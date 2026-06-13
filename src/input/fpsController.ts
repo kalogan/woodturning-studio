@@ -20,6 +20,20 @@ export function clampPitch(p: number): number {
 }
 
 /**
+ * Right-hand strafe basis in the XZ plane for a horizontal forward vector.
+ * right = cross(forward, worldUp) with up = +Y  →  (-fz, fx).
+ * So when facing -Z (default camera forward), right is +X (the player's right).
+ * Writes into `out` to avoid per-frame heap allocation (constraint #3).
+ *
+ * NOTE: FPSCamera previously inlined this with the signs negated — (fz, -fx) —
+ * which pointed LEFT, flipping A and D. This is the corrected, tested home.
+ */
+export function rightVectorXZ(fx: number, fz: number, out: { x: number; z: number }): void {
+  out.x = -fz;
+  out.z = fx;
+}
+
+/**
  * Captures WASD + mouse-look and normalises to FPSInput.
  * Lives in src/input/ — no Three.js, no React.
  */

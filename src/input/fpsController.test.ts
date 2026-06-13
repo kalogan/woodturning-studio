@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FPSController, keysToMovement, clampPitch } from './fpsController.js';
+import { FPSController, keysToMovement, clampPitch, rightVectorXZ } from './fpsController.js';
 
 // ---------------------------------------------------------------------------
 // Pure function tests
@@ -49,6 +49,39 @@ describe('clampPitch', () => {
   it('boundary values are not clamped', () => {
     expect(clampPitch(1.5)).toBe(1.5);
     expect(clampPitch(-1.5)).toBe(-1.5);
+  });
+});
+
+describe('rightVectorXZ (strafe basis — regression lock for the A/D flip)', () => {
+  const out = { x: 0, z: 0 };
+
+  it('facing -Z (default forward) → right is +X (player right)', () => {
+    rightVectorXZ(0, -1, out);
+    expect(out.x).toBeCloseTo(1);
+    expect(out.z).toBeCloseTo(0);
+  });
+
+  it('facing +Z → right is -X', () => {
+    rightVectorXZ(0, 1, out);
+    expect(out.x).toBeCloseTo(-1);
+    expect(out.z).toBeCloseTo(0);
+  });
+
+  it('facing +X → right is +Z', () => {
+    rightVectorXZ(1, 0, out);
+    expect(out.x).toBeCloseTo(0);
+    expect(out.z).toBeCloseTo(1);
+  });
+
+  it('D (strafe +1) facing -Z moves +X (right), NOT -X (the old bug)', () => {
+    rightVectorXZ(0, -1, out);
+    expect(out.x * 1).toBeGreaterThan(0); // +1 strafe × right.x > 0 → moves right
+  });
+
+  it('writes in place into the passed out object (no allocation)', () => {
+    const target = { x: 9, z: 9 };
+    rightVectorXZ(0, -1, target);
+    expect(target).toEqual({ x: 1, z: 0 });
   });
 });
 

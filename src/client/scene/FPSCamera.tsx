@@ -15,7 +15,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { FPSController } from '../../input/fpsController.js';
+import { FPSController, rightVectorXZ } from '../../input/fpsController.js';
 
 // ── Movement constants ─────────────────────────────────────────────────────
 const MOVE_SPEED = 1.4;  // metres per second
@@ -40,6 +40,7 @@ const ROOM_MAX_Z =  2.7;
 // These are mutated in place inside useFrame to satisfy constraint #3.
 const _forward = new THREE.Vector3();
 const _right   = new THREE.Vector3();
+const _rightXZ = { x: 0, z: 0 };  // scratch for rightVectorXZ — mutated in place
 const _euler   = new THREE.Euler(0, 0, 0, 'YXZ');
 
 interface FPSCameraProps {
@@ -111,8 +112,10 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
       _forward.normalize();
 
       // Right vector: perpendicular to forward in the XZ plane.
-      // Pre-allocated _right mutated in place — no new Vector3().
-      _right.set(_forward.z, 0, -_forward.x);
+      // right = cross(forward, +Y) = (-fz, fx) — see rightVectorXZ. The previous
+      // inline (fz, -fx) pointed LEFT, which flipped A and D. Allocation-free.
+      rightVectorXZ(_forward.x, _forward.z, _rightXZ);
+      _right.set(_rightXZ.x, 0, _rightXZ.z);
 
       const dist = MOVE_SPEED * delta;
 
