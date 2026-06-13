@@ -87,10 +87,15 @@ const LatheSpecSchema = z.object({
       powerButtonDiameter: z.number().positive(),
       powerButtonColor: z.string(),
       powerPullTravel: z.number().positive(),
-      // Speed knob — black rotary, top-left
+      // Speed knob — black rotary dial, now below power button (right column)
       speedKnobDiameter: z.number().positive(),
       speedKnobColor: z.string(),
-      // FWD/REV knob — right, below power button (decorative)
+      // Speed dial arc-scale decal quad (behind the knob)
+      speedDialScaleWidth: z.number().positive(),
+      speedDialScaleHeight: z.number().positive(),
+      speedDialArcColorLow: z.string(),   // green arc (low-rpm end)
+      speedDialArcColorHigh: z.string(),  // orange-red arc (high-rpm end)
+      // FWD/REV knob — decorative (moved to left column / removed overlap)
       fwdRevKnobDiameter: z.number().positive(),
       fwdRevKnobColor: z.string(),
       // H/L speed-range placard — left, below speed knob (decorative)
