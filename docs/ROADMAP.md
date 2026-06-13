@@ -33,42 +33,45 @@ session before trusting "looks right".
 
 ---
 
-## Phase T — first-person turning + EVS lathe controls (IN PROGRESS)
+## Phase T — first-person turning + EVS lathe controls (CORE LOOP DONE; hands + control-feel deferred)
 
 The signature loop: stand first-person at your lathe → **press the power button →
 manually twist the speed dial up** → the blank spins → pick up the tool → move it
-into the spinning wood (both hands visible). Camera locks while turning; mouse drives
-the tool. RPM honestly affects the cut (too slow for the diameter → catches; near
-ideal → clean).
+into the spinning wood. Camera locks while turning; mouse drives the tool. RPM honestly
+affects the cut (too slow for the diameter → catches; near ideal → clean). Visible
+hands (to show technique) are the goal but DEFERRED — see remaining item 1.
 
-**Done:** T1 geometry · T3 physics · T2-state store · hands foundation · T2b-display ·
-T4 first-person view · blank-orientation fix.
+**Done — the core loop works end-to-end:** T1 EVS control geometry · T3 RPM→cut
+physics · T2-state RPM store · T2b-display (live readout + blank spins) · T4
+first-person turning view · blank horizontal + spins in place · tool presentation
+(held + presented to the wood) · spin-from-RPM (blank tracks the dialed speed) ·
+**AT-lathe controls** (auto-cursor stance: click START, drag the speed dial) ·
+step-back-to-walk button. Walk → lathe (camera locks, cursor) → START + dial → E →
+first-person turning → ← step back. Hands FOUNDATION exists (model + poses) but is
+**unmounted** (see below).
 
 **Remaining (ordered):**
 
-1. **T4 framing tune** *(pending director eyeball on 5173)* — confirm the blank now
-   reads horizontal + spinning in place; tune `OPERATOR_CAM_POS/TARGET/FOV`
-   (`TurningEntry.tsx`) and `RIG_WORLD_POSITION` (`TurningScene.tsx`). If the blank
-   lies along the wrong axis, flip the sign on the `[0,0,-Math.PI/2]` wrapper in
-   `TurningScene.tsx`.
-2. **Tool-to-wood tracking** — make the tool visually cut where the physics removes
-   material. Root issue: physics station axis = `toolPose.position.z`, but the blank
-   geometry length axis = local **Y**, and `grain.glsl` assumes the lathe axis is Y.
-   Aligning them touches the **grain shader** → MUST boot-verify (see
-   `shader-runtime-verification` memory; the gate can't catch GLSL errors). Do this
-   when screenshots work again.
-3. **Spin from RPM** — drive `WoodBlank`'s spin (currently a constant `rotation.y +=
-   0.05`) from `useLatheStore.currentRpm` instead of a fixed default.
-4. **Full blank-size unify** — the turning blank is still a 0.3 m draft; size it to
-   the real 1.07 m between-centers span so it seats between the centers (the old "A2"
-   unify of the lathe-mounted blank with the physics blank).
-5. **Hands-on-tool grip** — wire the merged `FirstPersonHands` to grip the tool (add a
-   grip `HandPose`); director wants **both hands visible** while turning.
-6. **T2b control interaction** *(pending director's interaction-feel sign-off)* —
-   director chose **cursor click + drag**: at the lathe the cursor releases, you click
-   the green START button (power) and click-drag the speed dial to set RPM, with a hand
-   reaching the control. Then close the loop: power → dial → cutting **gated on RPM>0**
-   and shaped by T3's surface-speed model (`tickPhysics` already takes the `rpm` arg).
+1. **Visible hands — DEFERRED to a deliberate, eyeball-tuned pass.** Blind placement
+   looked awful (a single disembodied hand at the controls; "worse than none"). Both
+   mounts (reaching + grip) were removed; the hands model + `GrippingHands`/`ReachingHand`
+   components remain in `src/client/hands`, unmounted. Do this WITH the director
+   screenshotting: controls-hand should come from the lower frame edge (the operator's
+   arm) or appear only on interaction; the turning grip needs correct two-hand poses on
+   the tool. Architect preview screenshots have been broken — needs the director's eyes.
+2. **Tool-cut precision / turning control-feel — a DESIGN DECISION (see
+   `docs/research/competitive-analysis.html`).** The loop works, but the tool doesn't
+   cut *exactly* where it visually touches (mouseAdapter ties cut-station `pose.z` and
+   sideways motion together → slight diagonal). A proper fix means reorienting the tool
+   control frame (re-tunes tool presentation) AND ideally adopting the richer control
+   model the report recommends: **SHIFT precision mode, mouse XY = traverse + depth,
+   one-cursor-two-constraints two-hand control, audio-first cut gradient, ghost
+   tool-path.** Pick the control model with the director, then implement (NOT a blind
+   patch — it re-tunes recent visual work).
+3. **Optional polish:** full blank-size unify (blank is a 0.3 m draft vs the 1.07 m
+   between-centers span — note this ripples into LessonEvaluator thresholds, so it's a
+   coupled change, not pure visual); framing/feel tuning of the camera + drag
+   sensitivity (all named constants).
 
 ---
 
