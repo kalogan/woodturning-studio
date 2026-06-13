@@ -5,12 +5,16 @@
  * Overlay components render OUTSIDE the Canvas (DOM layer).
  * Either may be absent for a given state.
  *
- * INVARIANT (pointer-lock safety):
- *   registry.WORKSHOP_WALK.Scene3D === registry.AT_LATHE.Scene3D
+ * PROXIMITY AUTO-LOCK DESIGN:
+ *   AT_LATHE intentionally uses a DIFFERENT Scene3D from WORKSHOP_WALK.
+ *   When proximity triggers AT_LATHE, React unmounts WalkScene (FPSCamera +
+ *   pointer lock) and mounts AtLatheScene (fixed operator camera, free cursor).
+ *   This is the "proximity auto-lock" mechanic: the camera snaps to the
+ *   operator stance and the cursor is freed for clicking controls.
  *
- * Both states share the same WalkScene component reference so React does NOT
- * unmount/remount it when the player crosses the proximity threshold.
- * Remounting FPSCamera while pointer lock is active breaks pointer lock.
+ *   The old invariant (WALK === AT_LATHE, same ref to preserve pointer lock)
+ *   is intentionally REVERSED: we now WANT the FPSCamera to unmount so pointer
+ *   lock is released and the mouse cursor appears for the control-panel UI.
  */
 
 import type { FC } from 'react';
@@ -19,6 +23,7 @@ import type { SceneCtx } from './sceneCtx.js';
 import { MenuOverlay } from './scenes/MenuScene.js';
 import { WalkScene } from './scenes/WalkScene.js';
 import { WalkOverlay } from './scenes/WalkOverlay.js';
+import { AtLatheScene } from './scenes/AtLatheScene.js';
 import { AtLatheOverlay } from './scenes/AtLatheOverlay.js';
 import { TurningScene3D, TurningOverlay } from './scenes/TurningEntry.js';
 import { LessonCompleteScene3D, LessonCompleteOverlay } from './scenes/LessonCompleteScene.js';
@@ -45,8 +50,11 @@ export const sceneRegistry: SceneRegistry = {
   },
 
   AT_LATHE: {
-    // ⚠️  SAME WalkScene reference as WORKSHOP_WALK — preserves pointer lock
-    Scene3D: WalkScene,
+    // AT_LATHE intentionally uses a fixed operator camera + free cursor
+    // (proximity auto-lock); the WALK↔AT_LATHE camera swap is by design.
+    // AtLatheScene mounts a PerspectiveCamera (no FPSCamera / pointer lock)
+    // so the player can click the START button and drag the speed dial.
+    Scene3D: AtLatheScene,
     Overlay: AtLatheOverlay,
   },
 
