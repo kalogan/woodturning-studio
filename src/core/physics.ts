@@ -1,4 +1,7 @@
-import type { WoodState, ToolPose, ToolKind, PhysicsResult } from './types.js';
+import type { WoodState, ToolPose, ToolKind, PhysicsResult, SpeciesCutProfile } from './types.js';
+
+/** Identity profile — multiplies everything by 1, preserving prior behaviour exactly. */
+const NEUTRAL_CUT_PROFILE: SpeciesCutProfile = { cutRate: 1, tearout: 1, catch: 1 };
 
 /** Bevel angle (radians) below which bevel-riding contact is achieved, per tool. */
 const BEVEL_THRESHOLD: Record<ToolKind, number> = {
@@ -24,6 +27,7 @@ export function tickPhysics(
   toolPose: ToolPose,
   toolKind: ToolKind,
   dt: number,
+  cutProfile: SpeciesCutProfile = NEUTRAL_CUT_PROFILE,
 ): PhysicsResult {
   const stations = woodState.profile.length;
   const stationSpacing = woodState.length / stations;
@@ -46,10 +50,11 @@ export function tickPhysics(
 
   if (catchOccurred) {
     // Catches cause a sudden, large, uncontrolled removal + tearout spike
+    // Both depth and tearout spike are scaled by the catch coefficient.
     const currentRadius = woodState.profile[stationIndex] ?? 0;
-    const catchDepth = Math.min(currentRadius, 0.01);
+    const catchDepth = Math.min(currentRadius, 0.01 * cutProfile.catch);
     woodState.profile[stationIndex] = Math.max(0, currentRadius - catchDepth);
-    woodState.tearout[stationIndex] = Math.min(1, (woodState.tearout[stationIndex] ?? 0) + 0.6);
+    woodState.tearout[stationIndex] = Math.min(1, (woodState.tearout[stationIndex] ?? 0) + 0.6 * cutProfile.catch);
     return { catch: true, materialRemoved: catchDepth * stationSpacing * Math.PI };
   }
 
@@ -57,15 +62,17 @@ export function tickPhysics(
     return { catch: false, materialRemoved: 0 };
   }
 
-  // Normal cut: depth proportional to pressure × dt, capped by max cut depth
+  // Normal cut: depth proportional to pressure × dt, capped by max cut depth.
+  // cutRate scales the removal; cap is applied after scaling so we never exceed remaining radius.
   const depth = Math.min(
-    MAX_CUT_DEPTH[toolKind] * toolPose.pressure * (dt / 0.016),
+    MAX_CUT_DEPTH[toolKind] * toolPose.pressure * (dt / 0.016) * cutProfile.cutRate,
     woodState.profile[stationIndex] ?? 0
   );
 
-  // Grain tearout: cutting against grain direction (simplified: negative angleY = against grain)
+  // Grain tearout: cutting against grain direction (simplified: negative angleY = against grain).
+  // tearout coefficient scales accumulation rate.
   const againstGrain = toolPose.angleY < -0.15;
-  const tearoutDelta = againstGrain ? depth * 40 : 0;
+  const tearoutDelta = againstGrain ? depth * 40 * cutProfile.tearout : 0;
 
   woodState.profile[stationIndex] = Math.max(0, (woodState.profile[stationIndex] ?? 0) - depth);
   woodState.tearout[stationIndex] = Math.min(1, (woodState.tearout[stationIndex] ?? 0) + tearoutDelta);
