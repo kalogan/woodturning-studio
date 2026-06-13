@@ -73,6 +73,58 @@ export const RELAXED: HandPose = {
   wristRoll:  0.0,
 };
 
+/**
+ * GRIP_TOOL: both hands wrapped around the turning-tool handle.
+ *
+ * Intent: the turner's grip on a ~28 mm diameter handle — fingers curl tightly
+ * (0.80–0.90) to wrap the cylinder, thumb opposed and pressing in from the
+ * radial side.  Wrist is in a neutral/slight pronation (palms roughly facing
+ * the floor) as the tool rests on the tool rest bar.
+ *
+ * The position/rotation fields are zeroed here; TurningScene places each
+ * hand at its own offset along the handle (GRIP_REAR / GRIP_FRONT constants).
+ */
+export const GRIP_TOOL: HandPose = {
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  fingerCurls: {
+    thumb:  0.60, // thumb presses from radial side — less curled than fingers
+    index:  0.82, // index wraps tightly
+    middle: 0.88, // middle/ring carry most of the grip force
+    ring:   0.88,
+    pinky:  0.80, // pinky curls in at the butt of the handle
+  },
+  thumbSplay: 0.10, // thumb drawn in toward the handle, not spread
+  wristPitch: 0.05, // nearly neutral — tool rest dictates angle
+  wristYaw:   0.0,
+  wristRoll:  0.15, // slight pronation — palms angled toward the floor
+};
+
+/**
+ * REACH_CONTROL: one hand extended toward the headstock control panel —
+ * as if the turner is about to press the START button or pinch the speed dial.
+ *
+ * Intent: index finger extends and points (curl ≈ 0.10) to hover near a button;
+ * remaining fingers are softly curled (0.45–0.60) in a relaxed open-pinch shape;
+ * thumb is slightly opposed and extended to balance the hand.
+ * Wrist angled slightly forward (upward pitch) as the arm reaches out.
+ */
+export const REACH_CONTROL: HandPose = {
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  fingerCurls: {
+    thumb:  0.20, // thumb out, lightly extended to counter the index
+    index:  0.10, // index almost fully extended — pointing/pressing
+    middle: 0.50, // middle gently curled — not gripping, not stiff
+    ring:   0.55,
+    pinky:  0.60,
+  },
+  thumbSplay: 0.40, // thumb spread outward naturally
+  wristPitch: -0.15, // slight dorsal extension — wrist angled as arm reaches forward
+  wristYaw:    0.05,
+  wristRoll:   0.10, // mild pronation — palm faces slightly down as arm extends
+};
+
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
 /**

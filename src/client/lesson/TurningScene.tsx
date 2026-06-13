@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { WoodBlank } from '../wood/index.js';
 import { useLatheStore } from '../../workshop/index.js';
 import { ToolMesh, PhysicsLoop } from '../scene/index.js';
+import { GrippingHands } from '../hands/index.js';
 import { evaluateLesson } from './LessonEvaluator.js';
 import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
 import type { CurriculumLesson } from '../../session/index.js';
@@ -163,9 +164,12 @@ export function TurningScene({
       </group>
       {/* Anchor the tool at the tool rest bar position (TOOL_REST_ANCHOR).
           ToolMesh adds the pose position offset on top of this anchor, so the
-          player's mouse/pencil input moves the tool relative to the rest. */}
+          player's mouse/pencil input moves the tool relative to the rest.
+          GrippingHands is mounted in the SAME group so both hands inherit the
+          tool's world transform and move with it as the player steers the tool. */}
       <group position={TOOL_REST_ANCHOR}>
         <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
+        <GrippingHands />
       </group>
       <PhysicsLoop
         woodState={woodState}

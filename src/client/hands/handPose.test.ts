@@ -11,6 +11,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   RELAXED,
+  GRIP_TOOL,
+  REACH_CONTROL,
   clampPoseValue,
   lerpPose,
   clampFingerCurls,
@@ -67,6 +69,116 @@ describe('RELAXED pose', () => {
 
   it('wrist pitch is a small angle (< 0.3 rad)', () => {
     expect(Math.abs(RELAXED.wristPitch)).toBeLessThan(0.3);
+  });
+});
+
+// ── GRIP_TOOL pose shape ──────────────────────────────────────────────────────
+
+describe('GRIP_TOOL pose', () => {
+  it('has all five fingers defined', () => {
+    const fingers: (keyof FingerCurls)[] = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+    for (const f of fingers) {
+      expect(typeof GRIP_TOOL.fingerCurls[f]).toBe('number');
+    }
+  });
+
+  it('all finger curls are in [0, 1]', () => {
+    for (const [name, val] of Object.entries(GRIP_TOOL.fingerCurls)) {
+      expect(val, `${name} curl must be ≥ 0`).toBeGreaterThanOrEqual(0);
+      expect(val, `${name} curl must be ≤ 1`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('fingers are tightly curled (≥ 0.6) to wrap a handle', () => {
+    const { index, middle, ring, pinky } = GRIP_TOOL.fingerCurls;
+    expect(index,  'index should grip tightly').toBeGreaterThanOrEqual(0.6);
+    expect(middle, 'middle should grip tightly').toBeGreaterThanOrEqual(0.6);
+    expect(ring,   'ring should grip tightly').toBeGreaterThanOrEqual(0.6);
+    expect(pinky,  'pinky should grip tightly').toBeGreaterThanOrEqual(0.6);
+  });
+
+  it('thumbSplay is in [0, 1]', () => {
+    expect(GRIP_TOOL.thumbSplay).toBeGreaterThanOrEqual(0);
+    expect(GRIP_TOOL.thumbSplay).toBeLessThanOrEqual(1);
+  });
+
+  it('thumb is more drawn in (lower splay) than RELAXED', () => {
+    // When gripping, the thumb wraps in — less splay than resting
+    expect(GRIP_TOOL.thumbSplay).toBeLessThan(RELAXED.thumbSplay);
+  });
+
+  it('wrist angles are finite numbers', () => {
+    expect(Number.isFinite(GRIP_TOOL.wristPitch)).toBe(true);
+    expect(Number.isFinite(GRIP_TOOL.wristYaw)).toBe(true);
+    expect(Number.isFinite(GRIP_TOOL.wristRoll)).toBe(true);
+  });
+
+  it('position is a 3-tuple of numbers', () => {
+    expect(GRIP_TOOL.position).toHaveLength(3);
+    for (const v of GRIP_TOOL.position) {
+      expect(typeof v).toBe('number');
+    }
+  });
+
+  it('rotation is a 3-tuple of numbers', () => {
+    expect(GRIP_TOOL.rotation).toHaveLength(3);
+    for (const v of GRIP_TOOL.rotation) {
+      expect(typeof v).toBe('number');
+    }
+  });
+});
+
+// ── REACH_CONTROL pose shape ──────────────────────────────────────────────────
+
+describe('REACH_CONTROL pose', () => {
+  it('has all five fingers defined', () => {
+    const fingers: (keyof FingerCurls)[] = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+    for (const f of fingers) {
+      expect(typeof REACH_CONTROL.fingerCurls[f]).toBe('number');
+    }
+  });
+
+  it('all finger curls are in [0, 1]', () => {
+    for (const [name, val] of Object.entries(REACH_CONTROL.fingerCurls)) {
+      expect(val, `${name} curl must be ≥ 0`).toBeGreaterThanOrEqual(0);
+      expect(val, `${name} curl must be ≤ 1`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('index finger is nearly extended (curl ≤ 0.2) to point at a button', () => {
+    expect(REACH_CONTROL.fingerCurls.index).toBeLessThanOrEqual(0.2);
+  });
+
+  it('index is more extended than middle/ring/pinky (pointing finger)', () => {
+    const { index, middle, ring, pinky } = REACH_CONTROL.fingerCurls;
+    expect(index).toBeLessThan(middle);
+    expect(index).toBeLessThan(ring);
+    expect(index).toBeLessThan(pinky);
+  });
+
+  it('thumbSplay is in [0, 1]', () => {
+    expect(REACH_CONTROL.thumbSplay).toBeGreaterThanOrEqual(0);
+    expect(REACH_CONTROL.thumbSplay).toBeLessThanOrEqual(1);
+  });
+
+  it('wrist angles are finite numbers', () => {
+    expect(Number.isFinite(REACH_CONTROL.wristPitch)).toBe(true);
+    expect(Number.isFinite(REACH_CONTROL.wristYaw)).toBe(true);
+    expect(Number.isFinite(REACH_CONTROL.wristRoll)).toBe(true);
+  });
+
+  it('position is a 3-tuple of numbers', () => {
+    expect(REACH_CONTROL.position).toHaveLength(3);
+    for (const v of REACH_CONTROL.position) {
+      expect(typeof v).toBe('number');
+    }
+  });
+
+  it('rotation is a 3-tuple of numbers', () => {
+    expect(REACH_CONTROL.rotation).toHaveLength(3);
+    for (const v of REACH_CONTROL.rotation) {
+      expect(typeof v).toBe('number');
+    }
   });
 });
 

@@ -7,12 +7,17 @@
  *  - HandPose          — type describing full hand articulation
  *  - FingerCurls       — type: per-finger curl ratios
  *  - RELAXED           — default pose constant
+ *  - GRIP_TOOL         — both hands wrapped around a turning-tool handle
+ *  - REACH_CONTROL     — index extended, reaching toward a button / dial
  *  - lerpPose          — pure pose interpolation helper
  *  - clampPoseValue    — pure clamp helper
  *  - clampFingerCurls  — pure finger-curl clamp helper
+ *  - GrippingHands     — R3F component: two hands at explicit world offsets (TURNING)
+ *  - ReachingHand      — R3F component: one hand at an explicit world position (AT_LATHE)
  */
 
 export { FirstPersonHands } from './FirstPersonHands.js';
+export { GrippingHands, ReachingHand } from './FirstPersonHands.js';
 export { Hand } from './Hand.js';
-export { RELAXED, lerpPose, clampPoseValue, clampFingerCurls } from './handPose.js';
+export { RELAXED, GRIP_TOOL, REACH_CONTROL, lerpPose, clampPoseValue, clampFingerCurls } from './handPose.js';
 export type { HandPose, FingerCurls } from './handPose.js';
