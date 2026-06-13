@@ -11,8 +11,11 @@
  * Headstock is fixed at the left (-X) end; tailstock at the right (+X) end.
  * betweenCenters = 1.0668 m — drive-center tip to live-center tip.
  */
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
+import { useLatheStore } from '../../workshop/index.js';
 import { Bed } from './Bed.js';
 import { Headstock } from './Headstock.js';
 import { Tailstock } from './Tailstock.js';
@@ -121,6 +124,21 @@ export function Lathe({
     [blankRadius, blankLength],
   );
 
+  // ── Blank spin (imperative, no per-frame re-render, no per-frame alloc) ──
+  // The group wraps the blank cylinder; its local rotation.x is the spindle axis.
+  // We rotate about X because the cylinder's axis (Y in cylinder-local space) was
+  // already mapped to world-X via rotation={[0, 0, Math.PI / 2]} on the mesh.
+  // Here the group itself drives that rotation so the mesh rotation stays constant.
+  const blankGroupRef = useRef<THREE.Group | null>(null);
+
+  useFrame((_, dt) => {
+    const group = blankGroupRef.current;
+    if (group === null) return;
+    const rpm = useLatheStore.getState().currentRpm;
+    // ω (rad/s) = (rpm / 60) * 2π  — no allocation, just arithmetic
+    group.rotation.x += (rpm / 60) * (2 * Math.PI) * dt;
+  });
+
   // ── Stand lift ────────────────────────────────────────────────────────────
   // Bed bottom (Y=0 in machine-local space) sits on top of the stand's top plate.
   const machineY = stand.legHeight + stand.topPlateThickness;
@@ -168,12 +186,16 @@ export function Lathe({
           height={toolRestPostH}
         />
 
-        {/* ── Optional blank placeholder ── for verifying center spacing */}
+        {/* ── Optional blank placeholder ── for verifying center spacing       */}
+        {/* Wrapped in a ref group; useFrame (above) rotates the group about X  */}
+        {/* at (currentRpm/60)*2π rad/s — imperative, no per-frame allocation.  */}
         {defaultBlankVisible && (
-          <mesh position={[blankCentreX, spindleY, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={blankArgs} />
-            <meshStandardMaterial color="#c8a96e" roughness={0.8} metalness={0.0} />
-          </mesh>
+          <group ref={blankGroupRef} position={[blankCentreX, spindleY, 0]}>
+            <mesh rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={blankArgs} />
+              <meshStandardMaterial color="#c8a96e" roughness={0.8} metalness={0.0} />
+            </mesh>
+          </group>
         )}
       </group>
     </group>
