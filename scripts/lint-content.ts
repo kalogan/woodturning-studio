@@ -172,6 +172,72 @@ const LatheSpecSchema = z.object({
   }),
 });
 
+// ── Wood species schema ───────────────────────────────────────────────────────
+
+const SPECIES_IDS = ['pine', 'maple', 'cherry', 'walnut', 'oak', 'ash'] as const;
+const TOOL_IDS = ['roughing-gouge', 'spindle-gouge', 'parting-tool'] as const;
+
+const WoodFigureSchema = z.object({
+  type: z.enum(['none', 'fleck', 'streak']),
+  intensity: z.number().min(0).max(1),
+});
+
+const WoodVisualSchema = z.object({
+  baseColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a 6-digit hex color'),
+  grainColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a 6-digit hex color'),
+  ringFrequency: z.number().positive(),
+  ringContrast: z.number().min(0).max(1),
+  figure: WoodFigureSchema,
+});
+
+const WoodSpeciesSchema = z.object({
+  id: z.enum(SPECIES_IDS),
+  displayName: z.string().min(1),
+  janka: z.number().positive(),
+  density: z.number().positive(),
+  visual: WoodVisualSchema,
+});
+
+// ── Cutting matrix schema ─────────────────────────────────────────────────────
+
+const CuttingCoefficientsSchema = z.object({
+  cutRate: z.number().positive(),
+  tearout: z.number().positive(),
+  catch: z.number().positive(),
+});
+
+// Build the per-tool record shape: every species id is required.
+const SpeciesRecordSchema = z.object(
+  Object.fromEntries(SPECIES_IDS.map((id) => [id, CuttingCoefficientsSchema])) as Record<
+    (typeof SPECIES_IDS)[number],
+    typeof CuttingCoefficientsSchema
+  >,
+);
+
+const CuttingMatrixSchema = z.object({
+  tools: z.tuple([
+    z.literal('roughing-gouge'),
+    z.literal('spindle-gouge'),
+    z.literal('parting-tool'),
+  ]),
+  species: z.tuple([
+    z.literal('pine'),
+    z.literal('maple'),
+    z.literal('cherry'),
+    z.literal('walnut'),
+    z.literal('oak'),
+    z.literal('ash'),
+  ]),
+  coefficients: z.object(
+    Object.fromEntries(TOOL_IDS.map((id) => [id, SpeciesRecordSchema])) as Record<
+      (typeof TOOL_IDS)[number],
+      typeof SpeciesRecordSchema
+    >,
+  ),
+});
+
+// ── Validation helpers ────────────────────────────────────────────────────────
+
 let failures = 0;
 
 function validateDir(dir: string, schema: z.ZodTypeAny, label: string) {
@@ -188,9 +254,41 @@ function validateDir(dir: string, schema: z.ZodTypeAny, label: string) {
   }
 }
 
+function validateFile(filePath: string, schema: z.ZodTypeAny, label: string) {
+  const raw = JSON.parse(readFileSync(filePath, 'utf-8')) as unknown;
+  const result = schema.safeParse(raw);
+  if (!result.success) {
+    console.error(`[FAIL] ${label}:`, result.error.flatten());
+    failures++;
+  } else {
+    console.log(`[OK]   ${label}`);
+  }
+}
+
 validateDir('content/tools', ToolSpecSchema, 'tools');
 validateDir('content/curriculum', LessonSchema, 'curriculum');
 validateDir('content/lathe', LatheSpecSchema, 'lathe');
+
+// Wood species: species files validated as a group, cutting-matrix separately.
+// We use a custom loop so cutting-matrix.json is not fed to WoodSpeciesSchema.
+function validateWoodSpeciesDir(dir: string) {
+  const files = readdirSync(dir).filter(
+    (f) => f.endsWith('.json') && f !== 'cutting-matrix.json',
+  );
+  for (const file of files) {
+    const raw = JSON.parse(readFileSync(join(dir, file), 'utf-8')) as unknown;
+    const result = WoodSpeciesSchema.safeParse(raw);
+    if (!result.success) {
+      console.error(`[FAIL] wood/${file}:`, result.error.flatten());
+      failures++;
+    } else {
+      console.log(`[OK]   wood/${file}`);
+    }
+  }
+}
+
+validateWoodSpeciesDir('content/wood');
+validateFile('content/wood/cutting-matrix.json', CuttingMatrixSchema, 'wood/cutting-matrix.json');
 
 if (failures > 0) {
   console.error(`\n${failures} file(s) failed validation.`);
