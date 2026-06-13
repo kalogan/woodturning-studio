@@ -22,6 +22,7 @@ const fakeLessonOrder2: CurriculumLesson = {
   id: 'lesson-02-fake',
   title: 'Fake lesson 2',
   tool: 'spindle-gouge',
+  woodSpecies: 'cherry',
   order: 2,
   brief: '',
   successCriteria: { minMaterialRemoved: 0.3, maxTearout: 0.2, noCatches: false, catchesTolerance: 2 },

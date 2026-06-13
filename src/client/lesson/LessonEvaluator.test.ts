@@ -9,6 +9,7 @@ const minimalLesson: CurriculumLesson = {
   id: 'test-lesson',
   title: 'Test Lesson',
   tool: 'roughing-gouge',
+  woodSpecies: 'pine',
   order: 1,
   brief: 'A test lesson.',
   successCriteria: {
