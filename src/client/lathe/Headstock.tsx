@@ -4,26 +4,31 @@
  * Features modelled:
  *  - Cream cast-iron body box
  *  - BLACK cylindrical motor housing drum protruding from the -X (left) end
- *  - Control panel on the front (+Z) face:
- *      · Digital RPM readout rectangle (emissive, dark green display)
- *        — live digits drawn into a CanvasTexture; updated imperatively each
- *          frame only when the integer RPM changes (no per-frame re-render,
- *          no per-frame allocation).
- *      · Round green START/power button (left cluster, adjacent to speed knob)
- *      · Round red E-stop button (right side, separate)
- *      · Two small knob cylinders (speed / direction) — speed knob has an
- *        indicator mark on its front face so rotation is readable in T2
+ *  - Control panel on the front (+Z) face — REAL JWL-1642EVS layout (top→bottom):
+ *      1. Digital RPM readout rectangle at TOP (red LCD; live CanvasTexture driven
+ *         by useLatheStore.currentRpm — updated imperatively each frame when the
+ *         integer RPM changes; no per-frame allocation).
+ *      2. Red round POWER button in the MIDDLE — PULL-ON / PUSH-OFF:
+ *         pulled OUT (+Z by powerPullTravel) when powered on, flush when off.
+ *         Click toggles power.
+ *      3. Shiny SILVER speed knob at the BOTTOM — HORIZONTAL SLIDER:
+ *         drag LEFT↔RIGHT to set RPM across [0, maxRpm] over a short track.
+ *         Knob X position reflects targetRpm imperatively each frame.
  *  - Spindle nose short cylinder protruding +X
  *
- * All dimensions from spec.headstock (and spec.headstock.motorHousing /
- * spec.headstock.controlPanel). No hardcoded measurements.
+ * Director-tunable layout constants (named, with comments) live just below the
+ * imports — fine-tune READOUT_Y, POWER_BTN_Y, SPEED_TRACK_Y to taste after
+ * eyeballing on localhost:5173.
+ *
+ * All dimensions come from spec.headstock.controlPanel (content/lathe/jet-jwl-1642.json).
+ * No hardcoded measurements.
  */
 import { useRef, useMemo, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
-import { paintedCastIron, bareSteel, darkCastIron, blackRubber } from './materials.js';
+import { paintedCastIron, bareSteel, darkCastIron } from './materials.js';
 import { useLatheStore } from '../../workshop/index.js';
 import { formatRpm } from './rpmFormat.js';
 
@@ -32,11 +37,10 @@ interface HeadstockProps {
   rotation?: [number, number, number];
 }
 
-const bodyMat     = paintedCastIron(spec.headstock.color);
-const steelMat    = bareSteel();
-const motorMat    = darkCastIron('#1f1f1d');   // near-black cast housing
-const panelMat    = darkCastIron('#232323');   // control panel backing
-const knobMat     = blackRubber();
+const bodyMat   = paintedCastIron(spec.headstock.color);
+const steelMat  = bareSteel();
+const motorMat  = darkCastIron('#1f1f1d');   // near-black cast housing
+const panelMat  = darkCastIron('#232323');   // control panel backing
 
 // ── Readout canvas dimensions (pixels) ──────────────────────────────────────
 // Higher resolution for legible digits; power-of-two not strictly required but
@@ -44,14 +48,23 @@ const knobMat     = blackRubber();
 const READOUT_CANVAS_W = 256;
 const READOUT_CANVAS_H = 64;
 
-// ── Drag sensitivity ─────────────────────────────────────────────────────────
-// Moving this many pixels vertically sweeps the full [0, maxRpm] range.
+// ── Speed slider drag sensitivity ────────────────────────────────────────────
+// Dragging this many pixels horizontally sweeps the full [0, maxRpm] range.
 const DRAG_PIXELS_FOR_FULL_RANGE = 200;
 
-// ── Speed knob rotation sweep ─────────────────────────────────────────────────
-// 270° sweep from -135° (min RPM) to +135° (max RPM).
-const KNOB_MIN_ANGLE = -Math.PI * 0.75; // -135°
-const KNOB_MAX_ANGLE =  Math.PI * 0.75; //  +135°
+// ── Panel layout Y offsets (relative to panel centre) ────────────────────────
+// Director: fine-tune these to match the screenshot from localhost:5173.
+// All values are in METRES (world units).
+//
+//  READOUT_Y    — readout display sits at the TOP of the panel
+//  POWER_BTN_Y  — red pull-button in the MIDDLE (below readout)
+//  SPEED_TRACK_Y— silver knob + track at the BOTTOM (below red button)
+//
+// The panel height is spec.headstock.controlPanel.height (0.20 m).
+// Positive Y = up; typical range here is ±(panelHeight/2 * 0.8).
+const READOUT_Y_OFFSET     =  0.06;  // 60 mm above panel centre → top zone
+const POWER_BTN_Y_OFFSET   =  0.01;  // 10 mm above centre → middle zone
+const SPEED_TRACK_Y_OFFSET = -0.06;  // 60 mm below centre → bottom zone
 
 export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: HeadstockProps) {
   const {
@@ -66,214 +79,182 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
     controlPanel,
   } = spec.headstock;
 
+  const cp = controlPanel;
+
   // ── RPM readout canvas + texture (pre-allocated once, reused every frame) ──
-  // The canvas element, 2D context, and CanvasTexture are created once in useMemo.
-  // useFrame reads the RPM imperatively (no subscription/re-render), redraws the
-  // canvas ONLY when the integer value changes, then flags needsUpdate.
   const { ctx: readoutCtx, texture: readoutTexture } = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width  = READOUT_CANVAS_W;
     canvas.height = READOUT_CANVAS_H;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Headstock: could not get 2D canvas context for RPM readout');
-
-    // Initial draw — show "0" at rest
     const texture = new THREE.CanvasTexture(canvas);
     return { ctx, texture };
-  }, []); // created once, never re-created — stable empty dep array is intentional
+  }, []); // created once — stable empty dep array is intentional
 
   // Track the last integer we painted so we skip identical frames.
   const lastDisplayedRpm = useRef<number>(-1);
 
-  // ── Speed knob mesh ref — we rotate it visually to reflect targetRpm ────────
+  // ── Mesh refs for imperative per-frame updates ────────────────────────────
+  // powerBtnRef: Z position driven by power state (no re-render, no allocation)
+  // speedKnobRef: X position driven by targetRpm (no re-render, no allocation)
+  const powerBtnRef  = useRef<THREE.Mesh>(null);
   const speedKnobRef = useRef<THREE.Mesh>(null);
 
-  // ── Drag state — pre-allocated scalars, no per-event heap allocation ─────────
-  // isDragging: are we currently tracking a pointer drag?
-  // dragStartY: clientY where the drag began (pixels).
-  // dragStartRpm: targetRpm at the moment the drag began.
-  const isDragging = useRef(false);
-  const dragStartY = useRef(0);
-  const dragStartRpm = useRef(0);
+  // ── Drag state — pre-allocated scalars, zero heap alloc per event ─────────
+  const isDragging    = useRef(false);
+  const dragStartX    = useRef(0);
+  const dragStartRpm  = useRef(0);
 
-  // ── START button handlers ─────────────────────────────────────────────────────
-  const handleStartClick = useCallback((_e: ThreeEvent<MouseEvent>) => {
+  // ── Power button handlers ──────────────────────────────────────────────────
+  const handlePowerClick = useCallback((_e: ThreeEvent<MouseEvent>) => {
     const { power, setPower } = useLatheStore.getState();
     setPower(!power);
   }, []);
 
-  const handleStartPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
+  const handlePowerPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
     document.body.style.cursor = 'pointer';
   }, []);
 
-  const handleStartPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
+  const handlePowerPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
     document.body.style.cursor = '';
   }, []);
 
-  // ── Speed dial handlers ───────────────────────────────────────────────────────
-  const handleDialPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+  // ── Speed knob (horizontal slider) handlers ───────────────────────────────
+  const handleKnobPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    isDragging.current = true;
-    dragStartY.current = e.nativeEvent.clientY;
+    isDragging.current   = true;
+    dragStartX.current   = e.nativeEvent.clientX;
     dragStartRpm.current = useLatheStore.getState().targetRpm;
-    document.body.style.cursor = 'ns-resize';
+    document.body.style.cursor = 'ew-resize';
   }, []);
 
-  const handleDialPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging.current) {
-      document.body.style.cursor = 'ns-resize';
-    }
+  const handleKnobPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    if (!isDragging.current) document.body.style.cursor = 'grab';
   }, []);
 
-  const handleDialPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging.current) {
-      document.body.style.cursor = '';
-    }
+  const handleKnobPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    if (!isDragging.current) document.body.style.cursor = '';
   }, []);
 
-  // Window-level pointermove/pointerup: registered on mount, stable no-alloc handlers.
-  // We capture the handlers in refs so the effect cleanup can remove the exact same function.
+  // Window-level pointermove/pointerup: registered once on mount.
+  // All reads go through refs / store.getState() — no stale captures.
   const onWindowPointerMove = useCallback((e: PointerEvent) => {
     if (!isDragging.current) return;
     const { maxRpm, setTargetRpm } = useLatheStore.getState();
-    // Drag UP = increase RPM (negative deltaY because screen Y goes down).
-    const deltaY = dragStartY.current - e.clientY;
-    const deltaRpm = (deltaY / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
-    const newRpm = dragStartRpm.current + deltaRpm;
-    setTargetRpm(newRpm); // store clamps to [0, maxRpm] and guards power-off
-    // Empty dep array is intentional: reads all state via refs + store.getState()
-    // so the callback never captures stale values without needing to re-register.
-  }, []); // stable by design — all mutable reads go through .current / getState()
+    // Drag RIGHT = increase RPM (positive deltaX).
+    const deltaX   = e.clientX - dragStartX.current;
+    const deltaRpm = (deltaX / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
+    setTargetRpm(dragStartRpm.current + deltaRpm); // store clamps + guards power-off
+  }, []); // stable — reads only through .current / getState()
 
   const onWindowPointerUp = useCallback((_e: PointerEvent) => {
     if (!isDragging.current) return;
     isDragging.current = false;
     document.body.style.cursor = '';
-    // stable by design — only touches .current
-  }, []);
+  }, []); // stable
 
-  // Register and clean up the window-level drag listeners once on mount.
-  // useEffect (not useMemo) so React handles the cleanup on unmount.
-  // Empty dep array is intentional: the handlers are stable references (see above).
   useEffect(() => {
     window.addEventListener('pointermove', onWindowPointerMove);
-    window.addEventListener('pointerup', onWindowPointerUp);
+    window.addEventListener('pointerup',   onWindowPointerUp);
     return () => {
       window.removeEventListener('pointermove', onWindowPointerMove);
-      window.removeEventListener('pointerup', onWindowPointerUp);
+      window.removeEventListener('pointerup',   onWindowPointerUp);
     };
   }, []); // stable handlers registered once on mount
 
-  // Helper — draw the readout display; called on first render and whenever
-  // the integer RPM changes. No allocation: reuses existing canvas / ctx.
+  // ── drawReadout — called on mount + whenever integer RPM changes ──────────
+  // Reuses existing canvas/ctx; no heap allocation.
   function drawReadout(intRpm: number) {
     readoutCtx.clearRect(0, 0, READOUT_CANVAS_W, READOUT_CANVAS_H);
-
-    // Background — dark LCD green
-    readoutCtx.fillStyle = '#0a1a0a';
+    // Background — deep red-black LCD
+    readoutCtx.fillStyle = '#1a0000';
     readoutCtx.fillRect(0, 0, READOUT_CANVAS_W, READOUT_CANVAS_H);
-
-    // Digits — bright green, right-aligned
-    // Font size pre-computed as an integer string to satisfy strict template-literal rules.
+    // Digits — bright red, right-aligned
     const fontSizePx = Math.round(READOUT_CANVAS_H * 0.75).toString();
-    readoutCtx.fillStyle = '#00ff44';
+    readoutCtx.fillStyle = '#ff2200';
     readoutCtx.font = `bold ${fontSizePx}px monospace`;
     readoutCtx.textAlign = 'right';
     readoutCtx.textBaseline = 'middle';
     readoutCtx.fillText(formatRpm(intRpm), READOUT_CANVAS_W - 6, READOUT_CANVAS_H / 2);
-
     readoutTexture.needsUpdate = true;
   }
 
-  // Draw the initial "0" immediately (before first frame).
-  // Stable empty dep array is intentional — we only want this side effect once.
-  useMemo(() => { drawReadout(0); }, []);
+  // Draw initial "0" immediately (before first frame).
+  useMemo(() => { drawReadout(0); }, []); // stable empty dep intentional
 
-  // Per-frame update — imperative, no React re-render, no heap allocation.
-  // KNOB_MIN_ANGLE / KNOB_MAX_ANGLE are module-level constants (270° sweep).
+  // ── Per-frame imperative update — zero re-renders, zero heap alloc ────────
   useFrame(() => {
-    const { currentRpm, targetRpm, maxRpm } = useLatheStore.getState();
+    const { currentRpm, targetRpm, maxRpm, power } = useLatheStore.getState();
 
-    // ── RPM readout ───────────────────────────────────────────────────────────
+    // 1. RPM readout
     const intRpm = Math.round(currentRpm);
     if (intRpm !== lastDisplayedRpm.current) {
       lastDisplayedRpm.current = intRpm;
       drawReadout(intRpm);
     }
 
-    // ── Speed knob visual rotation ─────────────────────────────────────────────
-    // Rotates to show targetRpm position (what the dial is set to, not currentRpm),
-    // so it feels like a physical dial the player sets, not a tachometer.
+    // 2. Power button Z — protrudes by powerPullTravel when on, flush when off
+    const btn = powerBtnRef.current;
+    if (btn !== null) {
+      btn.position.z = powerBtnZ + (power ? cp.powerPullTravel : 0);
+    }
+
+    // 3. Speed knob X — slides along track proportional to targetRpm/maxRpm
     const knob = speedKnobRef.current;
     if (knob !== null && maxRpm > 0) {
-      const t = targetRpm / maxRpm; // normalised [0, 1]
-      // Interpolate from min to max angle; Z rotation tilts the indicator mark.
-      knob.rotation.z = KNOB_MIN_ANGLE + t * (KNOB_MAX_ANGLE - KNOB_MIN_ANGLE);
+      const t = targetRpm / maxRpm; // [0, 1]
+      // Track spans ±(trackLength/2) around the track centre X
+      knob.position.x = speedTrackCentreX + (t - 0.5) * cp.speedTrackLength;
     }
   });
 
-  // ── Body ─────────────────────────────────────────────────────────────────
-  // Local origin is at the bed surface, left face of headstock.
-  // The body box centre Y = height/2, X = width/2 (right of left face).
+  // ── Layout geometry (all read from spec, no hardcoded measurements) ───────
+
   const bodyY = height / 2;
 
-  // ── Motor housing drum ────────────────────────────────────────────────────
-  // The spec gives width×height×depth as a bounding box.
-  // Represent as a horizontal cylinder: diameter = min(width, height), length = depth.
-  // It protrudes from the -X end of the headstock body.
+  // Motor housing drum
   const motorDiameter = Math.min(motorHousing.width, motorHousing.height);
-  const motorRadius = motorDiameter / 2;
-  const motorLength = motorHousing.depth;
-  // Centre of motor drum: just to the left of the body left face (X=0 in headstock local),
-  // so X = -(motorLength/2)
-  const motorX = -(motorLength / 2);
-  const motorY = bodyY; // vertically centred on the body
+  const motorRadius   = motorDiameter / 2;
+  const motorLength   = motorHousing.depth;
+  const motorX        = -(motorLength / 2);
+  const motorY        = bodyY;
 
-  // ── Spindle nose ──────────────────────────────────────────────────────────
-  // Protrudes +X from the body right face (X = width)
+  // Spindle nose
   const spindleNoseX = width + spindleNoseLength / 2;
 
-  // ── Control panel ─────────────────────────────────────────────────────────
-  // Panel sits proud on the front (+Z) face of the body, centred horizontally on the body.
-  const cp = controlPanel;
+  // Control panel backing plate
   const panelX = width / 2;            // centred along body width
-  const panelY = bodyY + cp.height / 2 - height / 2 + height * 0.1; // lower-centre of face
+  const panelY = bodyY - height * 0.1; // slightly below body centre
   const panelZ = depth / 2 + cp.depth / 2; // flush with / just proud of front face
 
-  // Readout — upper portion of the panel
-  const readoutY = panelY + cp.height * 0.2;
-  const readoutZ = panelZ + 0.001; // sits on top of panel
+  // ── Control panel element positions ──────────────────────────────────────
+  // Each item is positioned relative to the panel centre (panelX, panelY, panelZ).
 
-  // E-stop button — lower-right of panel
-  const estopR = cp.estopDiameter / 2;
-  const estopX = panelX + cp.width * 0.2;
-  const estopY = panelY - cp.height * 0.2;
-  const estopZ = panelZ + estopR; // protrudes from panel face
+  // 1. RPM readout — TOP
+  const readoutY = panelY + READOUT_Y_OFFSET;
+  const readoutZ = panelZ + 0.002; // just proud of panel face
 
-  // Small knobs (speed + direction) — to the left side of the panel
-  const knobR = 0.012;
-  const knobLen = 0.015;
+  // 2. Red power button — MIDDLE
+  const powerBtnR = cp.powerButtonDiameter / 2;
+  const powerBtnX = panelX;
+  const powerBtnY = panelY + POWER_BTN_Y_OFFSET;
+  // powerBtnZ is the FLUSH (off) Z; useFrame adds pullTravel when on
+  const powerBtnZ = panelZ + powerBtnR; // button face proud of panel by one radius
 
-  // START button — adjacent to the speed knob (left cluster: power + speed grouped)
-  // Placed to the right of the speed knob at the same Y row.
-  const startR = cp.startButtonDiameter / 2;
-  const speedKnobX = panelX - cp.width * 0.25;
-  const speedKnobY = panelY + cp.height * 0.15;
-  const startBtnX = speedKnobX + knobR * 2 + startR + 0.004; // snug beside the speed knob
-  const startBtnY = speedKnobY;
-  const startBtnZ = panelZ + startR; // protrudes proud like E-stop
+  // 3. Silver speed knob + track — BOTTOM
+  const speedKnobR           = cp.speedKnobDiameter / 2;
+  const speedTrackY          = panelY + SPEED_TRACK_Y_OFFSET;
+  const speedTrackZ          = panelZ + 0.005; // track sits on panel face
+  const speedTrackCentreX    = panelX;         // track centred on panel X
 
-  // Speed knob indicator mark — thin contrasting strip on the +Z face near the rim,
-  // pointing "up" at rest (local Y+). Rendered as a child in the group at world coords.
-  const markWidth  = knobR * 0.35;
-  const markHeight = knobR * 0.7;
-  const markDepth  = 0.001;
-  const markX = speedKnobX;
-  const markY = speedKnobY + knobR * 0.55; // near top of knob face
-  const markZ = panelZ + knobLen + 0.001;  // just proud of the knob front face
+  // Track rail: thin box showing the groove the knob slides in
+  const trackRailH = 0.004; // 4 mm tall — thin groove indicator
+  const trackRailD = 0.006; // 6 mm deep
 
   return (
     <group position={position} rotation={rotation}>
+
       {/* ── Main body box ── */}
       <mesh position={[width / 2, bodyY, 0]}>
         <boxGeometry args={[width, height, depth]} />
@@ -301,9 +282,12 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         <meshStandardMaterial {...panelMat} />
       </mesh>
 
-      {/* ── RPM readout display ── live canvas texture showing currentRpm */}
-      {/* The CanvasTexture is redrawn imperatively in useFrame (above) only when  */}
-      {/* the integer RPM changes — no per-frame re-render, no per-frame alloc.    */}
+      {/* ─────────────────────────────────────────────────────────────────────
+          1. RPM READOUT — TOP of panel
+          Live CanvasTexture showing currentRpm; redrawn imperatively in
+          useFrame only when the integer value changes (no per-frame alloc).
+          Red LCD display matching the real JWL-1642EVS.
+      ───────────────────────────────────────────────────────────────────── */}
       <mesh position={[panelX, readoutY, readoutZ]}>
         <boxGeometry args={[cp.readoutWidth, cp.readoutHeight, 0.003]} />
         <meshStandardMaterial
@@ -316,54 +300,61 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         />
       </mesh>
 
-      {/* ── E-stop button ── red round cylinder */}
-      <mesh position={[estopX, estopY, estopZ]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[estopR, estopR, estopR * 1.2, 16]} />
-        <meshStandardMaterial color={cp.estopColor} roughness={0.5} metalness={0.0} />
+      {/* ─────────────────────────────────────────────────────────────────────
+          2. RED POWER BUTTON — MIDDLE of panel (PULL-ON / PUSH-OFF)
+          Z position driven imperatively in useFrame:
+            power ON  → powerBtnZ + powerPullTravel  (pulled OUT toward operator)
+            power OFF → powerBtnZ                    (pushed IN, flush)
+          Click toggles power via useLatheStore.getState().setPower().
+      ───────────────────────────────────────────────────────────────────── */}
+      <mesh
+        ref={powerBtnRef}
+        position={[powerBtnX, powerBtnY, powerBtnZ]}
+        rotation={[Math.PI / 2, 0, 0]}
+        onClick={handlePowerClick}
+        onPointerOver={handlePowerPointerOver}
+        onPointerOut={handlePowerPointerOut}
+      >
+        <cylinderGeometry args={[powerBtnR, powerBtnR, powerBtnR * 1.6, 20]} />
+        <meshStandardMaterial
+          color={cp.powerButtonColor}
+          roughness={0.4}
+          metalness={0.05}
+        />
       </mesh>
 
-      {/* ── Speed knob — draggable; rotates visually to reflect targetRpm ── */}
-      {/* Drag UP to raise RPM, DOWN to lower. Only effective when power is on. */}
+      {/* ─────────────────────────────────────────────────────────────────────
+          3a. SPEED TRACK RAIL — thin groove at BOTTOM of panel
+          Visual indicator of the slider path; static decorative element.
+      ───────────────────────────────────────────────────────────────────── */}
+      <mesh position={[speedTrackCentreX, speedTrackY, speedTrackZ]}>
+        <boxGeometry args={[cp.speedTrackLength + speedKnobR * 2, trackRailH, trackRailD]} />
+        <meshStandardMaterial color="#111111" roughness={0.8} metalness={0.1} />
+      </mesh>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          3b. SILVER SPEED KNOB — rides the horizontal track
+          X position driven imperatively in useFrame:
+            t = targetRpm / maxRpm  →  knob.x = centreX + (t-0.5)*trackLength
+          Drag LEFT↔RIGHT to set RPM. Only effective when power is on
+          (store enforces: setTargetRpm no-ops when power==false).
+          Metallic silver material matches the real machine.
+      ───────────────────────────────────────────────────────────────────── */}
       <mesh
         ref={speedKnobRef}
-        position={[panelX - cp.width * 0.25, panelY + cp.height * 0.15, panelZ + knobR]}
-        rotation={[Math.PI / 2, 0, 0]}
-        onPointerDown={handleDialPointerDown}
-        onPointerOver={handleDialPointerOver}
-        onPointerOut={handleDialPointerOut}
+        position={[speedTrackCentreX, speedTrackY, speedTrackZ + speedKnobR]}
+        onPointerDown={handleKnobPointerDown}
+        onPointerOver={handleKnobPointerOver}
+        onPointerOut={handleKnobPointerOut}
       >
-        <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
-        <meshStandardMaterial {...knobMat} />
+        <sphereGeometry args={[speedKnobR, 16, 12]} />
+        <meshStandardMaterial
+          color={cp.speedKnobColor}
+          roughness={0.2}
+          metalness={0.8}
+        />
       </mesh>
 
-      {/* ── Direction knob ── */}
-      <mesh
-        position={[panelX - cp.width * 0.25, panelY - cp.height * 0.15, panelZ + knobR]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
-        <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
-        <meshStandardMaterial {...knobMat} />
-      </mesh>
-
-      {/* ── Speed knob indicator mark — thin light strip on front face, pointing up at rest */}
-      {/* T2 will rotate the speed knob; this mark makes the angle readable */}
-      <mesh position={[markX, markY, markZ]}>
-        <boxGeometry args={[markWidth, markHeight, markDepth]} />
-        <meshStandardMaterial color="#e0e0e0" roughness={0.3} metalness={0.1} />
-      </mesh>
-
-      {/* ── START / power button — green, clickable, toggles lathe power ── */}
-      {/* Click to power ON (then drag the speed dial to set RPM).           */}
-      <mesh
-        position={[startBtnX, startBtnY, startBtnZ]}
-        rotation={[Math.PI / 2, 0, 0]}
-        onClick={handleStartClick}
-        onPointerOver={handleStartPointerOver}
-        onPointerOut={handleStartPointerOut}
-      >
-        <cylinderGeometry args={[startR, startR, startR * 1.2, 16]} />
-        <meshStandardMaterial color={cp.startButtonColor} roughness={0.5} metalness={0.0} />
-      </mesh>
     </group>
   );
 }
