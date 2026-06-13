@@ -34,18 +34,34 @@
       "depth": 0.22
     },
     "controlPanel": {
-      "width": 0.16,
-      "height": 0.2,
+      "width": 0.18,
+      "height": 0.22,
       "depth": 0.02,
-      "readoutWidth": 0.10,
-      "readoutHeight": 0.028,
-      "readoutColor": "#101810",
+
+      "readoutWidth": 0.075,
+      "readoutHeight": 0.030,
+      "readoutBezelColor": "#5a1010",
+      "readoutDigitColor": "#ff2a2a",
+
       "powerButtonDiameter": 0.028,
       "powerButtonColor": "#d83a2f",
       "powerPullTravel": 0.012,
-      "speedKnobDiameter": 0.022,
-      "speedKnobColor": "#c9ccd1",
-      "speedTrackLength": 0.06
+
+      "speedKnobDiameter": 0.036,
+      "speedKnobColor": "#1a1a1a",
+
+      "fwdRevKnobDiameter": 0.022,
+      "fwdRevKnobColor": "#1a1a1a",
+
+      "hlPlacardWidth": 0.060,
+      "hlPlacardHeight": 0.048,
+      "hlPlacardColor": "#111111",
+
+      "spindleLockRecessWidth": 0.030,
+      "spindleLockRecessHeight": 0.020,
+      "spindleLockRecessColor": "#111111",
+      "spindleLockKnobDiameter": 0.012,
+      "spindleLockKnobColor": "#1a1a1a"
     },
     "color": "#EAE6DC"
   },

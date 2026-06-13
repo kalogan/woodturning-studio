@@ -78,15 +78,31 @@ const LatheSpecSchema = z.object({
       width: z.number().positive(),
       height: z.number().positive(),
       depth: z.number().positive(),
+      // RPM readout (top-right)
       readoutWidth: z.number().positive(),
       readoutHeight: z.number().positive(),
-      readoutColor: z.string(),
+      readoutBezelColor: z.string(),
+      readoutDigitColor: z.string(),
+      // Power button (right, below readout)
       powerButtonDiameter: z.number().positive(),
       powerButtonColor: z.string(),
       powerPullTravel: z.number().positive(),
+      // Speed knob — black rotary, top-left
       speedKnobDiameter: z.number().positive(),
       speedKnobColor: z.string(),
-      speedTrackLength: z.number().positive(),
+      // FWD/REV knob — right, below power button (decorative)
+      fwdRevKnobDiameter: z.number().positive(),
+      fwdRevKnobColor: z.string(),
+      // H/L speed-range placard — left, below speed knob (decorative)
+      hlPlacardWidth: z.number().positive(),
+      hlPlacardHeight: z.number().positive(),
+      hlPlacardColor: z.string(),
+      // Spindle-lock recess — far-left, lower (decorative)
+      spindleLockRecessWidth: z.number().positive(),
+      spindleLockRecessHeight: z.number().positive(),
+      spindleLockRecessColor: z.string(),
+      spindleLockKnobDiameter: z.number().positive(),
+      spindleLockKnobColor: z.string(),
     }),
     color: z.string(),
   }),
