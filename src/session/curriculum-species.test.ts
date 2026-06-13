@@ -77,7 +77,7 @@ describe('W4 curriculum → species wiring', () => {
     for (let i = 1; i < jankaValues.length; i++) {
       expect(
         jankaValues[i],
-        `lesson ${i + 1} Janka (${jankaValues[i]}) should be ≥ lesson ${i} Janka (${jankaValues[i - 1]})`,
+        `lesson ${String(i + 1)} Janka (${String(jankaValues[i])}) should be >= lesson ${String(i)} Janka (${String(jankaValues[i - 1])})`,
       ).toBeGreaterThanOrEqual(jankaValues[i - 1] ?? 0);
     }
   });
@@ -152,7 +152,7 @@ describe('lessonCutProfile', () => {
     const fakeLesson: CurriculumLesson = {
       id: 'fake',
       title: 'Fake',
-      tool: 'roughing-gouge' as CurriculumLesson['tool'], // valid type but imagine override below
+      tool: 'roughing-gouge',
       woodSpecies: 'pine',
       order: 99,
       brief: '',
