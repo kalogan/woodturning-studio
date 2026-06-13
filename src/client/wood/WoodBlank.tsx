@@ -45,8 +45,11 @@ const FRAG_PARS_SNIPPET =
 
 // Replace the color_fragment include so grain runs there and PBR lighting
 // (normal maps, roughness, metalness, env-maps) still applies afterward.
+// NOTE: diffuseColor is already declared earlier in the standard fragment main
+// (`vec4 diffuseColor = vec4( diffuse, opacity )`), so we ASSIGN, not redeclare
+// (redeclaring causes a GLSL "redefinition" compile error at runtime).
 const FRAG_COLOR_REPLACEMENT = /* glsl */ `
-vec4 diffuseColor = vec4(computeWoodColor(v_localPos), opacity);
+diffuseColor = vec4(computeWoodColor(v_localPos), opacity);
 `;
 
 // ── Geometry helpers ──────────────────────────────────────────────────────────
