@@ -99,6 +99,41 @@ Tool bumping lathe parts → a coaching cue (brief §4 "CSG-style collision feed
 
 ---
 
+## Design backlog — from the competitive analysis (2026-06-13)
+
+Distilled from `docs/research/competitive-analysis.html`. Ranked roughly by
+bang-for-buck; each ties to an existing phase or stands as a new prototype. The
+through-line wedge: **honest physics + an audio-first correct/incorrect gradient +
+fading assistance + diegetic, machine-faithful controls** — a combination no shipping
+woodturning game attempts.
+
+**Turning feel & controls** *(Phase T+ control redesign — pick a model with the director first; this is the deferred "tool-cut/control-feel" item):*
+- **Mouse XY = traverse + depth** — left/right traverses the blank, in/out is cut depth; the cut is implicit on bevel contact (no click). Replaces today's diagonal `pose.z` mapping — this *is* the cut-alignment fix. (Cooking Sim contextual cut.)
+- **SHIFT precision mode** — hold to scale mouse delta ~4× down for finishing/detail passes. (Cooking Sim.)
+- **One cursor, two constraints** — mouse = front hand (tip), RMB/scroll = back hand (bevel angle). Learnable two-axis skill, no second pointer.
+- **Ghost tool-path overlay** — chase a translucent ideal bevel line in real time; teaches the MOTION, not just the silhouette (beats every existing woodturning game).
+
+**Feedback / juice** *(ties to Phase S SFX + wood visuals):*
+- **Audio-first cut gradient** — steady hiss = clean shear → rising harsh tone = nearing a catch → thunk + chip-spray = catch. (Skyrim lockpicking.) Highest-value feedback; the SFX foundation (S1) is already built.
+- **Chips + surface-state transformation** — pooled chip particles sized by cut aggressiveness; the wood surface goes torn → cut → polished sheen. (House Flipper reveal.) Honor the no-heap-alloc tick.
+- **Catch = teachable moment** — don't end the lesson; pause, replay the last second highlighting the bad angle, resume. (Surgeon Sim's low-shame failure, made instructive.)
+
+**Teaching & onboarding** *(ties to curriculum + Phase L0):*
+- **Step-gated craft chain** — mount → true → rough → finish → sand, each an independently green-able lesson slice. (Blacksmith Master + our slice model.)
+- **Fading assistance curve** — early lessons snap the bevel + widen catch tolerance; advanced lessons strip it, shown as a progress signal. (Alyx auto-land.)
+- **Zero-stakes scratch-pad blank** — motor-off, no objective; onboard the mouse (and the webcam-pencil) before any graded lesson. Mouse stays an always-available fallback for the exotic input.
+
+**Immersion / diegetic UI:**
+- **Lesson objective on a paper spec card** clipped to the bench, not a floating panel.
+- **Click-drag rotary EVS knob with motor-pitch feedback + detents** — extends the built dial; the diegetic RPM readout is already in.
+
+**Assembly** *(ties to Phase L0):*
+- **Snap-to-slot + confirming sound** for the JWL-1642EVS parts. (PC Building Sim install satisfaction.)
+
+**Hands** *(the current pass):* canned, correct two-hand poses per tool; a controls-hand must come from the lower frame edge or appear only on interaction — never a floating mid-scene hand ("worse than none").
+
+---
+
 ## Open decisions parked for the director (non-blocking)
 
 - **Turning framing** — eyeball T4 on 5173, confirm/tune the camera + blank-spin.
