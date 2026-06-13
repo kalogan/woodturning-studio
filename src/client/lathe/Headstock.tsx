@@ -18,8 +18,9 @@
  * All dimensions from spec.headstock (and spec.headstock.motorHousing /
  * spec.headstock.controlPanel). No hardcoded measurements.
  */
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
+import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
 import { paintedCastIron, bareSteel, darkCastIron, blackRubber } from './materials.js';
@@ -42,6 +43,15 @@ const knobMat     = blackRubber();
 // improves GPU mip-mapping. These are texture pixel counts, not world units.
 const READOUT_CANVAS_W = 256;
 const READOUT_CANVAS_H = 64;
+
+// ── Drag sensitivity ─────────────────────────────────────────────────────────
+// Moving this many pixels vertically sweeps the full [0, maxRpm] range.
+const DRAG_PIXELS_FOR_FULL_RANGE = 200;
+
+// ── Speed knob rotation sweep ─────────────────────────────────────────────────
+// 270° sweep from -135° (min RPM) to +135° (max RPM).
+const KNOB_MIN_ANGLE = -Math.PI * 0.75; // -135°
+const KNOB_MAX_ANGLE =  Math.PI * 0.75; //  +135°
 
 export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: HeadstockProps) {
   const {
@@ -75,6 +85,85 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   // Track the last integer we painted so we skip identical frames.
   const lastDisplayedRpm = useRef<number>(-1);
 
+  // ── Speed knob mesh ref — we rotate it visually to reflect targetRpm ────────
+  const speedKnobRef = useRef<THREE.Mesh>(null);
+
+  // ── Drag state — pre-allocated scalars, no per-event heap allocation ─────────
+  // isDragging: are we currently tracking a pointer drag?
+  // dragStartY: clientY where the drag began (pixels).
+  // dragStartRpm: targetRpm at the moment the drag began.
+  const isDragging = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartRpm = useRef(0);
+
+  // ── START button handlers ─────────────────────────────────────────────────────
+  const handleStartClick = useCallback((_e: ThreeEvent<MouseEvent>) => {
+    const { power, setPower } = useLatheStore.getState();
+    setPower(!power);
+  }, []);
+
+  const handleStartPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    document.body.style.cursor = 'pointer';
+  }, []);
+
+  const handleStartPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    document.body.style.cursor = '';
+  }, []);
+
+  // ── Speed dial handlers ───────────────────────────────────────────────────────
+  const handleDialPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    isDragging.current = true;
+    dragStartY.current = e.nativeEvent.clientY;
+    dragStartRpm.current = useLatheStore.getState().targetRpm;
+    document.body.style.cursor = 'ns-resize';
+  }, []);
+
+  const handleDialPointerOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    if (!isDragging.current) {
+      document.body.style.cursor = 'ns-resize';
+    }
+  }, []);
+
+  const handleDialPointerOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
+    if (!isDragging.current) {
+      document.body.style.cursor = '';
+    }
+  }, []);
+
+  // Window-level pointermove/pointerup: registered on mount, stable no-alloc handlers.
+  // We capture the handlers in refs so the effect cleanup can remove the exact same function.
+  const onWindowPointerMove = useCallback((e: PointerEvent) => {
+    if (!isDragging.current) return;
+    const { maxRpm, setTargetRpm } = useLatheStore.getState();
+    // Drag UP = increase RPM (negative deltaY because screen Y goes down).
+    const deltaY = dragStartY.current - e.clientY;
+    const deltaRpm = (deltaY / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
+    const newRpm = dragStartRpm.current + deltaRpm;
+    setTargetRpm(newRpm); // store clamps to [0, maxRpm] and guards power-off
+    // Empty dep array is intentional: reads all state via refs + store.getState()
+    // so the callback never captures stale values without needing to re-register.
+  }, []); // stable by design — all mutable reads go through .current / getState()
+
+  const onWindowPointerUp = useCallback((_e: PointerEvent) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    document.body.style.cursor = '';
+    // stable by design — only touches .current
+  }, []);
+
+  // Register and clean up the window-level drag listeners once on mount.
+  // useEffect (not useMemo) so React handles the cleanup on unmount.
+  // Empty dep array is intentional: the handlers are stable references (see above).
+  useEffect(() => {
+    window.addEventListener('pointermove', onWindowPointerMove);
+    window.addEventListener('pointerup', onWindowPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onWindowPointerMove);
+      window.removeEventListener('pointerup', onWindowPointerUp);
+    };
+  }, []); // stable handlers registered once on mount
+
   // Helper — draw the readout display; called on first render and whenever
   // the integer RPM changes. No allocation: reuses existing canvas / ctx.
   function drawReadout(intRpm: number) {
@@ -100,13 +189,27 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   // Stable empty dep array is intentional — we only want this side effect once.
   useMemo(() => { drawReadout(0); }, []);
 
-  // Per-frame update — imperative, no React re-render
+  // Per-frame update — imperative, no React re-render, no heap allocation.
+  // KNOB_MIN_ANGLE / KNOB_MAX_ANGLE are module-level constants (270° sweep).
   useFrame(() => {
-    const rpm     = useLatheStore.getState().currentRpm;
-    const intRpm  = Math.round(rpm);
-    if (intRpm === lastDisplayedRpm.current) return; // nothing changed
-    lastDisplayedRpm.current = intRpm;
-    drawReadout(intRpm);
+    const { currentRpm, targetRpm, maxRpm } = useLatheStore.getState();
+
+    // ── RPM readout ───────────────────────────────────────────────────────────
+    const intRpm = Math.round(currentRpm);
+    if (intRpm !== lastDisplayedRpm.current) {
+      lastDisplayedRpm.current = intRpm;
+      drawReadout(intRpm);
+    }
+
+    // ── Speed knob visual rotation ─────────────────────────────────────────────
+    // Rotates to show targetRpm position (what the dial is set to, not currentRpm),
+    // so it feels like a physical dial the player sets, not a tachometer.
+    const knob = speedKnobRef.current;
+    if (knob !== null && maxRpm > 0) {
+      const t = targetRpm / maxRpm; // normalised [0, 1]
+      // Interpolate from min to max angle; Z rotation tilts the indicator mark.
+      knob.rotation.z = KNOB_MIN_ANGLE + t * (KNOB_MAX_ANGLE - KNOB_MIN_ANGLE);
+    }
   });
 
   // ── Body ─────────────────────────────────────────────────────────────────
@@ -219,10 +322,15 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         <meshStandardMaterial color={cp.estopColor} roughness={0.5} metalness={0.0} />
       </mesh>
 
-      {/* ── Speed knob ── */}
+      {/* ── Speed knob — draggable; rotates visually to reflect targetRpm ── */}
+      {/* Drag UP to raise RPM, DOWN to lower. Only effective when power is on. */}
       <mesh
+        ref={speedKnobRef}
         position={[panelX - cp.width * 0.25, panelY + cp.height * 0.15, panelZ + knobR]}
         rotation={[Math.PI / 2, 0, 0]}
+        onPointerDown={handleDialPointerDown}
+        onPointerOver={handleDialPointerOver}
+        onPointerOut={handleDialPointerOut}
       >
         <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
         <meshStandardMaterial {...knobMat} />
@@ -244,8 +352,15 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         <meshStandardMaterial color="#e0e0e0" roughness={0.3} metalness={0.1} />
       </mesh>
 
-      {/* ── START / power button — green, adjacent to speed knob (left cluster) ── */}
-      <mesh position={[startBtnX, startBtnY, startBtnZ]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* ── START / power button — green, clickable, toggles lathe power ── */}
+      {/* Click to power ON (then drag the speed dial to set RPM).           */}
+      <mesh
+        position={[startBtnX, startBtnY, startBtnZ]}
+        rotation={[Math.PI / 2, 0, 0]}
+        onClick={handleStartClick}
+        onPointerOver={handleStartPointerOver}
+        onPointerOut={handleStartPointerOut}
+      >
         <cylinderGeometry args={[startR, startR, startR * 1.2, 16]} />
         <meshStandardMaterial color={cp.startButtonColor} roughness={0.5} metalness={0.0} />
       </mesh>
