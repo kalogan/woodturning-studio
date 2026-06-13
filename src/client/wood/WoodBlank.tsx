@@ -172,8 +172,14 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    // Spin on lathe axis (Z)
-    mesh.rotation.z += 0.05;
+    // Spin in place about the blank's own length/symmetry axis. LatheGeometry
+    // revolves the profile around Y, so Y IS the long axis — spinning about Y is
+    // "spin in place" (spinning about Z tumbled it end-over-end). The turning rig
+    // lays this Y axis onto the lathe's horizontal spindle axis (see TurningScene),
+    // so this reads as the wood spinning on the lathe.
+    // TODO(T2b-interaction): drive this rate from useLatheStore.currentRpm once the
+    // power/speed-dial interaction exists; constant default until then.
+    mesh.rotation.y += 0.05;
 
     // Detect profile change
     const prev = prevProfileRef.current;

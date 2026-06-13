@@ -115,12 +115,19 @@ export function TurningScene({
     // RIG_WORLD_POSITION places the rig on the lathe spindle axis — see constant above.
     // Physics call is UNCHANGED; only the group position has been set (T4 slice).
     <group position={RIG_WORLD_POSITION}>
-      <WoodBlank
-        woodState={woodState}
-        length={0.3}
-        radius={0.05}
-        {...(woodVisual !== undefined ? { visual: woodVisual } : {})}
-      />
+      {/* Lay the blank HORIZONTAL along the lathe spindle axis (world X), between the
+          centers. The blank's length axis is local Y (LatheGeometry revolves the profile
+          around Y); rotating -90° about Z maps that length axis onto the lathe's horizontal
+          axis. The blank spins in place about that axis (rotation.y inside WoodBlank) — so
+          the wood spins on the lathe while you move the tool into it. */}
+      <group rotation={[0, 0, -Math.PI / 2]}>
+        <WoodBlank
+          woodState={woodState}
+          length={0.3}
+          radius={0.05}
+          {...(woodVisual !== undefined ? { visual: woodVisual } : {})}
+        />
+      </group>
       <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
       <PhysicsLoop
         woodState={woodState}
