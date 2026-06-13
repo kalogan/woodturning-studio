@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { WoodBlank } from '../wood/index.js';
+import { useLatheStore } from '../../workshop/index.js';
 import { ToolMesh, PhysicsLoop } from '../scene/index.js';
 import { evaluateLesson } from './LessonEvaluator.js';
 import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
@@ -104,7 +105,12 @@ export function TurningScene({
     [lesson.woodSpecies, lesson.tool],
   );
 
-  useFrame(() => {
+  useFrame((_, dt) => {
+    // Advance the spindle motor simulation so currentRpm eases toward targetRpm
+    // (and spins down gracefully when power is cut) while the player is turning.
+    // Read imperatively — no hook subscription, no per-frame React re-render.
+    useLatheStore.getState().tick(dt);
+
     const latest = adapter.getLatestPose();
     if (latest !== null) {
       poseContainer.pose = latest;
