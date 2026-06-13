@@ -41,7 +41,9 @@
       "readoutHeight": 0.025,
       "readoutColor": "#101810",
       "estopDiameter": 0.03,
-      "estopColor": "#c0392b"
+      "estopColor": "#c0392b",
+      "startButtonDiameter": 0.018,
+      "startButtonColor": "#2ecc71"
     },
     "color": "#EAE6DC"
   },
