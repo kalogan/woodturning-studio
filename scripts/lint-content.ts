@@ -17,11 +17,14 @@ const ToolSpecSchema = z.object({
   v1: z.boolean(),
 });
 
+const LESSON_SPECIES_IDS = ['pine', 'maple', 'cherry', 'walnut', 'oak', 'ash'] as const;
+
 const LessonSchema = z.object({
   id: z.string(),
   schemaVersion: z.literal(1),
   title: z.string(),
   tool: z.enum(['roughing-gouge', 'spindle-gouge', 'parting-tool']),
+  woodSpecies: z.enum(LESSON_SPECIES_IDS),
   order: z.number().int().positive(),
   brief: z.string(),
   successCriteria: z.object({

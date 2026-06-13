@@ -7,6 +7,7 @@ export interface CurriculumLesson {
   id: string;
   title: string;
   tool: 'roughing-gouge' | 'spindle-gouge' | 'parting-tool';
+  woodSpecies: string;
   order: number;
   brief: string;
   successCriteria: {
