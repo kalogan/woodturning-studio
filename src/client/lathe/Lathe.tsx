@@ -195,6 +195,19 @@ export function Lathe({
               <cylinderGeometry args={blankArgs} />
               <meshStandardMaterial color="#c8a96e" roughness={0.8} metalness={0.0} />
             </mesh>
+            {/* Longitudinal grain streaks — WITHOUT these a smooth cylinder shows no
+                visible rotation (it's rotationally symmetric), so the spin reads as
+                static no matter the RPM. These are children of the spinning group, so
+                they sweep around at currentRpm and make the speed visible. Each streak
+                group is rotated to its angular position about the spindle (X) axis. */}
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <group key={deg} rotation={[(deg * Math.PI) / 180, 0, 0]}>
+                <mesh position={[0, blankRadius * 0.99, 0]}>
+                  <boxGeometry args={[blankLength * 0.97, 0.005, 0.004]} />
+                  <meshStandardMaterial color="#8a5a30" roughness={0.85} metalness={0.0} />
+                </mesh>
+              </group>
+            ))}
           </group>
         )}
       </group>
