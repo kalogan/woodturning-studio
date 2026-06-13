@@ -33,6 +33,15 @@ export interface WoodState {
 
 export type ToolKind = 'roughing-gouge' | 'spindle-gouge' | 'parting-tool';
 
+/** Per-(tool,species) cut-feel multipliers, passed into the physics tick.
+    Mapped from content/wood/cutting-matrix.json by the wiring layer (W4) —
+    core stays data-agnostic and never imports content. */
+export interface SpeciesCutProfile {
+  cutRate: number;  // multiplier on normal-cut material removal
+  tearout: number;  // multiplier on tearout accumulation
+  catch: number;    // multiplier on catch severity (depth + tearout spike)
+}
+
 export interface PhysicsResult {
   /** Whether a catch occurred this tick */
   catch: boolean;
