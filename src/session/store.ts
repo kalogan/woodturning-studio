@@ -4,16 +4,13 @@ import { loadSession, saveSession, emptySession } from './db.js';
 
 interface SessionStore {
   record: SessionRecord;
-  activeLessonId: string | null;
 
   loadFromDB: () => Promise<void>;
   completeLesson: (lessonId: string, score: number) => Promise<void>;
-  setActiveLesson: (lessonId: string) => void;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   record: emptySession(),
-  activeLessonId: null,
 
   loadFromDB: async () => {
     const record = await loadSession();
@@ -50,7 +47,4 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     await saveSession(updated);
   },
 
-  setActiveLesson: (lessonId: string) => {
-    set({ activeLessonId: lessonId });
-  },
 }));

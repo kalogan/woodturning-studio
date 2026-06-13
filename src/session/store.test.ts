@@ -15,7 +15,6 @@ vi.mock('./db.js', () => ({
 beforeEach(() => {
   useSessionStore.setState({
     record: { schemaVersion: 1, lastOpenedAt: 0, lessons: [] },
-    activeLessonId: null,
   });
 });
 
