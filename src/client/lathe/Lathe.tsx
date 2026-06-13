@@ -11,7 +11,7 @@
  * Headstock is fixed at the left (-X) end; tailstock at the right (+X) end.
  * betweenCenters = 1.0668 m — drive-center tip to live-center tip.
  */
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
@@ -31,8 +31,8 @@ interface LatheProps {
   /** 0..1 quill extension for the tailstock */
   quillExtension?: number;
   /**
-   * When true, renders a placeholder cylinder blank between the centers so you can
-   * verify that the spacing is correct and a blank would sit properly.
+   * When true, renders a square un-roughed stock blank between the centers (Lesson 1
+   * "From Square to Round").  Sized to fit without clipping the tailstock.
    */
   defaultBlankVisible?: boolean;
   /** When false, hides the floor stand (default true). */
@@ -113,22 +113,34 @@ export function Lathe({
   const toolRestPostH = spindleY - toolRestBaseY - toolRest.barDiameter;
 
   // ── Blank placeholder ──────────────────────────────────────────────────────
-  // Use a practical radius well within swingRadius (0.2032); 0.07 gives visible presence.
-  const blankRadius  = 0.07;
-  // Blank spans tip-to-tip so both centers visibly engage the wood.
-  const blankLength  = betweenCenters;
-  const blankCentreX = driveCenterTipX + betweenCenters / 2;
-
-  const blankArgs = useMemo(
-    () => [blankRadius, blankRadius, blankLength, 24] as [number, number, number, number],
-    [blankRadius, blankLength],
-  );
+  // Lesson 1 is "From Square to Round" — the starting blank is SQUARE cross-section
+  // stock (a long rectangular prism), not a cylinder.  A spinning square reads as
+  // obviously un-turned stock; the rotating corners make speed visible without
+  // needing grain-streak children.
+  //
+  // TUNABLE CONSTANTS — adjust these to dial in the visual feel:
+  //
+  //   BLANK_SIDE       square cross-section side length (m) — chunky 3×3" nominal stock
+  const BLANK_SIDE = 0.12;
+  //   BLANK_CLEARANCE  gap (m) left at the TAILSTOCK end so the blank cannot clip the
+  //                    live-center body or tailstock face.  The drive-center end is a
+  //                    spur so it penetrates the wood — no clearance needed there.
+  const BLANK_CLEARANCE = 0.015; // 15 mm gap at tailstock end
+  //
+  // TODO (future): let the player slide the tailstock in toward the headstock to
+  //   clamp shorter blanks.  For now the blank is sized to fit the full between-
+  //   centers distance (minus clearance) so it always reads as "mounted and ready".
+  const blankLength  = betweenCenters - BLANK_CLEARANCE;
+  // Centre the blank: drive-center end is flush with driveCenterTipX; tailstock end
+  // stops BLANK_CLEARANCE short of liveCenterTipX.
+  const blankCentreX = driveCenterTipX + blankLength / 2;
+  // Half-side used for tool-rest Z clearance (conservative — corner reach = BLANK_SIDE*√2/2).
+  const blankHalfSide = BLANK_SIDE / 2;
 
   // ── Blank spin (imperative, no per-frame re-render, no per-frame alloc) ──
-  // The group wraps the blank cylinder; its local rotation.x is the spindle axis.
-  // We rotate about X because the cylinder's axis (Y in cylinder-local space) was
-  // already mapped to world-X via rotation={[0, 0, Math.PI / 2]} on the mesh.
-  // Here the group itself drives that rotation so the mesh rotation stays constant.
+  // The group wraps the square blank box; rotation.x drives spin about the spindle
+  // (X) axis.  The box mesh has no rotation of its own — the group handles it all.
+  // A spinning square makes RPM obviously visible via its sweeping corners.
   const blankGroupRef = useRef<THREE.Group | null>(null);
 
   useFrame((_, dt) => {
@@ -176,38 +188,29 @@ export function Lathe({
         <Banjo position={[banjoCentreX, bedTopY, banjoCentreZ]} />
 
         {/* ── Tool Rest ── bar top at spindle height, offset toward the operator
-            so the post and rail clear the blank surface (blank radius + clearance) */}
+            so the post and rail clear the blank surface (blankHalfSide + clearance) */}
         <ToolRest
           position={[
             banjoCentreX,
             toolRestBaseY,
-            banjoCentreZ + blankRadius + toolRest.barDiameter,
+            banjoCentreZ + blankHalfSide + toolRest.barDiameter,
           ]}
           height={toolRestPostH}
         />
 
-        {/* ── Optional blank placeholder ── for verifying center spacing       */}
-        {/* Wrapped in a ref group; useFrame (above) rotates the group about X  */}
+        {/* ── Optional blank placeholder ── square un-roughed stock             */}
+        {/* Lesson 1 is "From Square to Round" — mount a SQUARE cross-section    */}
+        {/* prism so the player clearly sees un-turned stock before they cut.     */}
+        {/* The spinning square corners make RPM visible; no grain streaks needed.*/}
+        {/* Wrapped in a ref group; useFrame (above) rotates the group about X   */}
         {/* at (currentRpm/60)*2π rad/s — imperative, no per-frame allocation.  */}
         {defaultBlankVisible && (
           <group ref={blankGroupRef} position={[blankCentreX, spindleY, 0]}>
-            <mesh rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={blankArgs} />
+            {/* Square prism: X = spindle axis (length), Y/Z = square cross-section */}
+            <mesh>
+              <boxGeometry args={[blankLength, BLANK_SIDE, BLANK_SIDE]} />
               <meshStandardMaterial color="#c8a96e" roughness={0.8} metalness={0.0} />
             </mesh>
-            {/* Longitudinal grain streaks — WITHOUT these a smooth cylinder shows no
-                visible rotation (it's rotationally symmetric), so the spin reads as
-                static no matter the RPM. These are children of the spinning group, so
-                they sweep around at currentRpm and make the speed visible. Each streak
-                group is rotated to its angular position about the spindle (X) axis. */}
-            {[0, 60, 120, 180, 240, 300].map((deg) => (
-              <group key={deg} rotation={[(deg * Math.PI) / 180, 0, 0]}>
-                <mesh position={[0, blankRadius * 0.99, 0]}>
-                  <boxGeometry args={[blankLength * 0.97, 0.005, 0.004]} />
-                  <meshStandardMaterial color="#8a5a30" roughness={0.85} metalness={0.0} />
-                </mesh>
-              </group>
-            ))}
           </group>
         )}
       </group>
