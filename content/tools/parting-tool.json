@@ -1,0 +1,10 @@
+{
+  "id": "parting-tool",
+  "name": "Parting Tool",
+  "description": "A narrow blade for sizing diameters and cutting off finished pieces.",
+  "bladeWidthMm": 3,
+  "bevelAngleDeg": 25,
+  "shankDiameterMm": 10,
+  "handleLengthMm": 230,
+  "v1": true
+}

@@ -1,0 +1,10 @@
+{
+  "id": "roughing-gouge",
+  "name": "Roughing Gouge",
+  "description": "A large U-fluted gouge for removing bulk material quickly. First tool a beginner learns.",
+  "fluteWidthMm": 25,
+  "bevelAngleDeg": 45,
+  "shankDiameterMm": 19,
+  "handleLengthMm": 280,
+  "v1": true
+}

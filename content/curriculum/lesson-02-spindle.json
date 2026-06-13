@@ -1,0 +1,19 @@
+{
+  "id": "lesson-02-spindle",
+  "schemaVersion": 1,
+  "title": "Spindle Gouge: Shaping Coves",
+  "tool": "spindle-gouge",
+  "order": 2,
+  "brief": "Use the spindle gouge to cut a smooth cove. Enter on one side wall with the flute rotated about 45 degrees toward the cut — the bevel must contact the wood before the edge engages. Swing the handle in an arc as you travel down through the bottom of the cove, rotating the flute to face straight up at the lowest point. Exit by continuing the arc up the far wall, keeping bevel contact throughout. Never plunge straight into the cove; always start from the rim and work downhill toward the center. The fingernail grind lets you steer the cut — use that control.",
+  "successCriteria": {
+    "minMaterialRemoved": 0.15,
+    "maxTearout": 0.15,
+    "noCatches": true,
+    "catchesTolerance": 1
+  },
+  "coachingCues": [
+    { "trigger": "catch", "message": "Catch! You likely entered without bevel contact — rub the bevel first, then raise the handle to engage the edge." },
+    { "trigger": "tearout", "message": "Tearout — always cut downhill into the cove. If the grain is tearing, come from the other rim." },
+    { "trigger": "complete", "message": "Smooth cove! The arc of your handle swing and bevel contact worked together. That's spindle technique." }
+  ]
+}

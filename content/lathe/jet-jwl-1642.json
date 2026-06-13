@@ -1,0 +1,135 @@
+{
+  "id": "jet-jwl-1642evs",
+  "name": "Jet JWL-1642EVS",
+  "schemaVersion": 1,
+  "units": "meters",
+  "swingRadius": 0.2032,
+  "betweenCenters": 1.0668,
+  "spindleCenterToFloor": 1.1303,
+  "bed": {
+    "length": 1.45,
+    "wayCount": 2,
+    "wayWidth": 0.03,
+    "wayGap": 0.075,
+    "wayHeight": 0.04,
+    "thickness": 0.07,
+    "color": "#cfcabb",
+    "logoPlate": {
+      "width": 0.18,
+      "height": 0.06,
+      "color": "#c0392b"
+    }
+  },
+  "headstock": {
+    "width": 0.3,
+    "height": 0.26,
+    "depth": 0.24,
+    "spindleHeight": 0.2032,
+    "spindleDiameter": 0.03175,
+    "spindleNoseDiameter": 0.05,
+    "spindleNoseLength": 0.06,
+    "motorHousing": {
+      "width": 0.14,
+      "height": 0.14,
+      "depth": 0.22
+    },
+    "controlPanel": {
+      "width": 0.16,
+      "height": 0.2,
+      "depth": 0.02,
+      "readoutWidth": 0.06,
+      "readoutHeight": 0.025,
+      "readoutColor": "#101810",
+      "estopDiameter": 0.03,
+      "estopColor": "#c0392b"
+    },
+    "color": "#EAE6DC"
+  },
+  "tailstock": {
+    "width": 0.18,
+    "height": 0.24,
+    "depth": 0.22,
+    "quillDiameter": 0.038,
+    "quillTravel": 0.1016,
+    "quillLength": 0.14,
+    "handwheelDiameter": 0.12,
+    "handwheelThickness": 0.018,
+    "lockKnobDiameter": 0.022,
+    "lockKnobLength": 0.05,
+    "color": "#EAE6DC"
+  },
+  "banjo": {
+    "width": 0.18,
+    "depth": 0.14,
+    "height": 0.08,
+    "postHoleDiameter": 0.032,
+    "clampBoltDiameter": 0.016,
+    "color": "#3a3a3a"
+  },
+  "toolRest": {
+    "postDiameter": 0.03,
+    "postHeight": 0.16,
+    "barLength": 0.3556,
+    "barDiameter": 0.022,
+    "color": "#4a4a4a"
+  },
+  "driveCenter": {
+    "diameter": 0.032,
+    "length": 0.055,
+    "taper": "MT2",
+    "spurCount": 4,
+    "spurDepth": 0.006,
+    "centerPointLength": 0.009,
+    "spurLength": 0.026,
+    "shaftRatio": 0.5,
+    "color": "#5a5a5a"
+  },
+  "liveCenter": {
+    "diameter": 0.032,
+    "length": 0.055,
+    "taper": "MT2",
+    "pointAngleDeg": 60,
+    "bodyDiameter": 0.03,
+    "shaftRatio": 0.5,
+    "color": "#5a5a5a"
+  },
+  "faceplate": {
+    "diameter": 0.1524,
+    "thickness": 0.014,
+    "boltCircleDiameter": 0.11,
+    "boltCount": 6,
+    "color": "#3a3a3a"
+  },
+  "knockoutBar": {
+    "diameter": 0.0095,
+    "length": 0.42,
+    "color": "#5a5a5a"
+  },
+  "stand": {
+    "legHeight": 0.8,
+    "topPlateThickness": 0.02,
+    "legThickness": 0.07,
+    "footWidth": 0.42,
+    "topWidth": 0.2,
+    "archInsetRatio": 0.5,
+    "footPadLength": 0.12,
+    "footPadHeight": 0.03,
+    "adjustableFootDiameter": 0.04,
+    "adjustableFootHeight": 0.025,
+    "color": "#EAE6DC",
+    "footColor": "#1a1a1a",
+    "accentStripe": {
+      "primaryColor": "#c0392b",
+      "secondaryColor": "#1a1a1a",
+      "height": 0.018,
+      "fromFloor": 0.12
+    },
+    "toolBasket": {
+      "width": 0.55,
+      "depth": 0.16,
+      "height": 0.1,
+      "wireDiameter": 0.005,
+      "color": "#d8d4c8"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "lesson-01-roughing",
+  "schemaVersion": 1,
+  "title": "Roughing: From Square to Round",
+  "tool": "roughing-gouge",
+  "order": 1,
+  "brief": "Mount the blank and use the roughing gouge to bring a square blank down to a cylinder. Focus on bevel contact — keep the bevel riding the wood at all times.",
+  "successCriteria": {
+    "minMaterialRemoved": 0.3,
+    "maxTearout": 0.2,
+    "noCatches": false,
+    "catchesTolerance": 2
+  },
+  "coachingCues": [
+    { "trigger": "catch", "message": "Catch! You lost bevel contact — flatten your angle before engaging the edge." },
+    { "trigger": "tearout", "message": "Tearout — try cutting downhill, from high point to low." },
+    { "trigger": "complete", "message": "Clean cylinder! You've found bevel contact. That's the foundation of everything." }
+  ]
+}

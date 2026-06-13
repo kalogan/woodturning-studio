@@ -1,0 +1,10 @@
+{
+  "id": "spindle-gouge",
+  "name": "Spindle Gouge",
+  "description": "A fingernail-ground gouge for shaping coves, beads, and detail work on spindle pieces.",
+  "fluteWidthMm": 10,
+  "bevelAngleDeg": 40,
+  "shankDiameterMm": 13,
+  "handleLengthMm": 250,
+  "v1": true
+}
