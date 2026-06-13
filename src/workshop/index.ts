@@ -7,3 +7,5 @@ export {
   LEAVE_LATHE_DISTANCE,
 } from './proximity.js';
 export type { ProximityZone } from './proximity.js';
+export { useLatheStore } from './latheStore.js';
+export type { LatheConfig } from './latheStore.js';
