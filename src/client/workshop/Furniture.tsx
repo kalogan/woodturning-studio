@@ -11,6 +11,20 @@
 import type { ReactNode } from 'react';
 import { Casework } from './Casework.js';
 import { DemoStation } from './DemoStation.js';
+import {
+  paintedSteelCabinet,
+  brushedSteelHandle,
+  workshopWood,
+} from '../lathe/materials.js';
+
+// Pre-allocated module-scope material props
+const cabinetBodyMat   = paintedSteelCabinet('#7a3030');   // Jet-red tool cabinet
+const cabinetTopMat    = paintedSteelCabinet('#5a2020');   // darker cap
+const cabinetDivMat    = paintedSteelCabinet('#501818');   // drawer lines
+const handleMat        = brushedSteelHandle();
+const benchTopMat      = workshopWood('#9b6b3f');          // warm butcher-block
+const benchLegMat      = workshopWood('#7a5030');          // slightly darker legs
+const rackWoodMat      = workshopWood('#8a7060');          // aged rack wood
 
 // ─── ToolCabinet ──────────────────────────────────────────────────────────────
 // Tall painted-steel cabinet ~0.9m × 0.5m × 1.8m with drawer lines.
@@ -21,14 +35,14 @@ export function ToolCabinet() {
       {/* Body */}
       <mesh castShadow receiveShadow position={[0, 0.9, 0]}>
         <boxGeometry args={[0.9, 1.8, 0.5]} />
-        <meshStandardMaterial color="#7a3030" roughness={0.55} metalness={0.45} />
+        <meshStandardMaterial {...cabinetBodyMat} />
       </mesh>
 
       {/* Drawer lines — three inset strips */}
       {([0.3, 0.55, 0.8] as const).map((y, i) => (
         <mesh key={i} position={[0, y, 0.251]}>
           <boxGeometry args={[0.84, 0.02, 0.005]} />
-          <meshStandardMaterial color="#501818" roughness={0.6} metalness={0.3} />
+          <meshStandardMaterial {...cabinetDivMat} />
         </mesh>
       ))}
 
@@ -36,14 +50,14 @@ export function ToolCabinet() {
       {([0.42, 0.67, 0.92] as const).map((y, i) => (
         <mesh key={i} position={[0, y, 0.258]}>
           <boxGeometry args={[0.12, 0.025, 0.012]} />
-          <meshStandardMaterial color="#c0b090" roughness={0.4} metalness={0.7} />
+          <meshStandardMaterial {...handleMat} />
         </mesh>
       ))}
 
       {/* Top cap */}
       <mesh castShadow position={[0, 1.805, 0]}>
         <boxGeometry args={[0.92, 0.012, 0.52]} />
-        <meshStandardMaterial color="#5a2020" roughness={0.5} metalness={0.5} />
+        <meshStandardMaterial {...cabinetTopMat} />
       </mesh>
     </group>
   );
@@ -70,20 +84,20 @@ export function Workbench() {
       {/* Top — butcher-block */}
       <mesh castShadow receiveShadow position={[0, LEG_H + TOP_T / 2, 0]}>
         <boxGeometry args={[1.6, TOP_T, 0.7]} />
-        <meshStandardMaterial color="#9b6b3f" roughness={0.75} metalness={0.0} />
+        <meshStandardMaterial {...benchTopMat} />
       </mesh>
 
       {/* Under-shelf */}
       <mesh receiveShadow position={[0, 0.3, 0]}>
         <boxGeometry args={[1.5, 0.03, 0.6]} />
-        <meshStandardMaterial color="#7a5030" roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial {...benchLegMat} />
       </mesh>
 
       {/* Legs */}
       {legPositions.map(([x, z], i) => (
         <mesh key={i} castShadow position={[x, LEG_H / 2, z]}>
           <boxGeometry args={[LEG_W, LEG_H, LEG_W]} />
-          <meshStandardMaterial color="#7a5030" roughness={0.8} metalness={0.0} />
+          <meshStandardMaterial {...benchLegMat} />
         </mesh>
       ))}
     </group>
@@ -113,14 +127,14 @@ export function BlankRack() {
       {/* Back panel */}
       <mesh receiveShadow position={[0, 0.9, -0.18]}>
         <boxGeometry args={[0.8, 1.8, 0.03]} />
-        <meshStandardMaterial color="#8a7060" roughness={0.85} metalness={0.0} />
+        <meshStandardMaterial {...rackWoodMat} />
       </mesh>
 
       {/* Side uprights */}
       {([-0.385, 0.385] as const).map((x, i) => (
         <mesh key={i} castShadow position={[x, 0.9, 0]}>
           <boxGeometry args={[0.03, 1.8, 0.38]} />
-          <meshStandardMaterial color="#8a7060" roughness={0.85} metalness={0.0} />
+          <meshStandardMaterial {...rackWoodMat} />
         </mesh>
       ))}
 
@@ -128,7 +142,7 @@ export function BlankRack() {
       {([0.08, 0.52, 0.96, 1.4, 1.72] as const).map((y, i) => (
         <mesh key={i} receiveShadow position={[0, y, 0]}>
           <boxGeometry args={[0.74, 0.03, 0.38]} />
-          <meshStandardMaterial color="#8a7060" roughness={0.85} metalness={0.0} />
+          <meshStandardMaterial {...rackWoodMat} />
         </mesh>
       ))}
 

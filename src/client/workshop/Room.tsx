@@ -6,14 +6,17 @@
  * The +Z face (player spawn side) is left open — no wall there.
  */
 
+import { concreteFloor, paintedDrywall, paintedDrywallCeiling } from '../lathe/materials.js';
+
 const ROOM_W = 6;   // metres, X axis
 const ROOM_D = 5;   // metres, Z axis
 const ROOM_H = 3;   // metres, Y axis
 
-const FLOOR_COLOR = '#6b6b68';
-const WALL_COLOR = '#d8d2c4';
-const CEILING_COLOR = '#e8e4dc';
-const BASEBOARD_COLOR = '#b8b0a0';
+const floorMat    = concreteFloor();
+const wallMat     = paintedDrywall();
+const ceilingMat  = paintedDrywallCeiling();
+// Baseboard: slightly darker and warmer than wall — painted wood trim
+const baseboardMat = { color: '#b8b0a0', roughness: 0.72, metalness: 0.0 };
 
 export function Room() {
   return (
@@ -26,11 +29,7 @@ export function Room() {
         position={[0, 0, 0]}
       >
         <planeGeometry args={[ROOM_W, ROOM_D]} />
-        <meshStandardMaterial
-          color={FLOOR_COLOR}
-          roughness={0.92}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...floorMat} />
       </mesh>
 
       {/* ── Ceiling ── */}
@@ -40,11 +39,7 @@ export function Room() {
         position={[0, ROOM_H, 0]}
       >
         <planeGeometry args={[ROOM_W, ROOM_D]} />
-        <meshStandardMaterial
-          color={CEILING_COLOR}
-          roughness={0.85}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...ceilingMat} />
       </mesh>
 
       {/* ── Back wall (−Z) ── */}
@@ -54,11 +49,7 @@ export function Room() {
         position={[0, ROOM_H / 2, -ROOM_D / 2]}
       >
         <boxGeometry args={[ROOM_W, ROOM_H, 0.05]} />
-        <meshStandardMaterial
-          color={WALL_COLOR}
-          roughness={0.82}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...wallMat} />
       </mesh>
 
       {/* ── Left wall (−X) ── */}
@@ -69,11 +60,7 @@ export function Room() {
         rotation={[0, Math.PI / 2, 0]}
       >
         <boxGeometry args={[ROOM_D, ROOM_H, 0.05]} />
-        <meshStandardMaterial
-          color={WALL_COLOR}
-          roughness={0.82}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...wallMat} />
       </mesh>
 
       {/* ── Right wall (+X) ── */}
@@ -84,11 +71,7 @@ export function Room() {
         rotation={[0, -Math.PI / 2, 0]}
       >
         <boxGeometry args={[ROOM_D, ROOM_H, 0.05]} />
-        <meshStandardMaterial
-          color={WALL_COLOR}
-          roughness={0.82}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...wallMat} />
       </mesh>
 
       {/* ── Baseboard trim — back wall ── */}
@@ -97,11 +80,7 @@ export function Room() {
         position={[0, 0.05, -ROOM_D / 2 + 0.03]}
       >
         <boxGeometry args={[ROOM_W, 0.1, 0.02]} />
-        <meshStandardMaterial
-          color={BASEBOARD_COLOR}
-          roughness={0.7}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...baseboardMat} />
       </mesh>
 
       {/* ── Baseboard trim — left wall ── */}
@@ -111,11 +90,7 @@ export function Room() {
         rotation={[0, Math.PI / 2, 0]}
       >
         <boxGeometry args={[ROOM_D, 0.1, 0.02]} />
-        <meshStandardMaterial
-          color={BASEBOARD_COLOR}
-          roughness={0.7}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...baseboardMat} />
       </mesh>
 
       {/* ── Baseboard trim — right wall ── */}
@@ -125,11 +100,7 @@ export function Room() {
         rotation={[0, -Math.PI / 2, 0]}
       >
         <boxGeometry args={[ROOM_D, 0.1, 0.02]} />
-        <meshStandardMaterial
-          color={BASEBOARD_COLOR}
-          roughness={0.7}
-          metalness={0.0}
-        />
+        <meshStandardMaterial {...baseboardMat} />
       </mesh>
     </group>
   );

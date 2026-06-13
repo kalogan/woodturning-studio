@@ -12,6 +12,13 @@
  * No per-frame allocations — static scene only.
  */
 
+import {
+  cabinetPaint,
+  laminateCounter,
+  brushedSteelHandle,
+  workshopWood,
+} from '../lathe/materials.js';
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 const WALL_Z = -2.5;       // back wall centre Z
 const BASE_H = 0.9;        // base cabinet height (top surface)
@@ -21,10 +28,14 @@ const UPPER_H = 0.7;       // upper cabinet height
 const UPPER_D = 0.3;       // upper cabinet depth
 const UPPER_Y = 1.55 + UPPER_H / 2; // centre Y of upper cabs (bottom at ~1.55)
 
-const CAB_WHITE = '#e8e6e0';
-const CAB_SHADOW = '#d0cdc6';      // darker inset lines
-const HANDLE_COL = '#b0a888';
-const COUNTER_COL = '#8a8070';     // grey laminate countertop
+// Material props — pre-allocated at module scope
+const cabMat      = cabinetPaint();                     // painted MDF white body
+const cabShadowMat = cabinetPaint('#d0cdc6');           // slightly darker inset lines
+const handleMat   = brushedSteelHandle('#b0a888');      // warm brushed-steel pulls
+const counterMat  = laminateCounter();                  // grey laminate top
+const woodMat     = workshopWood();                     // open-shelving carcass
+
+// Glass-front door: kept as literal since it has unique transparent props
 const GLASS_COL = '#7090a8';       // bluish-grey for glass-front doors
 
 // ── Lower base cabinet run ─────────────────────────────────────────────────────
@@ -49,7 +60,7 @@ export function BaseCabinets() {
       {/* Main carcass */}
       <mesh castShadow receiveShadow position={[centreX, BASE_H / 2, WALL_Z + BASE_D / 2]}>
         <boxGeometry args={[totalW, BASE_H, BASE_D]} />
-        <meshStandardMaterial color={CAB_WHITE} roughness={0.75} metalness={0.0} />
+        <meshStandardMaterial {...cabMat} />
       </mesh>
 
       {/* Countertop */}
@@ -59,28 +70,28 @@ export function BaseCabinets() {
         position={[centreX, BASE_H + BASE_TOP_T / 2, WALL_Z + BASE_D / 2]}
       >
         <boxGeometry args={[totalW + 0.02, BASE_TOP_T, BASE_D + 0.02]} />
-        <meshStandardMaterial color={COUNTER_COL} roughness={0.55} metalness={0.05} />
+        <meshStandardMaterial {...counterMat} />
       </mesh>
 
       {/* Vertical door-line dividers (inset strips on front face) */}
       {doorDividers.map((x, i) => (
         <mesh key={`div-${String(i)}`} position={[x, BASE_H / 2, frontZ + 0.001]}>
           <boxGeometry args={[0.012, BASE_H - 0.04, 0.008]} />
-          <meshStandardMaterial color={CAB_SHADOW} roughness={0.8} metalness={0.0} />
+          <meshStandardMaterial {...cabShadowMat} />
         </mesh>
       ))}
 
       {/* Horizontal mid-rail (separates upper drawer from lower door) */}
       <mesh position={[centreX, 0.52, frontZ + 0.001]}>
         <boxGeometry args={[totalW - 0.02, 0.012, 0.008]} />
-        <meshStandardMaterial color={CAB_SHADOW} roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial {...cabShadowMat} />
       </mesh>
 
       {/* Handles — one per section */}
       {handles.map((x, i) => (
         <mesh key={`h-${String(i)}`} position={[x, 0.62, frontZ + 0.016]}>
           <boxGeometry args={[0.1, 0.018, 0.012]} />
-          <meshStandardMaterial color={HANDLE_COL} roughness={0.4} metalness={0.55} />
+          <meshStandardMaterial {...handleMat} />
         </mesh>
       ))}
     </group>
@@ -109,25 +120,29 @@ export function UpperCabinets() {
           {/* Carcass */}
           <mesh castShadow receiveShadow>
             <boxGeometry args={[sec.w, UPPER_H, UPPER_D]} />
-            <meshStandardMaterial color={CAB_WHITE} roughness={0.75} metalness={0.0} />
+            <meshStandardMaterial {...cabMat} />
           </mesh>
 
           {/* Door panel — glass or solid */}
           <mesh position={[0, 0, UPPER_D / 2 + 0.002]}>
             <boxGeometry args={[sec.w - 0.04, UPPER_H - 0.04, 0.016]} />
-            <meshStandardMaterial
-              color={sec.glass ? GLASS_COL : CAB_SHADOW}
-              roughness={sec.glass ? 0.05 : 0.75}
-              metalness={sec.glass ? 0.1 : 0.0}
-              transparent={sec.glass}
-              opacity={sec.glass ? 0.3 : 1.0}
-            />
+            {sec.glass ? (
+              <meshStandardMaterial
+                color={GLASS_COL}
+                roughness={0.05}
+                metalness={0.1}
+                transparent
+                opacity={0.3}
+              />
+            ) : (
+              <meshStandardMaterial {...cabShadowMat} />
+            )}
           </mesh>
 
           {/* Door handle */}
           <mesh position={[0, -0.05, UPPER_D / 2 + 0.014]}>
             <boxGeometry args={[0.1, 0.015, 0.01]} />
-            <meshStandardMaterial color={HANDLE_COL} roughness={0.4} metalness={0.55} />
+            <meshStandardMaterial {...handleMat} />
           </mesh>
         </group>
       ))}
@@ -188,28 +203,28 @@ export function OpenShelving() {
       {([-unitW / 2, unitW / 2] as const).map((x, i) => (
         <mesh key={i} castShadow position={[x, unitH / 2, 0]}>
           <boxGeometry args={[0.025, unitH, unitD]} />
-          <meshStandardMaterial color={CAB_WHITE} roughness={0.75} metalness={0.0} />
+          <meshStandardMaterial {...woodMat} />
         </mesh>
       ))}
 
       {/* Back panel */}
       <mesh receiveShadow position={[0, unitH / 2, -unitD / 2 + 0.015]}>
         <boxGeometry args={[unitW, unitH, 0.018]} />
-        <meshStandardMaterial color={CAB_WHITE} roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial {...woodMat} />
       </mesh>
 
       {/* Shelves */}
       {shelfYs.map((y, i) => (
         <mesh key={i} receiveShadow position={[0, y, 0]}>
           <boxGeometry args={[unitW - 0.05, 0.025, unitD]} />
-          <meshStandardMaterial color={CAB_WHITE} roughness={0.75} metalness={0.0} />
+          <meshStandardMaterial {...woodMat} />
         </mesh>
       ))}
 
       {/* Countertop cap (flush with base cabs) */}
       <mesh castShadow position={[0, unitH + BASE_TOP_T / 2, 0]}>
         <boxGeometry args={[unitW + 0.02, BASE_TOP_T, unitD + 0.02]} />
-        <meshStandardMaterial color={COUNTER_COL} roughness={0.55} metalness={0.05} />
+        <meshStandardMaterial {...counterMat} />
       </mesh>
 
       {/* Wood blanks */}
