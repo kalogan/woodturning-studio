@@ -10,16 +10,10 @@ import type { SceneState } from '../../workshop/index.js';
 import type { EvalResult } from '../lesson/index.js';
 import type { PhysicsResult } from '../../core/types.js';
 import type { InputAdapter, InputSource } from '../../input/types.js';
-import type { PoseContainer, TurningSessionResult } from '../lesson/useTurningSession.js';
+import type { TurningSessionResult } from '../lesson/useTurningSession.js';
 import type { WoodState } from '../../core/types.js';
 import type { LessonRunState } from '../lesson/index.js';
-
-/** A curriculum lesson as returned by getCurriculum(). */
-export interface LessonDef {
-  id: string;
-  title: string;
-  [key: string]: unknown;
-}
+import type { CurriculumLesson } from '../../session/index.js';
 
 export interface SceneCtx {
   // ── Scene store fields ─────────────────────────────────────────────────────
@@ -34,7 +28,7 @@ export interface SceneCtx {
   returnToMenu: () => void;
 
   // ── Resolved curriculum entry ──────────────────────────────────────────────
-  lesson: LessonDef | null;
+  lesson: CurriculumLesson | null;
 
   // ── Turning session ────────────────────────────────────────────────────────
   adapter: InputAdapter | null;
