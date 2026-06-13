@@ -102,6 +102,13 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
       ctrl.stop();
       canvas.removeEventListener('click', handleClick);
       document.removeEventListener('pointerlockchange', handleLockChange);
+      // Release pointer lock when leaving walk mode (e.g. → AT_LATHE). Without this
+      // the lock persists into the fixed-camera lathe view, hiding the cursor so the
+      // player can't click START / drag the speed dial (R3F needs a visible cursor to
+      // raycast onto the 3D controls).
+      if (document.pointerLockElement !== null) {
+        document.exitPointerLock();
+      }
       controllerRef.current = null;
     };
   }, [camera, gl]);
