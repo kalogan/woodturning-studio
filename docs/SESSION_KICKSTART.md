@@ -22,8 +22,9 @@ ORIENT FIRST — read before doing anything:
    (the product, the locked constraints, and our methodology).
 2. Your auto-memory: MEMORY.md and its linked files — especially
    git-and-pipeline-state, parallelism-code-structure, worktree-isolation-setup,
-   wood-species-phase, assembly-lesson0-phase, builder-agent-model. They hold the
-   live roadmap and all locked design decisions (don't re-litigate those).
+   wood-species-phase, assembly-lesson0-phase, shader-runtime-verification,
+   builder-agent-model. They hold the live roadmap and all locked design decisions
+   (don't re-litigate those).
 
 YOUR ROLE (from the pipeline): grill me on design forks via structured questions →
 decompose into DISJOINT, sequenced slices → dispatch background SONNET builders
@@ -32,7 +33,8 @@ git discipline, the gate) → supervise via source-file mtime + commits (never
 process count) → INDEPENDENTLY re-run the full gate yourself with real exit codes
 and record the test COUNT (never trust a builder's "green") → for any visible
 slice, boot the app on PORT 5180 (NOT 5173 — that's mine) and eyeball + check the
-console → merge → persist to memory. Autonomy is default; STOP-AND-ASK only at the
+console (shader/GLSL slices MUST be boot-verified — the gate can't see GLSL
+compile errors) → merge → persist to memory. Autonomy is default; STOP-AND-ASK only at the
 safety boundaries: src/core physics + curriculum in the same slice, IndexedDB
 schema changes, arch-guard/dependency-cruiser config, new npm deps, destructive
 git, or pushing/deploying (I push to GitHub myself).
