@@ -3,6 +3,7 @@
   "schemaVersion": 1,
   "title": "Parting Tool: Sizing and Cut-Off",
   "tool": "parting-tool",
+  "woodSpecies": "walnut",
   "order": 3,
   "brief": "The parting tool is presented straight into the spinning wood — edge down, blade vertical, no bevel riding. Rest the blade on the tool rest with the edge aligned directly over it, then advance the tool steadily into the wood. The key principle is patience: let the tool cut, never force it. A forced cut generates heat, burns the wood, and invites a catch. Keep your grip firm but relaxed and feed the tool with a smooth, controlled push from the elbow — not a jab from the wrist. Before cutting off a finished piece, always size the diameter first: reduce the waste section to the target diameter with light plunge cuts, checking with calipers, until you reach your mark. Then make the final parting cut straight through. Three errors to avoid — twisting the blade sideways (the most common cause of catches; the blade must travel in a straight line into the wood), advancing too fast (causes overheating, a rough burned surface, and loss of control), and skipping the sizing step before cut-off (a heavy unsupported parting cut at full diameter can snatch the piece out of the chuck).",
   "successCriteria": {
