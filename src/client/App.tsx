@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useSceneStore } from '../workshop/index.js';
+import { nextProximityZone, horizontalDistance } from '../workshop/index.js';
 import { useSessionStore } from '../session/index.js';
 import { getCurriculum } from '../session/index.js';
 import { LessonSelect, CoachingOverlay, InputToggle } from './ui/index.js';
@@ -9,8 +10,25 @@ import { TurningScene, LessonComplete, useTurningSession } from './lesson/index.
 import type { EvalResult } from './lesson/index.js';
 import { Room, Furniture, Lighting } from './workshop/index.js';
 import { Lathe } from './lathe/index.js';
+import { FPSCamera } from './scene/index.js';
 import type { PhysicsResult } from '../core/types.js';
 import type React from 'react';
+
+// ── Tool-rest world XZ position ────────────────────────────────────────────
+// Derived from content/lathe/jet-jwl-1642.json + Lathe.tsx layout math.
+// Lathe is placed at [0, 0, 0] in App; proximity check is XZ-plane only.
+//
+//   bedLeftX             = -bed.length / 2                      = -0.725
+//   headstockSpindleFaceX = bedLeftX + headstock.width
+//                         + headstock.spindleNoseLength         = -0.365
+//   banjoCentreX          = headstockSpindleFaceX
+//                         + betweenCenters * 0.4               ≈  0.062
+//   toolRestZ             = banjoCentreZ (0) + blankRadius (0.07)
+//                         + toolRest.barDiameter (0.022)        =  0.092
+//
+// DO NOT edit Lathe.tsx or content/lathe/*.json to change these — read only.
+const TOOL_REST_WORLD_X =  0.062;
+const TOOL_REST_WORLD_Z =  0.092;
 
 export default function App() {
   const {
@@ -18,8 +36,6 @@ export default function App() {
     activeLessonId,
     lastPassed,
     startLesson,
-    enterLathe,
-    stepBack,
     pickUpTool,
     finishCutscene,
     returnToMenu,
@@ -41,6 +57,41 @@ export default function App() {
 
   const [completionResult, setCompletionResult] = useState<EvalResult | null>(null);
   const [lastResult, setLastResult] = useState<PhysicsResult | null>(null);
+
+  // ── FPS walk + proximity ────────────────────────────────────────────────
+  // Player position stored as scalars in refs — no per-frame object allocation.
+  const playerX = useRef(0);
+  const playerZ = useRef(2.5); // Start near the back of the workshop, facing the lathe
+
+  // Called every frame by FPSCamera with updated XZ position (scalars only).
+  const handlePlayerMove = useCallback((x: number, z: number) => {
+    playerX.current = x;
+    playerZ.current = z;
+
+    // Compute horizontal distance to tool rest and drive proximity transitions.
+    // enterLathe() / stepBack() are guarded no-ops if the scene state is wrong,
+    // so calling them every frame is safe.
+    const dist = horizontalDistance(x, z, TOOL_REST_WORLD_X, TOOL_REST_WORLD_Z);
+    const currentZone =
+      useSceneStore.getState().state === 'AT_LATHE' ? 'AT_LATHE' : 'WORKSHOP_WALK';
+    const nextZone = nextProximityZone(currentZone, dist);
+
+    if (nextZone === 'AT_LATHE' && currentZone === 'WORKSHOP_WALK') {
+      useSceneStore.getState().enterLathe();
+    } else if (nextZone === 'WORKSHOP_WALK' && currentZone === 'AT_LATHE') {
+      useSceneStore.getState().stepBack();
+    }
+  }, []);
+
+  // ── Interact (E key) handler — called from FPSCamera frame loop ─────────
+  // Tool-pickup seam: AT_LATHE + interact → TURNING
+  // FPSController edge-triggers interact, so this is only true for one frame.
+  // We read it inside FPSCamera's useFrame via onInteract prop.
+  const handleInteract = useCallback(() => {
+    if (useSceneStore.getState().state === 'AT_LATHE') {
+      pickUpTool();
+    }
+  }, [pickUpTool]);
 
   const handleEvalResult = useCallback(
     (result: EvalResult) => {
@@ -70,7 +121,8 @@ export default function App() {
 
   const toolAngleDeg = (poseContainer.current.pose.angleX * 180) / Math.PI;
 
-  // Workshop scene rendered in WORKSHOP_WALK, AT_LATHE, and LESSON_COMPLETE states
+  // Workshop scene rendered in WORKSHOP_WALK, AT_LATHE, and LESSON_COMPLETE states.
+  // FPSCamera replaces OrbitControls in walk/at-lathe states.
   const workshopScene = (
     <>
       <Lighting />
@@ -78,19 +130,31 @@ export default function App() {
       <Furniture />
       {/* Lathe is floor-standing; its own stand provides working height */}
       <Lathe position={[0, 0, 0]} defaultBlankVisible />
-      <OrbitControls target={[0, 1.05, 0]} />
     </>
   );
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', position: 'relative' }}>
       {/* ── Single persistent Canvas — never conditionally unmounted ── */}
-      <Canvas shadows camera={{ position: [2.0, 1.6, 2.2], fov: 55 }}>
+      <Canvas shadows camera={{ position: [0, 1.6, 2.5], fov: 75 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[2, 4, 3]} intensity={1.2} />
 
-        {(state === 'WORKSHOP_WALK' || state === 'AT_LATHE' || state === 'LESSON_COMPLETE') &&
-          workshopScene}
+        {(state === 'WORKSHOP_WALK' || state === 'AT_LATHE') && (
+          <>
+            {workshopScene}
+            {/* FPS walk controller — replaces OrbitControls in walk/lathe states */}
+            <FPSCamera onMove={handlePlayerMove} onInteract={handleInteract} />
+          </>
+        )}
+
+        {state === 'LESSON_COMPLETE' && (
+          <>
+            {workshopScene}
+            {/* Use orbit in lesson-complete so player can see the result */}
+            <OrbitControls target={[0, 1.05, 0]} />
+          </>
+        )}
 
         {state === 'TURNING' && lesson !== null && adapter !== null && adapterReady && (
           <TurningScene
@@ -104,7 +168,7 @@ export default function App() {
             completed={completionResult !== null}
           />
         )}
-        {/* OrbitControls for turning view — Slice B replaces with locked turning camera */}
+        {/* OrbitControls for turning view — Slice C replaces with locked turning camera */}
         {state === 'TURNING' && <OrbitControls />}
       </Canvas>
 
@@ -116,26 +180,28 @@ export default function App() {
         </div>
       )}
 
-      {/* TEMP Slice-B seam: replace with FPS walk + proximity auto-lock detection */}
+      {/* WORKSHOP_WALK: show lesson title + walk hint overlay */}
       {state === 'WORKSHOP_WALK' && lesson !== null && (
         <div style={hudStyle}>
           <span style={{ color: '#c8873a', fontWeight: 600 }}>{lesson.title}</span>
-          <button style={tempBtnStyle} onClick={enterLathe}>
-            Approach lathe → {/* TEMP: Slice B proximity auto-lock */}
-          </button>
+          <span style={{ color: '#aaa', fontSize: 12 }}>
+            Click to look · WASD to walk · approach the lathe to lock in
+          </span>
           <button style={escapeBtnStyle} onClick={returnToMenu}>← Menu</button>
         </div>
       )}
 
-      {/* TEMP Slice-B seam: replace with E-to-grab and distance-based step-back */}
+      {/* AT_LATHE: proximity-locked — show E-to-grab affordance.
+          Tool-pickup seam: E key triggers pickUpTool() via FPSCamera onInteract. */}
       {state === 'AT_LATHE' && (
         <div style={hudStyle}>
-          <button style={tempBtnStyle} onClick={pickUpTool}>
-            Pick up tool → {/* TEMP: Slice B E-to-grab */}
-          </button>
-          <button style={escapeBtnStyle} onClick={stepBack}>
-            ← Step back {/* TEMP: Slice B distance-based auto-unlock */}
-          </button>
+          <span style={{ color: '#c8873a', fontWeight: 600 }}>At the lathe</span>
+          <span style={{ color: '#e0e0e0', fontSize: 13 }}>
+            Press <kbd style={kbdStyle}>E</kbd> to pick up the tool
+          </span>
+          <span style={{ color: '#888', fontSize: 12 }}>
+            Step back to return to walk mode
+          </span>
         </div>
       )}
 
@@ -165,7 +231,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Escape hatch — always available in non-MENU states (except WORKSHOP_WALK which has its own) */}
+      {/* Escape hatch — always available in non-MENU states (WORKSHOP_WALK has its own) */}
       {(state === 'AT_LATHE' || state === 'TURNING' || state === 'LESSON_COMPLETE') && (
         <button
           style={{ ...escapeBtnStyle, position: 'fixed', top: 12, left: 12, zIndex: 200 }}
@@ -206,15 +272,15 @@ const hudStyle: React.CSSProperties = {
   color: '#e0e0e0',
 };
 
-const tempBtnStyle: React.CSSProperties = {
-  padding: '10px 20px',
-  background: '#c8873a',
-  color: '#1a1a1a',
-  border: 'none',
-  borderRadius: 6,
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: 'pointer',
+const kbdStyle: React.CSSProperties = {
+  display: 'inline-block',
+  background: '#444',
+  color: '#fff',
+  borderRadius: 4,
+  padding: '1px 6px',
+  fontFamily: 'monospace',
+  fontSize: 13,
+  border: '1px solid #666',
 };
 
 const escapeBtnStyle: React.CSSProperties = {
