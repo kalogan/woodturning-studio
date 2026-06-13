@@ -11,13 +11,17 @@
  *    2. POWER BUTTON   — red round button ("PULL ON / PUSH OFF" label above).
  *                        Pulled OUT (+Z by powerPullTravel) when on, flush when off.
  *                        Click toggles power via useLatheStore.getState().setPower().
- *    3. FWD/REV KNOB   — small dark knob; static/decorative.
+ *    3. SPEED DIAL     — radial knob + arc-scale decal, DIRECTLY BELOW power button.
+ *                        Black round knob with WHITE POINTER line on the face.
+ *                        Arc-scale decal (CanvasTexture, drawn ONCE): 270° arc of tick
+ *                        marks; "OFF" at bottom-centre; GREEN arc (low RPM) →
+ *                        ORANGE/RED arc (high RPM); RPM range labels.
+ *                        Pointer at OFF (bottom) = 0 rpm; sweeps clockwise to maxRpm.
+ *                        Drag interaction → setTargetRpm (power must be ON).
  *
  *  LEFT column (operator's left), top → bottom:
- *    4. SPEED KNOB     — black round knob (TOP-LEFT). Drag UP/mouse-up-right = faster.
- *                        Rotates (rotation.z) to reflect targetRpm position.
- *                        Dragging calls useLatheStore.getState().setTargetRpm().
- *    5. H/L PLACARD    — black rectangle with "H / L" text; static/decorative.
+ *    4. H/L PLACARD    — black rectangle with "H / L" text; static/decorative.
+ *    5. FWD/REV KNOB   — small dark knob; moved here from right column; decorative.
  *    6. SPINDLE-LOCK   — small recessed dark rectangle + dark plunger; static/decorative.
  *
  * Director-tunable layout constants (named, commented) live just below the imports.
@@ -32,6 +36,7 @@ import spec from '../../../content/lathe/jet-jwl-1642.json';
 import { paintedCastIron, bareSteel, darkCastIron } from './materials.js';
 import { useLatheStore } from '../../workshop/index.js';
 import { formatRpm } from './rpmFormat.js';
+import { dialAngleFromT, ARC_SWEEP_RAD } from './dialAngle.js';
 
 interface HeadstockProps {
   position?: [number, number, number];
@@ -52,16 +57,27 @@ const LABEL_ROW_H       = 20; // pixels for the "R.P.M." header label
 const HL_CANVAS_W = 128;
 const HL_CANVAS_H = 128;
 
+// ── Arc-scale decal canvas (speed dial face, drawn once) ───────────────────────
+// 256×256 power-of-two.  The arc spans ARC_SWEEP_DEG (270°), starting at the
+// bottom-centre ("OFF") and sweeping clockwise to max RPM.
+const ARC_CANVAS_W     = 256;
+const ARC_CANVAS_H     = 256;
+//   OFF is at the BOTTOM of the arc (ARC_SWEEP_DEG=270, from dialAngle.ts).
+//   Canvas ctx.arc uses standard math angles (0=east, CCW positive), but we want
+//   the arc to start at bottom-left (SW, ~225°) and sweep CW to bottom-right (SE).
+//   In canvas: CW arc from 135° to 45° going via 270° (bottom).  We draw the arc
+//   using explicit angles below.
+
 // ── Speed knob drag sensitivity ────────────────────────────────────────────────
 // Drag UP this many pixels to sweep the full [0, maxRpm] range.
-// (Positive deltaY from pointerdown → pointer-up = moving mouse upward on screen.)
 const DRAG_PIXELS_FOR_FULL_RANGE = 200;
 
-// ── Speed knob rotation limits (radians) ──────────────────────────────────────
-// knob.rotation.z maps targetRpm/maxRpm → [KNOB_MIN_ANGLE, KNOB_MAX_ANGLE]
-// −135° (fully anticlockwise) at 0 rpm, +135° (fully clockwise) at maxRpm.
-const KNOB_MIN_ANGLE = (-135 * Math.PI) / 180; // −2.356 rad
-const KNOB_MAX_ANGLE = ( 135 * Math.PI) / 180; // +2.356 rad
+// ── Speed dial rotation limits ─────────────────────────────────────────────────
+// ARC_SWEEP_RAD and HALF_SWEEP_RAD are imported from dialAngle.ts.
+// dialAngleFromT(t) maps normalised t ∈ [0,1] → knob rotation.z:
+//   t=0 (OFF/0 rpm)  → +HALF_SWEEP_RAD (pointer faces bottom of arc)
+//   t=1 (max rpm)    → −HALF_SWEEP_RAD (full CW sweep)
+// See dialAngle.ts for the full derivation + unit tests.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DIRECTOR-TUNABLE LAYOUT CONSTANTS
@@ -82,20 +98,131 @@ const LEFT_COL_DX  = -0.038; // items on operator's left sit −38 mm from centr
 // Right column vertical positions (Y offset from panel centre)
 const READOUT_Y_OFFSET    =  0.075; // top-right: readout sits 75 mm ABOVE panel centre
 const POWER_BTN_Y_OFFSET  =  0.020; // 20 mm above panel centre
-const FWD_REV_Y_OFFSET    = -0.038; // 38 mm below panel centre
+// SPEED DIAL is DIRECTLY BELOW the power button (right column).
+// Gap between power button face and speed dial centre: ~22 mm.
+const SPEED_DIAL_Y_OFFSET = -0.040; // 40 mm BELOW panel centre (just under power btn)
 
 // Left column vertical positions
-const SPEED_KNOB_Y_OFFSET =  0.068; // top-left: speed knob 68 mm above panel centre
-const HL_PLACARD_Y_OFFSET =  0.000; // H/L placard at panel centre
+const HL_PLACARD_Y_OFFSET  =  0.050; // H/L placard near top of left column
+const FWD_REV_Y_OFFSET     = -0.005; // FWD/REV decorative knob mid-left
 const SPINDLE_LOCK_Y_OFFSET = -0.062; // spindle lock 62 mm below panel centre
 
 // Depth offsets (Z) from panel face (panelZ = front face of panel box)
 const READOUT_Z_PROUD     = 0.002; // readout face 2 mm proud of panel
 const BTN_Z_PROUD_FACTOR  = 1.0;   // powerBtnZ = panelZ + btnRadius * FACTOR (flush/off)
 const KNOB_Z_PROUD        = 0.010; // knob face 10 mm proud of panel
+const ARC_SCALE_Z_PROUD   = 0.001; // arc-scale decal quad 1 mm proud of panel (behind knob)
 const DECOR_Z_PROUD       = 0.003; // decorative items 3 mm proud
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Draw the one-time arc-scale decal onto a 2D canvas context. */
+function drawArcScale(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  arcColorLow: string,
+  arcColorHigh: string,
+  maxRpm: number,
+): void {
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const cy = H / 2;
+  const outerR = W * 0.44;
+  const innerR = W * 0.28;
+  const midR   = (outerR + innerR) / 2;
+
+  // Background circle — very dark grey
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR + 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fill();
+
+  // ── Arc: 270° sweep, starting at bottom-left (SW) going CW to bottom-right (SE).
+  // In canvas standard angles (0=east, positive=CW):
+  //   SW = 135°, SE = 45°, going CW means crossing through 180° (west), 270° (south).
+  //   But we want: OFF at bottom (south=90° in canvas CW from east… wait:
+  //   canvas ctx.arc: angles in radians, positive = CLOCKWISE, 0 = right (east).
+  //   Bottom = Math.PI/2 (90°).  SW = 135° = 3*PI/4.  SE = 45° = PI/4.
+  //   CW from SW (3PI/4) → S (PI/2) → SE (PI/4): but that is only 90°.
+  //   We need 270°: SW → NW → N → NE → E → SE.
+  //   So: start=3PI/4, end=PI/4, anticlockwise=false (CW).  That goes CW the long way.
+  const startAng = (135 * Math.PI) / 180; // SW
+  const endAng   = (45  * Math.PI) / 180; // SE
+
+  // Two-tone gradient arc: green (low) → orange-red (high)
+  // Draw as two separate arcs for simplicity (avoids conic gradients in older engines).
+  // Low half: SW → bottom (90°) = first 135° of the 270° arc
+  // High half: bottom → SE = last 135°
+  const bottomAng = Math.PI / 2; // due south
+
+  // Green arc (low RPM): SW → bottom
+  ctx.beginPath();
+  ctx.arc(cx, cy, midR, startAng, bottomAng, false);
+  ctx.strokeStyle = arcColorLow;
+  ctx.lineWidth = outerR - innerR;
+  ctx.stroke();
+
+  // Orange-red arc (high RPM): bottom → SE
+  ctx.beginPath();
+  ctx.arc(cx, cy, midR, bottomAng, endAng, false);
+  ctx.strokeStyle = arcColorHigh;
+  ctx.lineWidth = outerR - innerR;
+  ctx.stroke();
+
+  // Tick marks
+  const TOTAL_TICKS = 27; // 270° / 10° each
+  for (let i = 0; i <= TOTAL_TICKS; i++) {
+    // Map tick index to canvas angle (CW from SW to SE via N)
+    // startAng = 3PI/4, we subtract because going CW means increasing angle in canvas
+    // but SW→SE CW = subtract from startAng going through the long 270° path.
+    // Angle for tick i: startAng + i*(ARC_SWEEP_RAD/TOTAL_TICKS) going CW
+    // In canvas CW coords: angle = startAng + step * i  BUT we also need to not
+    // cross the 360 boundary incorrectly.  Use modulo-friendly addition:
+    const frac = i / TOTAL_TICKS;
+    const ang = startAng + frac * ARC_SWEEP_RAD; // CW from SW
+
+    const isMajor = i % 9 === 0; // major every 90°
+    const tickLen = isMajor ? (outerR - innerR) * 0.80 : (outerR - innerR) * 0.45;
+    const r0 = outerR - 2;
+    const r1 = r0 - tickLen;
+
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(ang) * r0, cy + Math.sin(ang) * r0);
+    ctx.lineTo(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = isMajor ? 2.5 : 1.2;
+    ctx.stroke();
+  }
+
+  // ── "OFF" label at bottom (due south = startAng + 135° = bottom of arc) ────
+  const offAng = startAng + (135 * Math.PI) / 180; // = PI/2 = bottom
+  const offR   = outerR + 12;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('OFF', cx + Math.cos(offAng) * offR, cy + Math.sin(offAng) * offR);
+
+  // ── RPM labels at extremes ───────────────────────────────────────────────────
+  const lowLabel  = 'L' + String(Math.round(maxRpm * 0.375)); // ~1200 for 3200 max
+  const highLabel = 'H' + String(maxRpm);
+
+  // Low (near SW start)
+  const lowAng = startAng + (20 * Math.PI) / 180;
+  ctx.fillStyle = arcColorLow;
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(lowLabel, cx + Math.cos(lowAng) * (outerR + 8), cy + Math.sin(lowAng) * (outerR + 8));
+
+  // High (near SE end)
+  const highAng = startAng + (250 * Math.PI) / 180;
+  ctx.fillStyle = arcColorHigh;
+  ctx.textAlign = 'right';
+  ctx.fillText(highLabel, cx + Math.cos(highAng) * (outerR + 8), cy + Math.sin(highAng) * (outerR + 8));
+}
 
 export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: HeadstockProps) {
   const {
@@ -168,9 +295,29 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
     return texture;
   }, [cp.hlPlacardColor]);
 
+  // ── Arc-scale decal canvas (drawn ONCE; static — no per-frame alloc) ──────
+  const arcScaleTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width  = ARC_CANVAS_W;
+    canvas.height = ARC_CANVAS_H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Headstock: could not get 2D canvas for arc-scale decal');
+    const { maxRpm } = useLatheStore.getState();
+    drawArcScale(
+      ctx,
+      ARC_CANVAS_W,
+      ARC_CANVAS_H,
+      cp.speedDialArcColorLow,
+      cp.speedDialArcColorHigh,
+      maxRpm,
+    );
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+  }, [cp.speedDialArcColorLow, cp.speedDialArcColorHigh]);
+
   // ── Mesh refs for imperative per-frame updates ────────────────────────────
   const powerBtnRef  = useRef<THREE.Mesh>(null);
-  const speedKnobRef = useRef<THREE.Mesh>(null);
+  const speedKnobRef = useRef<THREE.Group>(null);
   const lastRpm      = useRef<number>(-1);
 
   // ── Drag state (pre-allocated scalars, zero heap alloc per event) ─────────
@@ -192,7 +339,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
     document.body.style.cursor = '';
   }, []);
 
-  // ── Speed ROTARY knob handlers ────────────────────────────────────────────
+  // ── Speed RADIAL DIAL handlers ────────────────────────────────────────────
   // Drag direction: UP (negative deltaY on screen) = faster RPM.
   const handleKnobPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -294,11 +441,13 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
       btn.position.z = powerBtnBaseZ + (power ? cp.powerPullTravel : 0);
     }
 
-    // 3. Speed knob rotation.z — reflects targetRpm/maxRpm in [MIN,MAX] angle
+    // 3. Speed dial rotation.z — OFF at bottom (pointer down), CW to max.
+    //    dialAngleFromT(0) = +HALF_SWEEP (pointer points down = OFF)
+    //    dialAngleFromT(1) = −HALF_SWEEP (full CW rotation = max RPM)
     const knob = speedKnobRef.current;
     if (knob !== null && maxRpm > 0) {
       const t = Math.max(0, Math.min(1, targetRpm / maxRpm));
-      knob.rotation.z = KNOB_MIN_ANGLE + t * (KNOB_MAX_ANGLE - KNOB_MIN_ANGLE);
+      knob.rotation.z = dialAngleFromT(t);
     }
   });
 
@@ -338,19 +487,20 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   // powerBtnBaseZ is the OFF (flush) Z; useFrame adds pullTravel when on
   const powerBtnBaseZ = panelFaceZ + powerBtnR * BTN_Z_PROUD_FACTOR;
 
-  // ── 3. FWD/REV KNOB (right, below power button) ──────────────────────────
+  // ── 3. SPEED DIAL — RIGHT COLUMN, DIRECTLY BELOW POWER BUTTON ────────────
+  const speedKnobR    = cp.speedKnobDiameter / 2;
+  const speedDialY    = panelY + SPEED_DIAL_Y_OFFSET;
+  const speedKnobZ    = panelFaceZ + KNOB_Z_PROUD;
+  const arcScaleZ     = panelFaceZ + ARC_SCALE_Z_PROUD;
+
+  // ── 4. H/L PLACARD (left column, top) ────────────────────────────────────
+  const hlPlacardY = panelY + HL_PLACARD_Y_OFFSET;
+  const hlPlacardZ = panelFaceZ + DECOR_Z_PROUD;
+
+  // ── 5. FWD/REV KNOB (left column — moved here from right) ────────────────
   const fwdRevKnobR = cp.fwdRevKnobDiameter / 2;
   const fwdRevKnobY = panelY + FWD_REV_Y_OFFSET;
   const fwdRevKnobZ = panelFaceZ + KNOB_Z_PROUD;
-
-  // ── 4. SPEED KNOB (top-left, black rotary) ───────────────────────────────
-  const speedKnobR = cp.speedKnobDiameter / 2;
-  const speedKnobY = panelY + SPEED_KNOB_Y_OFFSET;
-  const speedKnobZ = panelFaceZ + KNOB_Z_PROUD;
-
-  // ── 5. H/L PLACARD (left, below speed knob) ──────────────────────────────
-  const hlPlacardY = panelY + HL_PLACARD_Y_OFFSET;
-  const hlPlacardZ = panelFaceZ + DECOR_Z_PROUD;
 
   // ── 6. SPINDLE-LOCK RECESS (far-left, lower) ─────────────────────────────
   const spindleLockX  = panelX + LEFT_COL_DX - 0.020; // pushed a bit further left
@@ -433,32 +583,34 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
       </mesh>
 
       {/* ─────────────────────────────────────────────────────────────────────
-          3. FWD/REV KNOB — RIGHT, BELOW POWER BUTTON
-          Small dark knob. Static/decorative — no interaction handlers.
+          3. SPEED DIAL — RIGHT COLUMN, DIRECTLY BELOW POWER BUTTON
+          Two parts:
+            A) Arc-scale decal quad (static CanvasTexture, drawn once):
+               Sits on the panel face behind the knob. 270° arc, OFF at bottom,
+               GREEN arc (low) → ORANGE/RED arc (high), tick marks, RPM labels.
+            B) Knob group (rotates each frame via useFrame → dialAngleFromT):
+               - Flat disc body (black)
+               - White pointer line on +Y face (visible from front when rotation
+                 maps to the correct angle — OFF = pointer points toward bottom
+                 of arc, max = pointer points toward high-RPM end).
+          Drag interaction: drag UP (+RPM), drag DOWN (−RPM).
       ───────────────────────────────────────────────────────────────────── */}
-      <mesh position={[rightX, fwdRevKnobY, fwdRevKnobZ]}>
-        <cylinderGeometry args={[fwdRevKnobR, fwdRevKnobR * 0.8, fwdRevKnobR * 2.2, 16]} />
+
+      {/* A) Arc-scale decal quad — behind the knob, on panel face */}
+      <mesh position={[rightX, speedDialY, arcScaleZ]}>
+        <planeGeometry args={[cp.speedDialScaleWidth, cp.speedDialScaleHeight]} />
         <meshStandardMaterial
-          color={cp.fwdRevKnobColor}
-          roughness={0.75}
-          metalness={0.1}
+          map={arcScaleTexture}
+          transparent
+          roughness={0.6}
+          metalness={0.0}
         />
       </mesh>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          LEFT COLUMN (operator's left)
-          ══════════════════════════════════════════════════════════════════ */}
-
-      {/* ─────────────────────────────────────────────────────────────────────
-          4. SPEED KNOB — TOP-LEFT (BLACK ROTARY)
-          Black round knob. rotation.z driven imperatively in useFrame to
-          reflect targetRpm: KNOB_MIN_ANGLE (0 rpm) → KNOB_MAX_ANGLE (maxRpm).
-          Drag UP (−Y) = increase RPM; drag DOWN (+Y) = decrease RPM.
-          A thin indicator line (box) on the knob face shows the set angle.
-      ───────────────────────────────────────────────────────────────────── */}
+      {/* B) Knob group — rotation.z set imperatively each frame */}
       <group
         ref={speedKnobRef}
-        position={[leftX, speedKnobY, speedKnobZ]}
+        position={[rightX, speedDialY, speedKnobZ]}
         onPointerDown={handleKnobPointerDown}
         onPointerOver={handleKnobOver}
         onPointerOut={handleKnobOut}
@@ -472,15 +624,22 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
             metalness={0.05}
           />
         </mesh>
-        {/* Indicator line on knob face — shows rotation angle */}
-        <mesh position={[0, speedKnobR * 0.35, 0]}>
-          <boxGeometry args={[speedKnobR * 0.12, speedKnobR * 0.55, speedKnobR * 0.15]} />
-          <meshStandardMaterial color="#cccccc" roughness={0.4} metalness={0.3} />
+        {/* White pointer line on top face — at +Y (top of knob in local space).
+            When rotation.z = +HALF_SWEEP (0 rpm / OFF) the group is rotated so
+            this +Y pointer faces down in world space, matching the "OFF" mark at
+            the bottom of the arc scale. */}
+        <mesh position={[0, speedKnobR * 0.38, speedKnobR * 0.46]}>
+          <boxGeometry args={[speedKnobR * 0.10, speedKnobR * 0.55, speedKnobR * 0.08]} />
+          <meshStandardMaterial color="#f0f0f0" roughness={0.2} metalness={0.1} emissive="#ffffff" emissiveIntensity={0.15} />
         </mesh>
       </group>
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          LEFT COLUMN (operator's left)
+          ══════════════════════════════════════════════════════════════════ */}
+
       {/* ─────────────────────────────────────────────────────────────────────
-          5. H/L SPEED-RANGE PLACARD — LEFT, BELOW SPEED KNOB
+          4. H/L SPEED-RANGE PLACARD — LEFT, TOP
           Black rectangle with H/L indicator blocks and speed-range text.
           CanvasTexture drawn ONCE (static — no per-frame redraw).
       ───────────────────────────────────────────────────────────────────── */}
@@ -490,6 +649,19 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
           map={hlTexture}
           roughness={0.6}
           metalness={0.0}
+        />
+      </mesh>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          5. FWD/REV KNOB — LEFT COLUMN (moved from right, decorative)
+          Small dark knob. Static/decorative — no interaction handlers.
+      ───────────────────────────────────────────────────────────────────── */}
+      <mesh position={[leftX, fwdRevKnobY, fwdRevKnobZ]}>
+        <cylinderGeometry args={[fwdRevKnobR, fwdRevKnobR * 0.8, fwdRevKnobR * 2.2, 16]} />
+        <meshStandardMaterial
+          color={cp.fwdRevKnobColor}
+          roughness={0.75}
+          metalness={0.1}
         />
       </mesh>
 
