@@ -16,6 +16,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
 import { useLatheStore } from '../../workshop/index.js';
+import { visualSpinRevPerSec } from './spinRate.js';
 import { Bed } from './Bed.js';
 import { Headstock } from './Headstock.js';
 import { Tailstock } from './Tailstock.js';
@@ -146,9 +147,10 @@ export function Lathe({
   useFrame((_, dt) => {
     const group = blankGroupRef.current;
     if (group === null) return;
-    const rpm = useLatheStore.getState().currentRpm;
-    // ω (rad/s) = (rpm / 60) * 2π  — no allocation, just arithmetic
-    group.rotation.x += (rpm / 60) * (2 * Math.PI) * dt;
+    const store = useLatheStore.getState();
+    // COMPRESSED visual spin rate (not literal rpm/60) so the spinning square doesn't
+    // alias/wagon-wheel at 60fps — keeps 400<1000<2000 monotonic. See spinRate.ts.
+    group.rotation.x += visualSpinRevPerSec(store.currentRpm, store.maxRpm) * (2 * Math.PI) * dt;
   });
 
   // ── Stand lift ────────────────────────────────────────────────────────────

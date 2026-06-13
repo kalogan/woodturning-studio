@@ -5,6 +5,7 @@ import type { WoodState } from '../../core/types.js';
 import type { WoodVisualParams } from '../../session/wood.js';
 import { visualToUniforms } from './woodVisual.js';
 import { useLatheStore } from '../../workshop/index.js';
+import { visualSpinRevPerSec } from '../lathe/spinRate.js';
 // vite-plugin-glsl imports the file as a string at build time
 import grainGlsl from './grain.glsl';
 
@@ -181,10 +182,11 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
     // "spin in place" (spinning about Z tumbled it end-over-end). The turning rig
     // lays this Y axis onto the lathe's horizontal spindle axis (see TurningScene),
     // so this reads as the wood spinning on the lathe.
-    // Read currentRpm imperatively (no hook subscription → no per-frame React re-render).
-    // ω = (rpm / 60) * 2π rad/s; per frame: Δθ = ω * dt.
-    const currentRpm = useLatheStore.getState().currentRpm;
-    mesh.rotation.y += (currentRpm / 60) * TWO_PI * dt;
+    // Read rpm imperatively (no hook subscription → no per-frame React re-render).
+    // Use the COMPRESSED visual spin rate (not literal rpm/60) so the spin doesn't
+    // alias/wagon-wheel at 60fps and stays monotonic with rpm — see lathe/spinRate.ts.
+    const store = useLatheStore.getState();
+    mesh.rotation.y += visualSpinRevPerSec(store.currentRpm, store.maxRpm) * TWO_PI * dt;
 
     // Detect profile change
     const prev = prevProfileRef.current;
