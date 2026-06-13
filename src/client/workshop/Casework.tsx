@@ -235,7 +235,8 @@ export function OpenShelving() {
           position={[b.xOff, (shelfYs[b.shelf] ?? 0) + b.r + 0.013, 0]}
           rotation={b.rot}
         >
-          <cylinderGeometry args={[b.r, b.r, b.len, 14]} />
+          {/* Square stock — not yet roughed round (that's the roughing-gouge lesson) */}
+          <boxGeometry args={[b.r * 2, b.len, b.r * 2]} />
           <meshStandardMaterial color={b.color} roughness={0.82} metalness={0.0} />
         </mesh>
       ))}

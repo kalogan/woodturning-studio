@@ -154,7 +154,8 @@ export function BlankRack() {
           position={spec.pos}
           rotation={spec.rot}
         >
-          <cylinderGeometry args={[spec.r, spec.r, spec.len, 16]} />
+          {/* Square stock — not yet roughed round (that's the roughing-gouge lesson) */}
+          <boxGeometry args={[spec.r * 2, spec.len, spec.r * 2]} />
           <meshStandardMaterial color={spec.color} roughness={0.8} metalness={0.0} />
         </mesh>
       ))}
