@@ -14,15 +14,18 @@
  * spec.headstock.controlPanel). No hardcoded measurements.
  */
 import spec from '../../../content/lathe/jet-jwl-1642.json';
-import { paintedCastIron, bareSteel } from './materials.js';
+import { paintedCastIron, bareSteel, darkCastIron, blackRubber } from './materials.js';
 
 interface HeadstockProps {
   position?: [number, number, number];
   rotation?: [number, number, number];
 }
 
-const bodyMat = paintedCastIron(spec.headstock.color);
-const steelMat = bareSteel(spec.headstock.color);
+const bodyMat     = paintedCastIron(spec.headstock.color);
+const steelMat    = bareSteel();
+const motorMat    = darkCastIron('#1f1f1d');   // near-black cast housing
+const panelMat    = darkCastIron('#232323');   // control panel backing
+const knobMat     = blackRubber();
 
 export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: HeadstockProps) {
   const {
@@ -90,7 +93,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
       {/* ── Motor housing drum — black cylinder along X axis, -X end ── */}
       <mesh position={[motorX, motorY, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[motorRadius, motorRadius, motorLength, 20]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.55} metalness={0.2} />
+        <meshStandardMaterial {...motorMat} />
       </mesh>
 
       {/* ── Spindle nose — short tapered cylinder, +X ── */}
@@ -105,7 +108,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
       {/* ── Control panel backing plate ── */}
       <mesh position={[panelX, panelY, panelZ]}>
         <boxGeometry args={[cp.width, cp.height, cp.depth]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.6} metalness={0.1} />
+        <meshStandardMaterial {...panelMat} />
       </mesh>
 
       {/* ── RPM readout display ── (emissive so it reads as a live screen) */}
@@ -132,7 +135,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         rotation={[Math.PI / 2, 0, 0]}
       >
         <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
-        <meshStandardMaterial color="#333333" roughness={0.7} metalness={0.1} />
+        <meshStandardMaterial {...knobMat} />
       </mesh>
 
       {/* ── Direction knob ── */}
@@ -141,7 +144,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
         rotation={[Math.PI / 2, 0, 0]}
       >
         <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
-        <meshStandardMaterial color="#333333" roughness={0.7} metalness={0.1} />
+        <meshStandardMaterial {...knobMat} />
       </mesh>
     </group>
   );
