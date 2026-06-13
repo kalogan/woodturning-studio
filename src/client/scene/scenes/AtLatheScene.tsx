@@ -22,6 +22,7 @@ import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Lighting, Room, Furniture } from '../../workshop/index.js';
 import { Lathe } from '../../lathe/index.js';
+import { ReachingHand } from '../../hands/index.js';
 import { useLatheStore } from '../../../workshop/index.js';
 import type { SceneCtx } from '../sceneCtx.js';
 
@@ -105,6 +106,15 @@ export function AtLatheScene({ ctx: _ctx }: Props) {
        * Headstock's interactive START button + speed dial live inside <Lathe>.
        */}
       <Lathe position={[0, 0, 0]} defaultBlankVisible />
+
+      {/*
+       * Reaching hand — one right hand in REACH_CONTROL pose, hovering in front
+       * of the headstock control panel (START button / speed dial).
+       * Placement is a FIRST-PASS DRAFT; tune REACH_HAND_POSITION +
+       * REACH_HAND_ROTATION constants in FirstPersonHands.tsx on localhost:5173.
+       * Static this pass — not cursor-tracked.
+       */}
+      <ReachingHand />
     </>
   );
 }
