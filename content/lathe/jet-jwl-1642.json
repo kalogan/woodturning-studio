@@ -37,13 +37,15 @@
       "width": 0.16,
       "height": 0.2,
       "depth": 0.02,
-      "readoutWidth": 0.06,
-      "readoutHeight": 0.025,
+      "readoutWidth": 0.10,
+      "readoutHeight": 0.028,
       "readoutColor": "#101810",
-      "estopDiameter": 0.03,
-      "estopColor": "#c0392b",
-      "startButtonDiameter": 0.018,
-      "startButtonColor": "#2ecc71"
+      "powerButtonDiameter": 0.028,
+      "powerButtonColor": "#d83a2f",
+      "powerPullTravel": 0.012,
+      "speedKnobDiameter": 0.022,
+      "speedKnobColor": "#c9ccd1",
+      "speedTrackLength": 0.06
     },
     "color": "#EAE6DC"
   },
