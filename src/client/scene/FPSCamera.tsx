@@ -22,6 +22,19 @@ const MOVE_SPEED = 1.4;  // metres per second
 const EYE_HEIGHT = 1.6;  // metres
 
 /**
+ * Walk spawn position (XZ).
+ *
+ * FPSCamera mounts fresh each time WORKSHOP_WALK begins — both on initial
+ * entry and after stepBack() returns from AT_LATHE.  We reset to this spawn
+ * so the very first proximity check does NOT immediately re-enter AT_LATHE.
+ *
+ * CONSTRAINT: this position MUST sit > 1.2 m from the tool rest (world XZ ≈
+ * 0.062, 0.092) to stay outside the proximity-exit hysteresis distance.
+ * At z = 1.8 the distance is ≈ √((0-0.062)² + (1.8-0.092)²) ≈ 1.71 m — safe.
+ */
+const WALK_SPAWN = { x: 0, z: 1.8 } as const;
+
+/**
  * Room AABB bounds — player position (XZ) is clamped inside these limits.
  * Values derived from Room.tsx conventions (warm-workshop room 8 × 6 m).
  * Kept as named constants with a comment — Room.tsx is NOT edited.
@@ -67,8 +80,10 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
     ctrl.start();
     controllerRef.current = ctrl;
 
-    // Set initial eye height
-    camera.position.y = EYE_HEIGHT;
+    // Reset to the walk spawn position.
+    // WALK_SPAWN is > 1.2 m from the tool rest, so the proximity check on the
+    // first frame after mount will NOT immediately re-enter AT_LATHE.
+    camera.position.set(WALK_SPAWN.x, EYE_HEIGHT, WALK_SPAWN.z);
 
     // Request pointer lock on canvas click
     const canvas = gl.domElement;
