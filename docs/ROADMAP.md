@@ -127,8 +127,10 @@ woodturning game attempts.
 - **Lesson objective on a paper spec card** clipped to the bench, not a floating panel.
 - **Click-drag rotary EVS knob with motor-pitch feedback + detents** — extends the built dial; the diegetic RPM readout is already in.
 
-**Assembly** *(ties to Phase L0):*
+**Assembly & setup** *(ties to Phase L0):*
 - **Snap-to-slot + confirming sound** for the JWL-1642EVS parts. (PC Building Sim install satisfaction.)
+- **Tailstock travel to fit the blank** — the player slides the tailstock in (loosen → move → lock) so the live center meets the blank's end; mounting a SHORT blank should prompt "move the tailstock closer." Today the blank is just sized to fit between the centers; real setup is positioning the tailstock to the stock length. (Director-flagged 2026-06-13.)
+- **Square-stock → round in the turning model** — the starting blank is square un-roughed stock (now shown at the lathe), but the physics WoodState is a RADIAL profile (always round per station), so it can't represent a square cross-section being trued round. Real square→round roughing needs a non-radial blank model (brief notes the profile array is a proxy). Backlog.
 
 **Hands** *(the current pass):* canned, correct two-hand poses per tool; a controls-hand must come from the lower frame edge or appear only on interaction — never a floating mid-scene hand ("worse than none").
 
