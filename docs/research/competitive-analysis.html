@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competitive Analysis — Sim Games → Woodturning Studio</title>
+<style>
+  :root{
+    --bg:#1c1916; --panel:#262019; --panel2:#2f2820; --line:#403629;
+    --ink:#ece4d6; --muted:#b3a892; --faint:#8a8071;
+    --accent:#c8873a; --accent2:#e0a85a; --good:#7dcea0; --bad:#cc6b5a; --wood:#d8b483;
+    --maxw:960px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65;font-size:16px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px 96px}
+  header{padding:64px 24px 40px;text-align:center;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#221d17,#1c1916)}
+  header .kicker{color:var(--accent);letter-spacing:.18em;text-transform:uppercase;font-size:12px;font-weight:600}
+  header h1{font-size:34px;line-height:1.2;margin:14px auto 10px;max-width:760px;font-weight:600}
+  header p.sub{color:var(--muted);max-width:680px;margin:0 auto;font-size:17px}
+  .thesis{max-width:var(--maxw);margin:32px auto 0;padding:20px 24px;background:var(--panel2);
+    border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;text-align:left}
+  .thesis b{color:var(--accent2)}
+  h2{font-size:24px;margin:64px 0 6px;font-weight:600}
+  h2 .num{color:var(--accent);font-size:15px;font-weight:600;display:block;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+  h3{font-size:18px;margin:28px 0 8px;font-weight:600;color:var(--wood)}
+  p{margin:10px 0}
+  a{color:var(--accent2);text-decoration:none;border-bottom:1px dotted #6c5a3a}
+  a:hover{border-bottom-style:solid}
+  .lead{color:var(--muted);font-size:16px;margin-top:8px}
+  .grid{display:grid;gap:16px;margin:20px 0}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h4{margin:0 0 6px;font-size:15px;font-weight:600;color:var(--ink)}
+  .card .game{color:var(--accent);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .card p{font-size:14px;color:var(--muted);margin:6px 0 0}
+  .lesson{counter-increment:l}
+  .lesson h4::before{content:counter(l);display:inline-flex;width:24px;height:24px;margin-right:10px;
+    background:var(--accent);color:#1c1916;border-radius:50%;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;vertical-align:middle}
+  .lessons{counter-reset:l}
+  .ours{background:#231d16;border:1px solid #4a3a22;border-left:4px solid var(--accent);
+    border-radius:0 8px 8px 0;padding:12px 16px;margin:12px 0;font-size:14.5px}
+  .ours b{color:var(--accent2)}
+  .ours .tag{display:inline-block;background:var(--accent);color:#1c1916;font-size:11px;font-weight:700;
+    padding:2px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.05em;margin-right:8px;vertical-align:1px}
+  .avoid{color:var(--bad);font-size:14px;margin:8px 0}
+  .avoid b{color:#e08a78}
+  .pill{display:inline-block;font-size:12px;color:var(--faint);border:1px solid var(--line);
+    border-radius:20px;padding:2px 12px;margin:0 6px 6px 0}
+  .map{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+  ol.proto{counter-reset:p;list-style:none;padding:0;margin:18px 0;display:grid;gap:10px}
+  ol.proto li{counter-increment:p;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px 14px 54px;position:relative;font-size:14.5px}
+  ol.proto li::before{content:counter(p);position:absolute;left:14px;top:13px;width:26px;height:26px;
+    background:var(--accent);color:#1c1916;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  ol.proto li b{color:var(--accent2)}
+  .teardown{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:16px 0}
+  .teardown h3{margin-top:0;color:var(--accent2)}
+  .steal{color:var(--good);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+  nav{position:sticky;top:0;background:rgba(28,25,22,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
+    padding:10px 24px;z-index:5;font-size:13px;text-align:center}
+  nav a{color:var(--muted);margin:0 9px;border:0}
+  nav a:hover{color:var(--accent2)}
+  footer{margin-top:72px;padding-top:24px;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
+  footer a{color:var(--muted)}
+  .src{font-size:12.5px;color:var(--faint);line-height:1.8}
+  .flag{color:var(--accent2);font-size:12px;font-style:italic}
+  @media(max-width:600px){header h1{font-size:26px}h2{font-size:21px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">Design research · Woodturning Studio</div>
+  <h1>What other simulators do well — and how we steal it</h1>
+  <p class="sub">A competitive teardown of making/precision sims (Cooking Sim, PC Building Sim, Half-Life: Alyx, pottery, blacksmith, Skyrim lockpicking) read through one lens: how should <em>our</em> first-person woodturning sim handle camera, controls, hands, feedback, teaching, and immersion.</p>
+  <div class="thesis">
+    <strong>The wedge.</strong> Every shipping "woodturning" game today is a shallow outline-tracer — tap/drag to match a silhouette, no tool physics, no grip, no catch. Our differentiator is the combination none of them attempt: <b>honest tool-to-wood physics + an audio-first correct/incorrect gradient + fading assistance + diegetic, machine-faithful controls.</b> That's the design to protect.
+  </div>
+</header>
+
+<nav>
+  <a href="#lessons">Big lessons</a>
+  <a href="#camera">Camera</a>
+  <a href="#controls">Controls</a>
+  <a href="#hands">Hands</a>
+  <a href="#feedback">Feedback</a>
+  <a href="#teaching">Teaching</a>
+  <a href="#diegetic">Diegetic UI</a>
+  <a href="#onboard">Onboarding</a>
+  <a href="#teardown">Teardowns</a>
+  <a href="#proto">Prototype list</a>
+</nav>
+
+<div class="wrap">
+
+<h2 id="lessons"><span class="num">The through-line</span>Six lessons that cut across every sim</h2>
+<p class="lead">If you read nothing else, these are the cross-cutting patterns the best making-sims share.</p>
+<div class="grid g2 lessons">
+  <div class="card lesson"><h4>A precision toggle, not raw sensitivity</h4><p>Cooking Sim (hold SHIFT for fine handling) and Skyrim lockpicking both solve our exact problem: a mouse is too coarse for delicate work. The win is a <em>modal</em> precision state with a clear feedback gradient as you near the sweet spot.</p></div>
+  <div class="card lesson"><h4>Hard, but learnable in minutes</h4><p>Surgeon Simulator's designer: awkward works because you "adapt quite quickly" and failure is "funny, not embarrassing." Be honest and punishing (catches, tear-out) — but the loop to competence must be minutes, not hours.</p></div>
+  <div class="card lesson"><h4>Menus are physical things</h4><p>Job Simulator's rule: progression can't be floating panels — it's cartridges you slot and levers you pull. Our lesson select, speed dial, and tool rack should live <em>in the shop</em>.</p></div>
+  <div class="card lesson"><h4>Show, then do — with invisible help</h4><p>Half-Life: Alyx auto-turns knobs you reach for and lands "close enough" pulls. The player feels precise; the game quietly closes the gap. A coach can snap tool-rest contact and forgive the first approach.</p></div>
+  <div class="card lesson"><h4>Juice per contact, 500 times</h4><p>Car Mechanic Sim is literally unscrewing bolts — it survives on per-bolt tactility. Our equivalent is per-pass chisel-to-wood: chips, pitch, surface change. It must feel good the 500th time.</p></div>
+  <div class="card lesson"><h4>The category is wide open</h4><p>Existing woodturning games are outline-matchers with no tool physics. Our honest physics is the moat — the danger is accidentally regressing to silhouette-tracing.</p></div>
+</div>
+
+<h2 id="camera"><span class="num">Dimension 1</span>Camera &amp; point of view</h2>
+<div class="grid g3">
+  <div class="card"><div class="game">PC Building Simulator</div><h4>Locked at the bench</h4><p>First-person fixed at a workbench that is the entire stage — you lean/orbit into the case, you don't roam mid-build.</p></div>
+  <div class="card"><div class="game">Cooking Simulator</div><h4>Roam, then station</h4><p>Free-roam kitchen, but <em>work</em> happens at fixed stations — transition is pure proximity + holding a tool.</p></div>
+  <div class="card"><div class="game">Flight / driving sims</div><h4>Cockpit = the screen</h4><p>Realistic modes enforce cockpit view and remove non-diegetic gauges. Precision work → lock the camera so the instruments are the frame.</p></div>
+</div>
+<p class="avoid"><b>Avoid:</b> Surgeon Simulator's free-floating camera over a physics mess (great comedy, terrible for honest precision); and third-person/over-the-shoulder for the cut — close work wants eyes on the contact line.</p>
+<div class="ours"><span class="tag">Our lathe</span> Three framed states: <b>(a) workshop walk</b> ~70–75° FOV for spatial comfort; <b>(b) at-lathe</b> locks to a fixed standing pose on the spindle axis, slight downward tilt onto the tool rest; <b>(c) turning</b> narrows FOV (~60°) and pushes in so the chip line and bevel dominate. Drive walk→lathe by proximity (we already have auto-lock), never by a cut. <span class="flag">We've already killed the old teleport-to-void — this validates that instinct.</span></div>
+
+<h2 id="controls"><span class="num">Dimension 2</span>Controls</h2>
+<div class="grid g2">
+  <div class="card"><div class="game">Cooking Simulator</div><h4>Hold SHIFT = precision mode</h4><p>Mouse = translate, LMB+vertical = raise/lower, RMB = rotate. Cutting is contextual: hold knife near meat, click the cut zone. The closest real analog to our mouse-driven tool.</p></div>
+  <div class="card"><div class="game">Car Mechanic Sim</div><h4>Hold + sweep to act</h4><p>Continuous unscrew = hold LMB and sweep the cursor; stuck bolts glow and gate on a consumable. Continuous action = hold + mouse delta, with visual gating for special cases.</p></div>
+  <div class="card"><div class="game">My Summer Car</div><h4>Tools by fidelity</h4><p>Ratchet for assembly, torque wrench for final spec — wrong torque fails later. Different tools carry different precision. <span class="flag">(exact torque numbers are community-sourced)</span></p></div>
+  <div class="card"><div class="game">Cockpits / Job Sim</div><h4>Click-drag the knob</h4><p>Dials and switches are grabbed and turned <em>in-world</em>, never adjusted by a 2D slider widget.</p></div>
+</div>
+<p class="avoid"><b>Avoid:</b> Surgeon Sim's per-finger keys (intentionally clumsy — the opposite of teaching a craft); and turning the EVS dial into a HUD slider.</p>
+<div class="ours"><span class="tag">Our lathe</span>
+  <b>Tool-in-hand:</b> mouse XY = tool tip in the cutting plane (traverse + depth); the cut is implicit while the tip rides the wood — no click, like a real bevel rub. Reserve a <b>SHIFT precision modifier</b> (scale mouse delta ~4× down) for finishing/detail passes.<br>
+  <b>Two-handed grip:</b> model it as <b>one cursor, two constraints</b> — mouse position is the front hand (tip); RMB/scroll is the back hand (bevel angle / tool rotation). A learnable two-axis skill, no second pointer.<br>
+  <b>EVS power/speed:</b> a click-and-drag rotary knob in 3D with detents + a motor pitch that tracks RPM; power is a physical paddle you click.
+  <div class="map"><span class="pill">maps to: turning input</span><span class="pill">two-hand grip</span><span class="pill">EVS controls (built)</span><span class="pill">finishing passes</span></div>
+</div>
+
+<h2 id="hands"><span class="num">Dimension 3</span>Hand presence</h2>
+<div class="grid g2">
+  <div class="card"><div class="game">Half-Life: Alyx</div><h4>IK ↔ animation slider</h4><p>Valve blends finger-tracking and canned animation per interaction so hands "feel natural — players don't think about them." The satisfying <em>click</em> of loading ammo is what sells tool presence.</p></div>
+  <div class="card"><div class="game">Job Simulator</div><h4>A small grip vocabulary</h4><p>Owlchemy studied ~30 grips, shipped the 10–15 common ones. Refine a small set of correct poses; don't sprawl into full IK.</p></div>
+</div>
+<p class="avoid"><b>Avoid:</b> uncanny half-finished IK — "just close enough to immersion to be distracting when it's not." Half-done hands are worse than none.</p>
+<div class="ours"><span class="tag">Our lathe</span> We're mouse, not VR — so use <b>canned, correct two-hand poses per tool</b> (a roughing gouge held differently from a skew), rigidly attached to the tool mesh, tool driven by the cursor. <b>The posture itself is coaching</b> — back hand on the handle, front hand pinning the tool to the rest. Animate a small flex/recoil on a catch. Don't chase per-finger IK to the spinning wood. <span class="flag">We just shipped a first-pass two-hand grip — this says: keep it canned + correct, add the catch-recoil.</span></div>
+
+<h2 id="feedback"><span class="num">Dimension 4</span>Tool ↔ material feedback ("juice")</h2>
+<div class="grid g2">
+  <div class="card"><div class="game">Skyrim lockpicking</div><h4>Audio is the channel</h4><p>Higher-pitched click near the sweet spot, harsh grind when wrong, pick snaps on force in the wrong place. Correct vs. wrong taught entirely by sound + resistance.</p></div>
+  <div class="card"><div class="game">House Flipper</div><h4>Surface-state reward</h4><p>Dirt wipes away, paint fills coverage — the visible transformation is the payoff. Progressive surface state is the reward loop.</p></div>
+  <div class="card"><div class="game">Cooking Simulator</div><h4>Graded forgiveness</h4><p>Yellow highlight = interactable; "Steady Hands" perk reduces rolling. Forgiveness is graded (weight matters more than exact shape), not binary.</p></div>
+  <div class="card"><div class="game">Blacksmith sims</div><h4>Each step its own feedback</h4><p>Heat → hammer → temper → grind — every stage has its own feedback beat, so a long craft feels like real process.</p></div>
+</div>
+<p class="avoid"><b>Avoid:</b> binary right/wrong (kills the skill curve); and the existing woodturning games' outline-match-only feedback — it teaches geometry, not technique.</p>
+<div class="ours"><span class="tag">Our lathe — the differentiator</span>
+  <b>Bevel-rub vs. scrape vs. catch as an audio-first gradient:</b> clean shear = steady hiss; too steep / dig-in = rising harsh tone → <b>catch</b> (tool kick + chip spray + thunk). Skyrim's sweet-spot/grind, applied to a gouge.<br>
+  <b>Chips + surface state:</b> pre-pooled chip particles whose size/spray encode aggressiveness; the wood transitions torn → cut → finished sheen (House Flipper's reveal). Honor the no-heap-allocation tick — pre-allocate the buffers.<br>
+  <b>Forgiveness dial:</b> early lessons widen catch tolerance and snap the bevel; advanced lessons remove the training wheels.
+  <div class="map"><span class="pill">maps to: cutting physics (built)</span><span class="pill">SFX (foundation built)</span><span class="pill">coaching overlay</span><span class="pill">per-species feel</span></div>
+</div>
+
+<h2 id="teaching"><span class="num">Dimension 5</span>Teaching &amp; tutorialization</h2>
+<div class="grid g3">
+  <div class="card"><div class="game">PC Building Sim</div><h4>Separate tutorial mode</h4><p>A dedicated "How to Build" mode apart from career; inventory categorized so the next correct part is findable. Step-gated, low-stakes.</p></div>
+  <div class="card"><div class="game">Woodturning 3D</div><h4>Ghost outline (shallow)</h4><p>A black silhouette to match — a good spatial target, but teaches only shape, never tool handling. Our opening.</p></div>
+  <div class="card"><div class="game">Surgeon Sim</div><h4>Failure as teacher</h4><p>Failure is funny and low-shame, so players keep retrying. The retry loop is the real tutorial.</p></div>
+</div>
+<div class="ours"><span class="tag">Our lathe</span> We already have gated lessons + a coaching overlay. Push three ideas:
+  <b>Ghost tool, not just ghost shape</b> — show a translucent ideal bevel-rub path the player chases in real time (fixes every competitor's blind spot: it teaches the <em>motion</em>).
+  <b>Step-gate the craft chain</b> — mount → true the cylinder → rough to profile → finish → sand, each an independently green-able lesson (fits our slice model).
+  <b>Catch = teachable moment</b> — don't end the lesson; pause, replay the last second highlighting the bad angle, resume. Low-shame retry.
+  <div class="map"><span class="pill">maps to: curriculum/lessons (built)</span><span class="pill">assembly Lesson 0 (queued)</span><span class="pill">coaching overlay</span></div>
+</div>
+
+<h2 id="diegetic"><span class="num">Dimension 6</span>Immersion &amp; diegetic UI</h2>
+<div class="grid g2">
+  <div class="card"><div class="game">Virtual cockpits</div><h4>Instruments are the UI</h4><p>Realism modes remove non-diegetic gauges entirely — the most immersive interface short of real hardware.</p></div>
+  <div class="card"><div class="game">Job Simulator</div><h4>UI is physical objects</h4><p>Progression = cartridges + a lever, not a menu.</p></div>
+</div>
+<p class="avoid"><b>Avoid:</b> going 100% diegetic and starving the player of the one or two numbers they truly need (current RPM, target diameter); and a persistent cluttered HUD that breaks the "real shop" feeling. The consensus: <em>blend</em> diegetic + minimal spatial HUD.</p>
+<div class="ours"><span class="tag">Our lathe</span> The real <b>Jet JWL-1642EVS has a digital RPM readout on the headstock</b> — use <em>that</em> as the speed display (diegetic, and faithful to the machine whose dims live in <code>content/lathe</code>). Put the lesson objective on a <b>paper spec card clipped to the bench</b>, not a floating panel. Keep only a minimal coaching overlay that fades in near the contact point and out when idle — the cockpit-sim blend, not a full HUD. <span class="flag">We already render the diegetic RPM readout + live digits — lean into it.</span></div>
+
+<h2 id="onboard"><span class="num">Dimension 7</span>Onboarding the signature interaction</h2>
+<div class="grid g3">
+  <div class="card"><div class="game">Half-Life: Alyx</div><h4>Invisible assistance</h4><p>The gravity-glove signature is eased in with auto-land help, full one-handed play, and left-handed options. Accessibility <em>is</em> the onboarding.</p></div>
+  <div class="card"><div class="game">Surgeon Sim</div><h4>Cheap, funny failure</h4><p>Onboards an odd scheme by making early failure low-cost, so players keep experimenting until it clicks.</p></div>
+  <div class="card"><div class="game">Let's Create! Pottery</div><h4>The material teaches tempo</h4><p>Slow drag = good, fast = ruined — taught purely through immediate material response, zero text.</p></div>
+</div>
+<div class="ours"><span class="tag">Our lathe</span>
+  <b>Mouse-tool onboarding:</b> a zero-stakes "scratch pad" blank, motor off, no objective — just feel cursor → tip. Then motor on, generous catch tolerance, ghost path on; graduate the tolerance down over lessons (Alyx's fading assistance).<br>
+  <b>Webcam-pencil (stretch input):</b> treat like Pottery's tempo lesson — first session is "draw a slow line in the air, watch the tool traverse"; success = "it moved smoothly," not "you matched a profile." Mouse stays an always-available fallback (Alyx's never-gate-content-behind-the-exotic-input rule).
+  <div class="map"><span class="pill">maps to: MediaPipe pencil input</span><span class="pill">mouse fallback (built)</span><span class="pill">lesson pacing</span></div>
+</div>
+
+<h2 id="teardown"><span class="num">Closest cousins</span>Best-in-class teardowns — what to steal</h2>
+
+<div class="teardown">
+  <h3>Cooking Simulator</h3>
+  <p>The single most directly transferable game we found. <b>SHIFT-to-precision</b> turns a coarse mouse into fine manipulation — lift it wholesale for finishing cuts. <b>Contextual contact</b> (hold knife near meat → cut) maps to hold-gouge-near-spinning-wood → cut, no extra verb. <b>Graded forgiveness</b> (weight matters, not exact form) → grade our profile tolerance per lesson.</p>
+  <div class="steal">↳ Steal: SHIFT precision · contextual cut · yellow-highlight grabbables · graded tolerance</div>
+</div>
+<div class="teardown">
+  <h3>PC Building Simulator</h3>
+  <p>Our assembly-lesson twin. <b>Locked-at-bench camera</b> + categorized inventory = the player always knows where to stand and what's next. A <b>dedicated "How to Build" mode</b> separate from career — and we are <em>literally building the JWL-1642EVS</em>, so that's our PCBS moment. The satisfaction of a part <b>snapping into its slot</b> with a confirming sound applies straight to our tailstock / banjo / tool-rest assembly.</p>
+  <div class="steal">↳ Steal: station-locked POV · a real assembly tutorial mode · snap-to-slot + confirm sound</div>
+</div>
+<div class="teardown">
+  <h3>Let's Create! Pottery</h3>
+  <p>Proof that <b>the material can teach tempo</b> with zero UI (fast = ruined), and that a <b>calm, low-failure creative loop</b> sells to a broad audience — a counterweight to Surgeon-Sim chaos. Position woodturning as <em>meditative craft mastery</em>. Caution: pottery sims are outcome-focused (shape-matching) — don't inherit their lack of <em>tool</em> fidelity; that's exactly where we win.</p>
+  <div class="steal">↳ Steal: material-teaches-tempo · meditative framing · (avoid) outcome-only shaping</div>
+</div>
+
+<h2 id="proto"><span class="num">Do next</span>Ideas worth prototyping</h2>
+<p class="lead">Punchy, specific, and ranked roughly by bang-for-buck given what we've already built.</p>
+<ol class="proto">
+  <li><b>Audio-first cut gradient</b> — steady hiss = clean shear; rising harsh tone = nearing a catch; thunk + chip-spray = catch. (Skyrim lockpicking, applied to wood.) Our SFX foundation is already in.</li>
+  <li><b>Ghost tool-path, not just ghost profile</b> — chase a translucent ideal bevel line in real time. Teaches motion; beats every existing woodturning game.</li>
+  <li><b>SHIFT precision mode</b> — mouse delta scales ~4× down for finishing/detail cuts. (Cooking Sim.)</li>
+  <li><b>One cursor, two constraints grip</b> — mouse = front hand (tip), RMB/scroll = back hand (bevel angle). Learnable two-axis skill, no second pointer.</li>
+  <li><b>Catch = teachable moment</b> — pause, replay the last second highlighting the bad angle, resume. (Surgeon Sim's low-shame failure, made instructive.)</li>
+  <li><b>Surface-state transformation</b> — wood visibly goes torn → cut → polished sheen as you finish + sand. (House Flipper's reveal.)</li>
+  <li><b>Fading assistance curve</b> — early lessons snap the bevel + widen catch tolerance; advanced lessons strip it, shown as a progress signal. (Alyx auto-land.)</li>
+  <li><b>Zero-stakes scratch-pad blank</b> for onboarding both mouse and webcam-pencil before any graded lesson.</li>
+  <li><b>Snap-to-slot assembly + confirm sound</b> for the JWL-1642EVS parts. (PCBS install satisfaction.)</li>
+  <li><b>Step-gated craft chain</b> — mounted → trued → roughed → finished → sanded, each an independently green-able lesson slice.</li>
+  <li><b>Click-drag rotary EVS knob with motor-pitch feedback + detents</b>, diegetic RPM on the real headstock display. (We've built the readout + dial — add the pitch + detents.)</li>
+</ol>
+
+<footer>
+  <p>Compiled for Woodturning Studio · grounded in primary sources (game guides, developer interviews, design press). A few claims are flagged inline as paraphrase or community-sourced where they couldn't be fully verified.</p>
+  <p class="src">
+    Key sources —
+    Cooking Sim precision handling: <a href="https://www.gamepressure.com/cooking-simulator/accurate-handling-and-cutting-mode/zfc5e2">gamepressure</a> ·
+    Surgeon Sim design: <a href="https://www.gamedeveloper.com/business/the-blissfully-awkward-controls-of-i-surgeon-simulator-2013-i-">Game Developer</a> ·
+    Alyx hand presence: <a href="https://www.uploadvr.com/importance-believable-vr-hands-presence/">UploadVR</a>, one-handed play: <a href="https://www.uploadvr.com/half-life-alyx-one-hand/">UploadVR</a> ·
+    Job Simulator design: <a href="https://80.lv/articles/why-social-physical-vr-games-are-thriving-according-to-owlchemy-labs">80.lv</a> ·
+    Car Mechanic Sim: <a href="https://steamcommunity.com/app/1190000/discussions/0/3271312871352283280/">Steam</a> ·
+    Skyrim lockpicking: <a href="https://en.uesp.net/wiki/Skyrim:Lockpicking">UESP</a> ·
+    House Flipper: <a href="https://gameinformer.com/review/house-flipper/a-definite-fixer-upper">Game Informer</a> ·
+    Pottery: <a href="https://potterygame.com/">potterygame.com</a> ·
+    Diegetic UI: <a href="https://tvtropes.org/pmwiki/pmwiki.php/Main/DiegeticInterface">TV Tropes</a> ·
+    Existing woodturning games: <a href="https://www.silvergames.com/en/woodturning-3d">SilverGames</a>.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>
