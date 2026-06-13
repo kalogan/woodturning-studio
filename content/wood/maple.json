@@ -1,0 +1,13 @@
+{
+  "id": "maple",
+  "displayName": "Hard Maple",
+  "janka": 1450,
+  "density": 705,
+  "visual": {
+    "baseColor": "#f2e8cc",
+    "grainColor": "#d4b88a",
+    "ringFrequency": 12.0,
+    "ringContrast": 0.18,
+    "figure": { "type": "fleck", "intensity": 0.25 }
+  }
+}

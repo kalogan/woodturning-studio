@@ -1,0 +1,30 @@
+{
+  "tools": ["roughing-gouge", "spindle-gouge", "parting-tool"],
+  "species": ["pine", "maple", "cherry", "walnut", "oak", "ash"],
+  "coefficients": {
+    "roughing-gouge": {
+      "pine":   { "cutRate": 1.55, "tearout": 1.70, "catch": 0.70 },
+      "maple":  { "cutRate": 0.65, "tearout": 0.40, "catch": 1.25 },
+      "cherry": { "cutRate": 0.90, "tearout": 0.65, "catch": 1.05 },
+      "walnut": { "cutRate": 0.85, "tearout": 0.55, "catch": 1.10 },
+      "oak":    { "cutRate": 0.70, "tearout": 0.80, "catch": 1.20 },
+      "ash":    { "cutRate": 0.75, "tearout": 0.75, "catch": 1.15 }
+    },
+    "spindle-gouge": {
+      "pine":   { "cutRate": 1.35, "tearout": 1.50, "catch": 0.80 },
+      "maple":  { "cutRate": 0.70, "tearout": 0.35, "catch": 1.35 },
+      "cherry": { "cutRate": 0.95, "tearout": 0.55, "catch": 1.10 },
+      "walnut": { "cutRate": 0.90, "tearout": 0.50, "catch": 1.15 },
+      "oak":    { "cutRate": 0.75, "tearout": 0.70, "catch": 1.30 },
+      "ash":    { "cutRate": 0.80, "tearout": 0.65, "catch": 1.25 }
+    },
+    "parting-tool": {
+      "pine":   { "cutRate": 1.40, "tearout": 1.40, "catch": 0.85 },
+      "maple":  { "cutRate": 0.60, "tearout": 0.45, "catch": 1.50 },
+      "cherry": { "cutRate": 0.85, "tearout": 0.60, "catch": 1.20 },
+      "walnut": { "cutRate": 0.80, "tearout": 0.55, "catch": 1.30 },
+      "oak":    { "cutRate": 0.65, "tearout": 0.75, "catch": 1.45 },
+      "ash":    { "cutRate": 0.70, "tearout": 0.70, "catch": 1.40 }
+    }
+  }
+}

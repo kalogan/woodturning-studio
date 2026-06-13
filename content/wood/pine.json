@@ -1,0 +1,13 @@
+{
+  "id": "pine",
+  "displayName": "Eastern White Pine",
+  "janka": 380,
+  "density": 350,
+  "visual": {
+    "baseColor": "#e8d8a8",
+    "grainColor": "#c8a870",
+    "ringFrequency": 4.5,
+    "ringContrast": 0.45,
+    "figure": { "type": "none", "intensity": 0.0 }
+  }
+}

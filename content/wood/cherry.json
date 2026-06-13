@@ -1,0 +1,13 @@
+{
+  "id": "cherry",
+  "displayName": "Black Cherry",
+  "janka": 950,
+  "density": 580,
+  "visual": {
+    "baseColor": "#c07850",
+    "grainColor": "#8a4828",
+    "ringFrequency": 8.0,
+    "ringContrast": 0.28,
+    "figure": { "type": "fleck", "intensity": 0.15 }
+  }
+}

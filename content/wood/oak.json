@@ -1,0 +1,13 @@
+{
+  "id": "oak",
+  "displayName": "Red Oak",
+  "janka": 1290,
+  "density": 680,
+  "visual": {
+    "baseColor": "#c8a060",
+    "grainColor": "#8a6030",
+    "ringFrequency": 6.5,
+    "ringContrast": 0.55,
+    "figure": { "type": "fleck", "intensity": 0.40 }
+  }
+}

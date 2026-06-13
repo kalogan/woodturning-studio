@@ -1,0 +1,13 @@
+{
+  "id": "ash",
+  "displayName": "White Ash",
+  "janka": 1320,
+  "density": 660,
+  "visual": {
+    "baseColor": "#ddd0a8",
+    "grainColor": "#a88850",
+    "ringFrequency": 5.5,
+    "ringContrast": 0.60,
+    "figure": { "type": "none", "intensity": 0.0 }
+  }
+}
