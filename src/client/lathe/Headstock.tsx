@@ -69,7 +69,7 @@ const ARC_CANVAS_H     = 256;
 //   using explicit angles below.
 
 // ── Speed knob drag sensitivity ────────────────────────────────────────────────
-// Drag UP this many pixels to sweep the full [0, maxRpm] range.
+// Drag RIGHT this many pixels to sweep the full [0, maxRpm] range.
 const DRAG_PIXELS_FOR_FULL_RANGE = 200;
 
 // ── Speed dial rotation limits ─────────────────────────────────────────────────
@@ -322,7 +322,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
 
   // ── Drag state (pre-allocated scalars, zero heap alloc per event) ─────────
   const isDragging    = useRef(false);
-  const dragStartY    = useRef(0);  // clientY at pointerdown
+  const dragStartX    = useRef(0);  // clientX at pointerdown
   const dragStartRpm  = useRef(0);  // targetRpm at pointerdown
 
   // ── Power button handlers ──────────────────────────────────────────────────
@@ -340,17 +340,17 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   }, []);
 
   // ── Speed RADIAL DIAL handlers ────────────────────────────────────────────
-  // Drag direction: UP (negative deltaY on screen) = faster RPM.
+  // Drag direction: RIGHT (positive deltaX on screen) = faster RPM.
   const handleKnobPointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     isDragging.current   = true;
-    dragStartY.current   = e.nativeEvent.clientY;
+    dragStartX.current   = e.nativeEvent.clientX;
     dragStartRpm.current = useLatheStore.getState().targetRpm;
-    document.body.style.cursor = 'ns-resize';
+    document.body.style.cursor = 'ew-resize';
   }, []);
 
   const handleKnobOver = useCallback((_e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging.current) document.body.style.cursor = 'grab';
+    if (!isDragging.current) document.body.style.cursor = 'ew-resize';
   }, []);
 
   const handleKnobOut = useCallback((_e: ThreeEvent<PointerEvent>) => {
@@ -361,9 +361,9 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   const onWindowPointerMove = useCallback((e: PointerEvent) => {
     if (!isDragging.current) return;
     const { maxRpm, setTargetRpm } = useLatheStore.getState();
-    // Drag UP (negative deltaY) = increase RPM.
-    const deltaY   = e.clientY - dragStartY.current;
-    const deltaRpm = (-deltaY / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
+    // Drag RIGHT (positive deltaX) = increase RPM.
+    const deltaX   = e.clientX - dragStartX.current;
+    const deltaRpm = (deltaX / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
     setTargetRpm(dragStartRpm.current + deltaRpm); // store clamps + guards power-off
   }, []);
 
@@ -593,7 +593,7 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
                - White pointer line on +Y face (visible from front when rotation
                  maps to the correct angle — OFF = pointer points toward bottom
                  of arc, max = pointer points toward high-RPM end).
-          Drag interaction: drag UP (+RPM), drag DOWN (−RPM).
+          Drag interaction: drag RIGHT (+RPM), drag LEFT (−RPM).
       ───────────────────────────────────────────────────────────────────── */}
 
       {/* A) Arc-scale decal quad — behind the knob, on panel face */}
