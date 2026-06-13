@@ -18,6 +18,9 @@ export function AtLatheOverlay(_: Props) {
     <div style={hudStyle}>
       <span style={{ color: '#c8873a', fontWeight: 600 }}>At the lathe</span>
       <span style={{ color: '#e0e0e0', fontSize: 13 }}>
+        Click <span style={{ color: '#55cc55' }}>START</span> · drag the dial to set speed
+      </span>
+      <span style={{ color: '#e0e0e0', fontSize: 13 }}>
         Press <kbd style={kbdStyle}>E</kbd> to pick up the tool
       </span>
       <span style={{ color: '#888', fontSize: 12 }}>
