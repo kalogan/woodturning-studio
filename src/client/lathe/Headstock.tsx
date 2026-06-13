@@ -6,8 +6,10 @@
  *  - BLACK cylindrical motor housing drum protruding from the -X (left) end
  *  - Control panel on the front (+Z) face:
  *      · Digital RPM readout rectangle (emissive, dark green display)
- *      · Round red E-stop button
- *      · Two small knob cylinders (speed / direction)
+ *      · Round green START/power button (left cluster, adjacent to speed knob)
+ *      · Round red E-stop button (right side, separate)
+ *      · Two small knob cylinders (speed / direction) — speed knob has an
+ *        indicator mark on its front face so rotation is readable in T2
  *  - Spindle nose short cylinder protruding +X
  *
  * All dimensions from spec.headstock (and spec.headstock.motorHousing /
@@ -82,6 +84,24 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
   const knobR = 0.012;
   const knobLen = 0.015;
 
+  // START button — adjacent to the speed knob (left cluster: power + speed grouped)
+  // Placed to the right of the speed knob at the same Y row.
+  const startR = cp.startButtonDiameter / 2;
+  const speedKnobX = panelX - cp.width * 0.25;
+  const speedKnobY = panelY + cp.height * 0.15;
+  const startBtnX = speedKnobX + knobR * 2 + startR + 0.004; // snug beside the speed knob
+  const startBtnY = speedKnobY;
+  const startBtnZ = panelZ + startR; // protrudes proud like E-stop
+
+  // Speed knob indicator mark — thin contrasting strip on the +Z face near the rim,
+  // pointing "up" at rest (local Y+). Rendered as a child in the group at world coords.
+  const markWidth  = knobR * 0.35;
+  const markHeight = knobR * 0.7;
+  const markDepth  = 0.001;
+  const markX = speedKnobX;
+  const markY = speedKnobY + knobR * 0.55; // near top of knob face
+  const markZ = panelZ + knobLen + 0.001;  // just proud of the knob front face
+
   return (
     <group position={position} rotation={rotation}>
       {/* ── Main body box ── */}
@@ -145,6 +165,19 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
       >
         <cylinderGeometry args={[knobR, knobR, knobLen, 12]} />
         <meshStandardMaterial {...knobMat} />
+      </mesh>
+
+      {/* ── Speed knob indicator mark — thin light strip on front face, pointing up at rest */}
+      {/* T2 will rotate the speed knob; this mark makes the angle readable */}
+      <mesh position={[markX, markY, markZ]}>
+        <boxGeometry args={[markWidth, markHeight, markDepth]} />
+        <meshStandardMaterial color="#e0e0e0" roughness={0.3} metalness={0.1} />
+      </mesh>
+
+      {/* ── START / power button — green, adjacent to speed knob (left cluster) ── */}
+      <mesh position={[startBtnX, startBtnY, startBtnZ]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[startR, startR, startR * 1.2, 16]} />
+        <meshStandardMaterial color={cp.startButtonColor} roughness={0.5} metalness={0.0} />
       </mesh>
     </group>
   );

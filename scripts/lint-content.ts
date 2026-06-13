@@ -83,6 +83,8 @@ const LatheSpecSchema = z.object({
       readoutColor: z.string(),
       estopDiameter: z.number().positive(),
       estopColor: z.string(),
+      startButtonDiameter: z.number().positive(),
+      startButtonColor: z.string(),
     }),
     color: z.string(),
   }),
