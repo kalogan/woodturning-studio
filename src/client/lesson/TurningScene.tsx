@@ -1,19 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { WoodBlank } from '../wood/index.js';
 import { ToolMesh, PhysicsLoop } from '../scene/index.js';
 import { evaluateLesson } from './LessonEvaluator.js';
-import { getWoodSpeciesById } from '../../session/wood.js';
+import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
 import type { CurriculumLesson } from '../../session/index.js';
 import type { InputAdapter } from '../../input/types.js';
-import type { WoodState, PhysicsResult } from '../../core/types.js';
+import type { WoodState, PhysicsResult, SpeciesCutProfile } from '../../core/types.js';
 import type { RefObject } from 'react';
 import type { PoseContainer } from './useTurningSession.js';
 import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
-
-// TODO(W4): replace with per-lesson species driven by curriculum data
-const TEMP_SPECIES = 'cherry';
-const TEMP_VISUAL = getWoodSpeciesById(TEMP_SPECIES)?.visual;
 
 export interface TurningSceneProps {
   lesson: CurriculumLesson;
@@ -41,6 +37,17 @@ export function TurningScene({
   completed,
 }: TurningSceneProps) {
   const [, rerender] = useState(0);
+
+  // Resolve species visual + cut-profile ONCE per lesson (memoized — not per frame).
+  const woodVisual = useMemo(
+    () => getWoodSpeciesById(lesson.woodSpecies)?.visual,
+    [lesson.woodSpecies],
+  );
+
+  const cutProfile = useMemo<SpeciesCutProfile | undefined>(
+    () => getCuttingCoefficients(lesson.woodSpecies, lesson.tool) ?? undefined,
+    [lesson.woodSpecies, lesson.tool],
+  );
 
   useFrame(() => {
     const latest = adapter.getLatestPose();
@@ -83,13 +90,14 @@ export function TurningScene({
         woodState={woodState}
         length={0.3}
         radius={0.05}
-        {...(TEMP_VISUAL !== undefined ? { visual: TEMP_VISUAL } : {})}
+        {...(woodVisual !== undefined ? { visual: woodVisual } : {})}
       />
       <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
       <PhysicsLoop
         woodState={woodState}
         toolPose={poseContainer.pose}
         toolKind={lesson.tool}
+        cutProfile={cutProfile}
         onResult={handleResult}
       />
     </group>

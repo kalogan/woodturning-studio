@@ -3,6 +3,7 @@
   "schemaVersion": 1,
   "title": "Roughing: From Square to Round",
   "tool": "roughing-gouge",
+  "woodSpecies": "pine",
   "order": 1,
   "brief": "Mount the blank and use the roughing gouge to bring a square blank down to a cylinder. Focus on bevel contact — keep the bevel riding the wood at all times.",
   "successCriteria": {
