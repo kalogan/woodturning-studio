@@ -50,6 +50,11 @@
       "speedKnobDiameter": 0.036,
       "speedKnobColor": "#1a1a1a",
 
+      "speedDialScaleWidth": 0.068,
+      "speedDialScaleHeight": 0.068,
+      "speedDialArcColorLow": "#22aa44",
+      "speedDialArcColorHigh": "#cc4411",
+
       "fwdRevKnobDiameter": 0.022,
       "fwdRevKnobColor": "#1a1a1a",
 
