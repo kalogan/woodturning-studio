@@ -22,3 +22,10 @@ export type { EnvelopeParams, EnvelopeSchedule, ToneParams, NoiseParams } from '
 // Events dispatcher — the primary API for gameplay code
 export { emit } from './events.js';
 export type { SfxEvent } from './events.js';
+
+// Continuous graphs — ambient room tone + RPM-driven motor
+export { calcMotorParams, calcMotorT, startAmbient, startMotor, stopAmbient, stopMotor, updateMotor } from './continuous.js';
+export type { MotorParams } from './continuous.js';
+
+// AudioManager — mounts once in App.tsx (always-on, renders null)
+export { default as AudioManager } from './AudioManager.js';

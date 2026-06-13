@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
+import AudioManager from './audio/AudioManager.js';
 import { useSceneStore } from '../workshop/index.js';
 import { nextProximityZone, horizontalDistance } from '../workshop/index.js';
 import { useSessionStore } from '../session/index.js';
@@ -152,6 +153,9 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', position: 'relative' }}>
+      {/* ── Audio manager — always mounted, renders null, unlocks on first gesture ── */}
+      <AudioManager />
+
       {/* ── Single persistent Canvas — never conditionally unmounted ── */}
       <Canvas shadows camera={{ position: [0, 1.6, 2.5], fov: 75 }}>
         <ambientLight intensity={0.5} />
