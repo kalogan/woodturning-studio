@@ -1,5 +1,31 @@
 import type { ToolKind, ToolPose } from '../../core/types.js';
 
+// ─── Director tuning knobs ────────────────────────────────────────────────────
+//
+// TOOL_BASE_ROTATION — Euler [rx, ry, rz] in radians (XYZ order).
+//
+//   The tool geometry has its handle-to-tip axis along local +Y (tip at +Y end).
+//   A real turner holds the tool roughly horizontal with the tip angled slightly
+//   UP toward the spinning blank surface and the handle angled DOWN toward their
+//   body (+Z = operator side).
+//
+//   rotateX(+PI/2) maps +Y → -Z  (tip now points toward -Z = into the blank
+//                                   from the operator side)
+//   subtract 0.25 rad           → tilts tip upward ~14° from horizontal so the
+//                                   cutting edge reaches the blank surface rather
+//                                   than pointing straight at the rest bar
+//
+//   Net: the tool lies nearly horizontal across the rest, tip presented to the
+//   wood, handle angling back toward the operator and slightly downward.
+//   Tune rx to raise/lower the tip; tune ry to sweep the tip left/right.
+//
+const TOOL_BASE_ROTATION: [number, number, number] = [
+  Math.PI / 2 - 0.25, // ~1.32 rad — nearly horizontal, tip tilted up ~14°
+  0,
+  0,
+];
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface ToolMeshProps {
   toolKind: ToolKind;
   pose: ToolPose;
@@ -10,10 +36,17 @@ export function ToolMesh({ toolKind, pose }: ToolMeshProps) {
   const py = pose.position.y;
   const pz = pose.position.z;
 
+  // Compose pose technique-modulation angles ON TOP of the base orientation.
+  // pose.angleX/angleY are small (~±0.2 rad) and represent the turner adjusting
+  // bevel angle and sweep — they ride on top of the base frame established above.
+  const rx = TOOL_BASE_ROTATION[0] + pose.angleX;
+  const ry = TOOL_BASE_ROTATION[1] + pose.angleY;
+  const rz = TOOL_BASE_ROTATION[2];
+
   return (
     <group
       position={[px, py, pz]}
-      rotation={[pose.angleX, pose.angleY, 0]}
+      rotation={[rx, ry, rz]}
     >
       {/* Handle — warm brown wood */}
       <mesh position={[0, 0, 0]}>

@@ -3,6 +3,13 @@ import { useFrame } from '@react-three/fiber';
 import { WoodBlank } from '../wood/index.js';
 import { ToolMesh, PhysicsLoop } from '../scene/index.js';
 import { evaluateLesson } from './LessonEvaluator.js';
+import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
+import type { CurriculumLesson } from '../../session/index.js';
+import type { InputAdapter } from '../../input/types.js';
+import type { WoodState, PhysicsResult, SpeciesCutProfile } from '../../core/types.js';
+import type { RefObject } from 'react';
+import type { PoseContainer } from './useTurningSession.js';
+import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
 
 // ─── Director tuning knob ─────────────────────────────────────────────────────
 //
@@ -31,13 +38,33 @@ import { evaluateLesson } from './LessonEvaluator.js';
  * tune freely without touching physics or lathe files.
  */
 const RIG_WORLD_POSITION: [number, number, number] = [0.23, 1.10, 0.0];
-import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
-import type { CurriculumLesson } from '../../session/index.js';
-import type { InputAdapter } from '../../input/types.js';
-import type { WoodState, PhysicsResult, SpeciesCutProfile } from '../../core/types.js';
-import type { RefObject } from 'react';
-import type { PoseContainer } from './useTurningSession.js';
-import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
+
+// ─── Tool rest anchor (rig-local space) ───────────────────────────────────────
+//
+// TOOL_REST_ANCHOR — where the tool "sits" on the tool rest bar, expressed in
+// rig-local coordinates (origin = blank centre on spindle axis).
+//
+//   X = 0        — centred on the blank along the spindle axis (tune to slide
+//                  the contact point toward headstock/tailstock)
+//   Y = -0.01    — just below spindle-centre height; the base rotation aims the
+//                  tip up ~14° so it reaches the blank surface at radius 0.05 m
+//   Z = +0.07    — on the operator/+Z side, just beyond the blank's 0.05 m
+//                  radius (the tool rest bar is typically ~1–1.5× blank radius
+//                  in front of the centre line)
+//
+// The pose position offsets (±0.15 / ±0.05 / ±0.12 m) are added on top of this
+// anchor in ToolMesh, giving the player the feeling of moving the tool along the
+// rest and into/out of the cut.
+//
+// Tune Z to move the anchor closer or further from the blank.
+// Tune Y to raise or lower the rest height.
+//
+const TOOL_REST_ANCHOR: [number, number, number] = [
+  0,      // X — centred on blank (spindle axis)
+  -0.01,  // Y — slightly below spindle-centre (tip rotation aims up to blank surface)
+  0.07,   // Z — operator side, just forward of blank radius
+];
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface TurningSceneProps {
   lesson: CurriculumLesson;
@@ -128,7 +155,12 @@ export function TurningScene({
           {...(woodVisual !== undefined ? { visual: woodVisual } : {})}
         />
       </group>
-      <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
+      {/* Anchor the tool at the tool rest bar position (TOOL_REST_ANCHOR).
+          ToolMesh adds the pose position offset on top of this anchor, so the
+          player's mouse/pencil input moves the tool relative to the rest. */}
+      <group position={TOOL_REST_ANCHOR}>
+        <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
+      </group>
       <PhysicsLoop
         woodState={woodState}
         toolPose={poseContainer.pose}
