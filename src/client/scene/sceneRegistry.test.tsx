@@ -36,17 +36,27 @@ describe('sceneRegistry — completeness', () => {
   });
 });
 
-describe('sceneRegistry — invariant #1 (pointer-lock safety)', () => {
-  it('WORKSHOP_WALK and AT_LATHE share the same Scene3D component reference', () => {
-    // If these references differ, React will unmount/remount FPSCamera on every
-    // WALK ↔ AT_LATHE proximity transition, breaking pointer lock.
+describe('sceneRegistry — invariant #1 (proximity auto-lock design)', () => {
+  // AT_LATHE intentionally uses a fixed operator camera + free cursor
+  // (proximity auto-lock); the WALK↔AT_LATHE camera swap is by design.
+  // The OLD invariant (same Scene3D reference = preserve FPS pointer lock)
+  // is intentionally REVERSED: we now WANT FPSCamera to unmount when
+  // proximity triggers AT_LATHE, so pointer lock is released and the
+  // free cursor appears for clicking the START button + speed dial.
+
+  it('WORKSHOP_WALK has its own Scene3D (FPSCamera walk scene)', () => {
     expect(sceneRegistry.WORKSHOP_WALK.Scene3D).toBeDefined();
+  });
+
+  it('AT_LATHE has its own distinct Scene3D (fixed-camera operator stance)', () => {
     expect(sceneRegistry.AT_LATHE.Scene3D).toBeDefined();
-    expect(sceneRegistry.WORKSHOP_WALK.Scene3D).toBe(sceneRegistry.AT_LATHE.Scene3D);
+    // AT_LATHE intentionally uses a fixed operator camera + free cursor
+    // (proximity auto-lock); the WALK↔AT_LATHE camera swap is by design.
+    expect(sceneRegistry.AT_LATHE.Scene3D).not.toBe(sceneRegistry.WORKSHOP_WALK.Scene3D);
   });
 
   it('WORKSHOP_WALK and AT_LATHE have DIFFERENT Overlay references', () => {
-    // Different overlays are expected: walk hint vs. E-to-grab prompt
+    // Different overlays are expected: walk hint vs. E-to-grab / START prompt
     expect(sceneRegistry.WORKSHOP_WALK.Overlay).not.toBe(sceneRegistry.AT_LATHE.Overlay);
   });
 });
