@@ -4,8 +4,12 @@ import * as THREE from 'three';
 import type { WoodState } from '../../core/types.js';
 import type { WoodVisualParams } from '../../session/wood.js';
 import { visualToUniforms } from './woodVisual.js';
+import { useLatheStore } from '../../workshop/index.js';
 // vite-plugin-glsl imports the file as a string at build time
 import grainGlsl from './grain.glsl';
+
+// Pre-compute to avoid per-frame recomputation (no allocation — just a const).
+const TWO_PI = 2 * Math.PI;
 
 interface WoodBlankProps {
   woodState: WoodState;
@@ -168,7 +172,7 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
   // ── Per-frame: spin + geometry rebuild on profile change ─────────────────
   // Pre-allocate nothing here; buildLathePoints creates Vector2 only when profile
   // changes (which is acceptable — it's not a hot every-frame alloc).
-  useFrame(() => {
+  useFrame((_, dt) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
@@ -177,9 +181,10 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
     // "spin in place" (spinning about Z tumbled it end-over-end). The turning rig
     // lays this Y axis onto the lathe's horizontal spindle axis (see TurningScene),
     // so this reads as the wood spinning on the lathe.
-    // TODO(T2b-interaction): drive this rate from useLatheStore.currentRpm once the
-    // power/speed-dial interaction exists; constant default until then.
-    mesh.rotation.y += 0.05;
+    // Read currentRpm imperatively (no hook subscription → no per-frame React re-render).
+    // ω = (rpm / 60) * 2π rad/s; per frame: Δθ = ω * dt.
+    const currentRpm = useLatheStore.getState().currentRpm;
+    mesh.rotation.y += (currentRpm / 60) * TWO_PI * dt;
 
     // Detect profile change
     const prev = prevProfileRef.current;
