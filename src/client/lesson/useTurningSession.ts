@@ -19,6 +19,25 @@ const DEFAULT_POSE: ToolPose = {
   pressure: 0,
 };
 
+// ── Turning blank dimensions (shared by the physics woodState + the visual rig) ──
+//
+// The blank is mounted BETWEEN CENTERS, so it must span from the headstock drive-
+// center tip to ~30 mm short of the tailstock body — exactly like the AT_LATHE blank
+// in Lathe.tsx — instead of floating as a short stub. Derived from
+// content/lathe/jet-jwl-1642.json so the ends meet the rendered centers:
+//   bedLeftX             = -bed.length/2                              = -0.725
+//   headstockSpindleFaceX= bedLeftX + headstock.width(0.30) + noseLen(0.06) = -0.365
+//   driveCenterTipX      = + driveCenter.length(0.055) + centerPointLength(0.009) = -0.301
+//   liveCenterTipX       = driveCenterTipX + betweenCenters(1.0668)   =  0.7658
+//   tailstockLeftFaceX   = liveCenterTipX - liveCenter.length(0.055)  =  0.7108
+//   blankRightEndX       = tailstockLeftFaceX - 0.03 (clear of body)  =  0.6808
+//   BLANK_LENGTH         = blankRightEndX - driveCenterTipX           =  0.9818
+//   BLANK_CENTRE_X       = (driveCenterTipX + blankRightEndX) / 2     =  0.1899
+// Keep these in sync if the lathe JSON changes (same formula as Lathe.tsx defaultBlank).
+export const BLANK_LENGTH = 0.9818;  // m — tip-of-drive-center to ~30 mm short of tailstock
+export const BLANK_RADIUS = 0.05;    // m — 0.1 m (≈4") diameter stock
+export const BLANK_CENTRE_X = 0.1899; // m — world X midpoint of the span (rig centre)
+
 export interface TurningSessionResult {
   adapter: InputAdapter | null;
   adapterReady: boolean;
@@ -41,7 +60,7 @@ export interface TurningSessionResult {
 }
 
 export function useTurningSession(): TurningSessionResult {
-  const woodState = useRef<WoodState>(createWoodState(0.3, 0.05));
+  const woodState = useRef<WoodState>(createWoodState(BLANK_LENGTH, BLANK_RADIUS));
   const adapterRef = useRef<InputAdapter | null>(null);
   const poseContainer = useRef<PoseContainer>({ pose: DEFAULT_POSE });
   const runStateRef = useRef<LessonRunState>({

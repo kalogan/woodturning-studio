@@ -11,6 +11,7 @@ import type { InputAdapter } from '../../input/types.js';
 import type { WoodState, PhysicsResult, SpeciesCutProfile } from '../../core/types.js';
 import type { RefObject } from 'react';
 import type { PoseContainer } from './useTurningSession.js';
+import { BLANK_LENGTH, BLANK_RADIUS, BLANK_CENTRE_X } from './useTurningSession.js';
 import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
 
 // ─── Mouse cursor → work plane constants ─────────────────────────────────────
@@ -75,7 +76,7 @@ const _hit = new THREE.Vector3();
  * on the spindle axis (X axis, +Z = operator side).  FIRST-PASS DRAFT values;
  * tune freely without touching physics or lathe files.
  */
-const RIG_WORLD_POSITION: [number, number, number] = [0.23, 1.10, 0.0];
+const RIG_WORLD_POSITION: [number, number, number] = [BLANK_CENTRE_X, 1.10, 0.0];
 
 // ─── Tool rest anchor (rig-local space) ───────────────────────────────────────
 //
@@ -227,8 +228,8 @@ export function TurningScene({
       <group rotation={[0, 0, -Math.PI / 2]}>
         <WoodBlank
           woodState={woodState}
-          length={0.3}
-          radius={0.05}
+          length={BLANK_LENGTH}
+          radius={BLANK_RADIUS}
           {...(woodVisual !== undefined ? { visual: woodVisual } : {})}
         />
       </group>
