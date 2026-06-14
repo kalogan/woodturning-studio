@@ -52,12 +52,12 @@ const RACK_PEG_LENGTH = 0.06;
 
 const TOOL_KINDS: ToolKind[] = ['roughing-gouge', 'spindle-gouge', 'parting-tool'];
 
-/** X offsets for the 3 tool pegs relative to RACK_POS[0]. */
-const SLOT_OFFSETS_X: [number, number, number] = [
-  -RACK_TOOL_SPACING,
-  0,
-  RACK_TOOL_SPACING,
-];
+/** X offset for each tool peg relative to RACK_POS[0]. */
+const SLOT_OFFSET_X: Record<ToolKind, number> = {
+  'roughing-gouge': -RACK_TOOL_SPACING,
+  'spindle-gouge':  0,
+  'parting-tool':   RACK_TOOL_SPACING,
+};
 
 // ─── Per-rack-slot colour label ───────────────────────────────────────────────
 // Subtle colour band on the backing board behind each slot so the player can
@@ -174,8 +174,6 @@ function RackTool({ toolKind, posX, posY, posZ, onGrab }: RackToolProps) {
 // ── ToolRack ──────────────────────────────────────────────────────────────────
 
 export function ToolRack({ onGrab }: Props) {
-  const [rx, ry, rz] = RACK_POS;
-
   return (
     <group position={RACK_POS}>
       {/* ── Backing board ─────────────────────────────────────────────────── */}
@@ -185,8 +183,8 @@ export function ToolRack({ onGrab }: Props) {
       </mesh>
 
       {/* ── Colour-coded slot strips (subtle) ─────────────────────────────── */}
-      {TOOL_KINDS.map((kind, i) => (
-        <mesh key={kind} position={[SLOT_OFFSETS_X[i], 0, -0.001]}>
+      {TOOL_KINDS.map((kind) => (
+        <mesh key={kind} position={[SLOT_OFFSET_X[kind], 0, -0.001]}>
           <boxGeometry args={[RACK_TOOL_SPACING * 0.85, RACK_BOARD_H * 0.9, 0.002]} />
           <meshStandardMaterial color={SLOT_COLORS[kind]} roughness={1} metalness={0} transparent opacity={0.35} />
         </mesh>
@@ -199,10 +197,10 @@ export function ToolRack({ onGrab }: Props) {
       </mesh>
 
       {/* ── Per-slot pegs ─────────────────────────────────────────────────── */}
-      {TOOL_KINDS.map((kind, i) => (
+      {TOOL_KINDS.map((kind) => (
         <mesh
           key={`peg-${kind}`}
-          position={[SLOT_OFFSETS_X[i], 0.04, RACK_PEG_LENGTH / 2 + 0.009]}
+          position={[SLOT_OFFSET_X[kind], 0.04, RACK_PEG_LENGTH / 2 + 0.009]}
           rotation={[Math.PI / 2, 0, 0]}
         >
           <cylinderGeometry args={[RACK_PEG_RADIUS, RACK_PEG_RADIUS, RACK_PEG_LENGTH, 8]} />
@@ -211,11 +209,11 @@ export function ToolRack({ onGrab }: Props) {
       ))}
 
       {/* ── Hanging tools ─────────────────────────────────────────────────── */}
-      {TOOL_KINDS.map((kind, i) => (
+      {TOOL_KINDS.map((kind) => (
         <RackTool
           key={kind}
           toolKind={kind}
-          posX={SLOT_OFFSETS_X[i]}
+          posX={SLOT_OFFSET_X[kind]}
           posY={-0.01}
           posZ={RACK_PEG_LENGTH * 0.6}
           onGrab={onGrab}
