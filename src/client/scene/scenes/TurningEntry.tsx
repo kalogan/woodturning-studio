@@ -10,7 +10,7 @@
  * matching the original guard in App.tsx.
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Lighting, Room, Furniture } from '../../workshop/index.js';
@@ -43,8 +43,29 @@ const OPERATOR_CAM_TARGET: [number, number, number] = [0.23, 1.10, 0.0];
 /** Vertical FOV in degrees — narrower pulls in the lathe detail. */
 const OPERATOR_CAM_FOV = 60;
 
+// ─── Overhead view (press V to toggle) ───────────────────────────────────────
+// High and looking down over the blank — turners change sightline constantly to
+// judge roundness/progress. Kept angled (not straight top-down) so the cursor-
+// follow tool still tracks correctly through this camera. Tunable.
+const OVERHEAD_CAM_POS: [number, number, number] = [0.23, 2.30, 0.60];
+const OVERHEAD_CAM_TARGET: [number, number, number] = [0.23, 1.10, 0.0];
+const OVERHEAD_CAM_FOV = 64;
+
+interface CamPreset {
+  name: string;
+  pos: [number, number, number];
+  target: [number, number, number];
+  fov: number;
+}
+
+/** TURNING camera presets — cycle with the V key. Index 0 is the default. */
+const CAM_PRESETS: CamPreset[] = [
+  { name: 'Operator', pos: OPERATOR_CAM_POS, target: OPERATOR_CAM_TARGET, fov: OPERATOR_CAM_FOV },
+  { name: 'Overhead', pos: OVERHEAD_CAM_POS, target: OVERHEAD_CAM_TARGET, fov: OVERHEAD_CAM_FOV },
+];
+
 // Pre-allocated Three.js target so lookAt is NEVER called with a heap-allocation
-// on every render frame (it's called once in useEffect).
+// on every render frame (it's .set() in a preset-change effect, not per frame).
 const _camTarget = new THREE.Vector3(...OPERATOR_CAM_TARGET);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,15 +78,36 @@ export function TurningScene3D({ ctx }: Props) {
     runStateRef, handleEvalResult, setLastResult, completionResult,
   } = ctx;
 
-  // Ref to the camera so we can call lookAt once after mount (no per-frame alloc).
+  // Ref to the camera so we can reposition + lookAt on preset change (no per-frame alloc).
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const [camIdx, setCamIdx] = useState(0);
 
+  // V cycles the camera preset (operator ↔ overhead) while turning.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'v' || e.key === 'V') {
+        setCamIdx((i) => (i + 1) % CAM_PRESETS.length);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  // Apply the active preset (position + fov + look-at) whenever it changes.
   useEffect(() => {
     const cam = camRef.current;
     if (cam === null) return;
-    // _camTarget was pre-allocated above — zero heap cost here.
+    const preset = CAM_PRESETS[camIdx];
+    if (preset === undefined) return;
+    cam.position.set(preset.pos[0], preset.pos[1], preset.pos[2]);
+    cam.fov = preset.fov;
+    cam.updateProjectionMatrix();
+    // _camTarget was pre-allocated above — mutate in place, zero heap cost.
+    _camTarget.set(preset.target[0], preset.target[1], preset.target[2]);
     cam.lookAt(_camTarget);
-  }, []);
+  }, [camIdx]);
 
   return (
     <>
@@ -130,6 +172,23 @@ export function TurningOverlay({ ctx }: Props) {
           toolAngleDeg={toolAngleDeg}
         />
       )}
+      {/* View-toggle hint — turners change sightline often (press V). */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 12,
+          bottom: 12,
+          padding: '4px 10px',
+          borderRadius: 6,
+          background: 'rgba(0,0,0,0.45)',
+          color: '#e8e2d0',
+          font: '12px system-ui, sans-serif',
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        Press <b>V</b> to change view (operator / overhead)
+      </div>
     </>
   );
 }
