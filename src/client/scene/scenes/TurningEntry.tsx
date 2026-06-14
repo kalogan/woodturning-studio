@@ -17,6 +17,7 @@ import { Lighting, Room, Furniture } from '../../workshop/index.js';
 import { Lathe } from '../../lathe/index.js';
 import { TurningScene } from '../../lesson/index.js';
 import { InputToggle, CoachingOverlay } from '../../ui/index.js';
+import { useSettingsStore } from '../../ui/settingsStore.js';
 import type { SceneCtx } from '../sceneCtx.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
@@ -109,6 +110,9 @@ export function TurningScene3D({ ctx }: Props) {
 export function TurningOverlay({ ctx }: Props) {
   const { lesson, inputSource, setInputSource, cameraAvailable, lastResult, woodState, toolAngleDeg } = ctx;
 
+  // Gate CoachingOverlay on the gameplay.coachingOverlay setting.
+  const coachingOverlayEnabled = useSettingsStore((s) => s.gameplay.coachingOverlay);
+
   if (lesson === null) return null;
 
   return (
@@ -118,12 +122,14 @@ export function TurningOverlay({ ctx }: Props) {
         onSwitch={setInputSource}
         cameraAvailable={cameraAvailable}
       />
-      <CoachingOverlay
-        lesson={lesson}
-        lastResult={lastResult}
-        woodState={woodState.current}
-        toolAngleDeg={toolAngleDeg}
-      />
+      {coachingOverlayEnabled && (
+        <CoachingOverlay
+          lesson={lesson}
+          lastResult={lastResult}
+          woodState={woodState.current}
+          toolAngleDeg={toolAngleDeg}
+        />
+      )}
     </>
   );
 }

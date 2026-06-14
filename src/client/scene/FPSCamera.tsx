@@ -81,6 +81,7 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
   // imports from src/client (dependency-cruiser constraint).
   const controls = useSettingsStore((s) => s.controls);
   const cameraSettings = useSettingsStore((s) => s.camera);
+  const fov = useSettingsStore((s) => s.display.fov);
 
   // Sync config whenever settings change. Effect runs after every render
   // where controls or cameraSettings differ (Zustand selector stable-refs).
@@ -93,6 +94,18 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
       invertY:         cameraSettings.invertY,
     });
   }, [controls, cameraSettings]);
+
+  // ── FOV effect — applied in an effect (NOT per-frame) ─────────────────────
+  // Only the walk (FPS) camera is affected; AT_LATHE / TURNING cameras are
+  // fixed-framing PerspectiveCameras in their own scene entries.
+  useEffect(() => {
+    // camera here is the R3F default camera (walk camera only — FPSCamera is
+    // only mounted in WORKSHOP_WALK state).
+    if (!('fov' in camera)) return;
+    const perspCam = camera as THREE.PerspectiveCamera;
+    perspCam.fov = fov;
+    perspCam.updateProjectionMatrix();
+  }, [camera, fov]);
 
   useEffect(() => {
     // Read latest settings at mount time (not in deps — this effect runs once).
