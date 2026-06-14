@@ -86,6 +86,31 @@ describe('setupStore', () => {
     expect(useSetupStore.getState().isComplete()).toBe(true);
   });
 
+  it('unmount removes a completed step and clears the hint', () => {
+    const s = useSetupStore.getState();
+    s.grab(spur.accessoryId);
+    s.tryMount('headstock-spindle');
+    // spur drive is now seated
+    expect(useSetupStore.getState().completedStepIds).toContain(spur.id);
+    s.setHint('some stale hint');
+    // unmount it
+    useSetupStore.getState().unmount(spur.id);
+    const after = useSetupStore.getState();
+    expect(after.completedStepIds).not.toContain(spur.id);
+    expect(after.hint).toBeNull();
+    // carrying is untouched (was null after mount — stays null)
+    expect(after.carrying).toBeNull();
+  });
+
+  it('unmount of a non-existent step is a no-op', () => {
+    const s = useSetupStore.getState();
+    s.grab(spur.accessoryId);
+    s.tryMount('headstock-spindle');
+    const before = useSetupStore.getState().completedStepIds.length;
+    useSetupStore.getState().unmount('does-not-exist');
+    expect(useSetupStore.getState().completedStepIds).toHaveLength(before);
+  });
+
   it('reset returns to an un-set-up lathe', () => {
     const s = useSetupStore.getState();
     s.grab(spur.accessoryId);

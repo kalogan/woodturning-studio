@@ -31,6 +31,12 @@ interface SetupStore {
    * anything else sets a coaching hint and does NOT mount.
    */
   tryMount: (point: MountPoint) => MountResult;
+  /**
+   * Remove a previously mounted step — the part comes back off (back to bench).
+   * `carrying` is left unchanged; the player must walk back and re-grab.
+   * Clears any transient hint.
+   */
+  unmount: (stepId: string) => void;
   /** Set / clear the transient coaching hint. */
   setHint: (hint: string | null) => void;
   /** True once every setup step is complete. */
@@ -97,6 +103,14 @@ export const useSetupStore = create<SetupStore>((set, get) => ({
     const hint = decoy?.wrongReason ?? "That doesn't belong on the lathe for this job.";
     set({ hint });
     return { kind: 'wrong-accessory', message: hint };
+  },
+
+  unmount: (stepId) => {
+    const { completedStepIds } = get();
+    set({
+      completedStepIds: completedStepIds.filter((id) => id !== stepId),
+      hint: null,
+    });
   },
 
   setHint: (hint) => {
