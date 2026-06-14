@@ -123,18 +123,20 @@ export function Lathe({
   //
   //   BLANK_SIDE       square cross-section side length (m) — chunky 3×3" nominal stock
   const BLANK_SIDE = 0.12;
-  //   BLANK_CLEARANCE  gap (m) left at the TAILSTOCK end so the blank cannot clip the
-  //                    live-center body or tailstock face.  The drive-center end is a
-  //                    spur so it penetrates the wood — no clearance needed there.
-  const BLANK_CLEARANCE = 0.015; // 15 mm gap at tailstock end
+  //   BLANK_TAILSTOCK_GAP  gap (m) between the blank's right end and the TAILSTOCK
+  //                    BODY's left face, so the square stock can't clip into the
+  //                    tailstock.  Anchor to the body face (tailstockLeftFaceX, computed
+  //                    above) — NOT the live-center tip, which sits close to / inside the
+  //                    tailstock in this model.  The drive-center (left) end is a spur
+  //                    that penetrates the wood, so no gap is needed there.
+  const BLANK_TAILSTOCK_GAP = 0.03; // 30 mm clear of the tailstock body face
   //
-  // TODO (future): let the player slide the tailstock in toward the headstock to
-  //   clamp shorter blanks.  For now the blank is sized to fit the full between-
-  //   centers distance (minus clearance) so it always reads as "mounted and ready".
-  const blankLength  = betweenCenters - BLANK_CLEARANCE;
-  // Centre the blank: drive-center end is flush with driveCenterTipX; tailstock end
-  // stops BLANK_CLEARANCE short of liveCenterTipX.
-  const blankCentreX = driveCenterTipX + blankLength / 2;
+  // TODO (future): let the player slide the tailstock in toward the headstock to clamp
+  //   shorter blanks; then this gap closes and the live center engages the blank's end.
+  const blankRightEndX = tailstockLeftFaceX - BLANK_TAILSTOCK_GAP;
+  // Left end flush with the drive-center tip; right end stops clear of the tailstock.
+  const blankLength  = blankRightEndX - driveCenterTipX;
+  const blankCentreX = (driveCenterTipX + blankRightEndX) / 2;
   // Half-side used for tool-rest Z clearance (conservative — corner reach = BLANK_SIDE*√2/2).
   const blankHalfSide = BLANK_SIDE / 2;
 
