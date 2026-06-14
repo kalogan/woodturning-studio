@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FPSController, rightVectorXZ } from '../../input/fpsController.js';
+import { useSettingsStore } from '../ui/settingsStore.js';
 
 // ── Movement constants ─────────────────────────────────────────────────────
 const MOVE_SPEED = 1.4;  // metres per second
@@ -75,8 +76,34 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
   // Track whether pointer is locked so we skip movement when not focused.
   const pointerLockedRef = useRef(false);
 
+  // ── Push settingsStore config into the controller whenever settings change ─
+  // Config is injected here (client → input direction) so src/input never
+  // imports from src/client (dependency-cruiser constraint).
+  const controls = useSettingsStore((s) => s.controls);
+  const cameraSettings = useSettingsStore((s) => s.camera);
+
+  // Sync config whenever settings change. Effect runs after every render
+  // where controls or cameraSettings differ (Zustand selector stable-refs).
   useEffect(() => {
+    const ctrl = controllerRef.current;
+    if (ctrl === null) return;
+    ctrl.setConfig({
+      keymap:          controls.keymap,
+      lookSensitivity: cameraSettings.lookSensitivity,
+      invertY:         cameraSettings.invertY,
+    });
+  }, [controls, cameraSettings]);
+
+  useEffect(() => {
+    // Read latest settings at mount time (not in deps — this effect runs once).
+    const { controls: initControls, camera: initCam } = useSettingsStore.getState();
     const ctrl = new FPSController();
+    // Apply current settings immediately on construction.
+    ctrl.setConfig({
+      keymap:          initControls.keymap,
+      lookSensitivity: initCam.lookSensitivity,
+      invertY:         initCam.invertY,
+    });
     ctrl.start();
     controllerRef.current = ctrl;
 
