@@ -6,7 +6,19 @@
  */
 
 // Bus lifecycle
-export { getContext, getMasterGain, unlock, setMuted, setVolume, isMuted, getVolume } from './audioBus.js';
+export {
+  getContext,
+  getMasterGain,
+  getChannelGain,
+  unlock,
+  setMuted,
+  setVolume,
+  isMuted,
+  getVolume,
+  setChannelVolume,
+  getChannelVolume,
+} from './audioBus.js';
+export type { AudioChannel } from './audioBus.js';
 
 // Settings store
 export { useAudioSettings } from './audioSettings.js';

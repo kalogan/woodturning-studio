@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import AudioManager from './audio/AudioManager.js';
 import { useSceneStore } from '../workshop/index.js';
@@ -11,6 +11,8 @@ import type { PhysicsResult } from '../core/types.js';
 import { sceneRegistry } from './scene/sceneRegistry.js';
 import { escapeBtnStyle } from './scene/sharedStyles.js';
 import type { SceneCtx } from './scene/sceneCtx.js';
+import { SettingsMenu } from './ui/SettingsMenu.js';
+import { useSettingsStore } from './ui/settingsStore.js';
 
 // ── Tool-rest world XZ position ────────────────────────────────────────────
 // Derived from content/lathe/jet-jwl-1642.json + Lathe.tsx layout math.
@@ -55,6 +57,20 @@ export default function App() {
 
   const [completionResult, setCompletionResult] = useState<EvalResult | null>(null);
   const [lastResult, setLastResult] = useState<PhysicsResult | null>(null);
+
+  // ── Settings menu: Esc key toggles the modal ───────────────────────────────
+  // A global keydown listener at the App level; minimal — just toggle().
+  // Esc also releases pointer lock (browser default), which is desirable —
+  // the menu needs free cursor movement.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        useSettingsStore.getState().toggle();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); };
+  }, []);
 
   // ── FPS walk + proximity ────────────────────────────────────────────────
   // Player position stored as scalars in refs — no per-frame object allocation.
@@ -155,6 +171,9 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', position: 'relative' }}>
       {/* ── Audio manager — always mounted, renders null, unlocks on first gesture ── */}
       <AudioManager />
+
+      {/* ── Settings modal — always mounted, visible only when isOpen=true ── */}
+      <SettingsMenu />
 
       {/* ── Single persistent Canvas — never conditionally unmounted ── */}
       <Canvas shadows camera={{ position: [0, 1.6, 2.5], fov: 75 }}>
