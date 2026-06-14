@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { WoodBlank } from '../wood/index.js';
 import { useLatheStore } from '../../workshop/index.js';
 import { ToolMesh, PhysicsLoop } from '../scene/index.js';
-import { cursorToWorkPlane } from '../scene/cursorToWorkPlane.js';
 import { evaluateLesson } from './LessonEvaluator.js';
 import { getWoodSpeciesById, getCuttingCoefficients } from '../../session/wood.js';
 import type { CurriculumLesson } from '../../session/index.js';
@@ -33,26 +32,22 @@ import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
 //   mouse path is always in "bevel contact" by default — reduces friction for new
 //   players who don't yet understand bevel riding.
 //
-// MOUSE_ANGLE_X_NDC_SCALE — additional angle nudge per NDC-Y unit so the bevel
-//   angle tracks the cursor height subtly.  Set to 0 to disable.
 //
-const MOUSE_WORK_PLANE_Z = 0.0;        // TUNABLE — world Z of the work plane
+const MOUSE_WORK_PLANE_Z = 0.07;       // TUNABLE — world Z of the tool/work plane (≈ tool-rest depth, matches TOOL_REST_ANCHOR Z)
 const MOUSE_ANGLE_X_DEFAULT = 0.3;     // TUNABLE — default bevel angle (rad)
-const MOUSE_ANGLE_X_NDC_SCALE = 0.0;  // TUNABLE — bevel-angle modulation with cursor Y
 
-// ─── Pre-allocated work-plane params object (mutated per-frame) ──────────────
+// ─── Pre-allocated raycast scratch (module scope — no per-frame heap alloc) ───
 //
-// tanHalfFovH and tanHalfFovV are computed from the camera each frame using
-// the camera's current fov and aspect — this handles canvas resizes correctly
-// without re-allocating.  The object itself is allocated once at module load.
+// We raycast the cursor through the REAL camera (which is pitched down ~29°)
+// onto the vertical work plane Z = MOUSE_WORK_PLANE_Z. THREE.Raycaster uses the
+// camera's full orientation, so the hit lands exactly under the cursor — unlike
+// a hand-rolled axis-aligned ray, which ignored the pitch and placed the tool
+// well above the cursor.
 //
-const _wpp = {
-  camX: 0, camY: 0, camZ: 0,
-  tanHalfFovH: 0, tanHalfFovV: 0,
-  workPlaneZ: MOUSE_WORK_PLANE_Z,
-  rigWorldX: 0, rigWorldY: 0,
-  toolRestAnchorY: 0,
-};
+const _ray = new THREE.Raycaster();
+const _workPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -MOUSE_WORK_PLANE_Z);
+const _ptr = new THREE.Vector2();
+const _hit = new THREE.Vector3();
 
 // ─── Director tuning knob ─────────────────────────────────────────────────────
 //
@@ -159,40 +154,25 @@ export function TurningScene({
     useLatheStore.getState().tick(dt);
 
     if (adapter.source === 'mouse') {
-      // ── Mouse path: raycast cursor onto the lathe work plane ────────────────
-      //
-      // Populate the pre-allocated params object with the camera's current state
-      // (handles canvas resizes) and the rig geometry.  No heap allocation.
-      //
-      // tanHalfFovH/V are recomputed each frame from camera.fov + camera.aspect
-      // because the canvas can resize.  computeTanHalfFov is pure arithmetic.
-      // Inline the tan(halfFov) computation directly into _wpp — avoids the
-      // intermediate { tanHalfFovV, tanHalfFovH } object (zero heap).
-      // The TURNING scene always uses a PerspectiveCamera (makeDefault in TurningEntry.tsx),
-      // so the cast is safe.  We guard against the base-class absence of fov/aspect.
-      const perspCam = camera as THREE.PerspectiveCamera;
-      _wpp.camX = perspCam.position.x;
-      _wpp.camY = perspCam.position.y;
-      _wpp.camZ = perspCam.position.z;
-      _wpp.tanHalfFovV = Math.tan((perspCam.fov * Math.PI) / 180 / 2);
-      _wpp.tanHalfFovH = _wpp.tanHalfFovV * perspCam.aspect;
-      _wpp.rigWorldX = RIG_WORLD_POSITION[0];
-      _wpp.rigWorldY = RIG_WORLD_POSITION[1];
-      _wpp.toolRestAnchorY = TOOL_REST_ANCHOR[1];
-
-      const hit = cursorToWorkPlane(pointer.x, pointer.y, _wpp);
+      // ── Mouse path: raycast cursor through the REAL camera onto the work plane ──
+      // setFromCamera uses the camera's full transform (position + the ~29° downward
+      // pitch + fov + aspect), so the hit lands exactly under the cursor on the
+      // Z = MOUSE_WORK_PLANE_Z plane (≈ the tool-rest depth).
+      _ptr.set(pointer.x, pointer.y);
+      _ray.setFromCamera(_ptr, camera);
+      const hit = _ray.ray.intersectPlane(_workPlane, _hit);
       if (hit !== null) {
         // Mutate the existing pose in place — no new object (constraint §3).
+        // pose.z = station along the blank (world X, relative to the rig centre);
+        // pose.y = tool-tip height above the spindle axis. ToolMesh (cursorFollowMode)
+        // renders the tool body at (pose.z, pose.y) so its CENTRE sits exactly under
+        // the cursor; the contact gate in PhysicsLoop reads the same pose.z/pose.y.
         const p = poseContainer.pose;
-        p.position.x = hit.posX;
-        p.position.y = hit.posY;
-        p.position.z = hit.posZ;
-        p.angleX = MOUSE_ANGLE_X_DEFAULT + pointer.y * MOUSE_ANGLE_X_NDC_SCALE;
-        // angleY and pressure are preserved from the previous frame
-        // (pressure is managed by mousedown/mouseup in MouseAdapter).
-        //
-        // Pull the latest pressure from the adapter's pose — the adapter still
-        // tracks mousedown/mouseup for pressure even though we override position.
+        p.position.x = 0;
+        p.position.z = _hit.x - RIG_WORLD_POSITION[0];
+        p.position.y = _hit.y - RIG_WORLD_POSITION[1] - TOOL_REST_ANCHOR[1];
+        p.angleX = MOUSE_ANGLE_X_DEFAULT;
+        // Pressure (mousedown/up) + angleY still come from the adapter.
         const adapterPose = adapter.getLatestPose();
         if (adapterPose !== null) {
           p.pressure = adapterPose.pressure;
@@ -258,7 +238,11 @@ export function TurningScene({
           (Disembodied gripping-hands removed per director — they read as awful;
           a proper arm-anchored hand pass is deferred.) */}
       <group position={TOOL_REST_ANCHOR}>
-        <ToolMesh toolKind={lesson.tool} pose={poseContainer.pose} />
+        <ToolMesh
+          toolKind={lesson.tool}
+          pose={poseContainer.pose}
+          cursorFollowMode={adapter.source === 'mouse'}
+        />
       </group>
       <PhysicsLoop
         woodState={woodState}
