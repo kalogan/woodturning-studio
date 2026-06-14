@@ -10,11 +10,27 @@ const BEVEL_THRESHOLD: Record<ToolKind, number> = {
   'parting-tool': 0.26,     // ~15°
 };
 
-/** Max depth of cut per tick in meters (at full pressure, correct angle). */
+/**
+ * Max depth of cut per tick in meters (at full pressure, correct angle, dt=0.016 s).
+ *
+ * DIRECTOR TUNING: These values control how FAST the tool removes material.
+ * Lower = more gradual / more satisfying shaving feel.
+ * Higher = faster / more aggressive removal.
+ *
+ * Target feel: at pressure ≈ 0.8 and ideal RPM, the square corner of a fresh
+ * blank (corner protrudes ≈ 0.021 m above the final cylinder) rounds over in
+ * ≈ 1–2 seconds of held contact.  Derivation:
+ *   corner_height = radius × (√2 − 1) ≈ 0.05 × 0.414 = 0.021 m
+ *   frames_at_60fps = 1.5 s × 60 = 90 frames
+ *   depth_needed_per_frame = 0.021 / 90 ≈ 0.000233 m  (at pressure=0.8)
+ *   MAX_CUT_DEPTH = depth_per_frame / pressure = 0.000233 / 0.8 ≈ 0.00029 → 0.0003
+ *
+ * Previously: roughing=0.004, spindle=0.002, parting=0.003 (≈13× too fast).
+ */
 const MAX_CUT_DEPTH: Record<ToolKind, number> = {
-  'roughing-gouge': 0.004,
-  'spindle-gouge': 0.002,
-  'parting-tool': 0.003,
+  'roughing-gouge': 0.0003,   // TUNABLE — was 0.004; rounds a square corner in ~1-2 s
+  'spindle-gouge':  0.00015,  // TUNABLE — was 0.002; detail tool, finer removal
+  'parting-tool':   0.000225, // TUNABLE — was 0.003; narrow kerf, medium rate
 };
 
 /**
