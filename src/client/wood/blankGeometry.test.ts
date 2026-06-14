@@ -124,9 +124,9 @@ describe('buildRing at t=0 (pure square)', () => {
   it('all vertices lie on the square boundary max(|x|,|z|) ≈ R', () => {
     const ring = buildRing(R, R, Y, 0, N);
     for (let k = 0; k < N; k++) {
-      const x = ring[k * 3];
-      const z = ring[k * 3 + 2];
-      const maxCoord = Math.max(Math.abs(x!), Math.abs(z!));
+      const x = Number(ring[k * 3]);
+      const z = Number(ring[k * 3 + 2]);
+      const maxCoord = Math.max(Math.abs(x), Math.abs(z));
       expect(maxCoord).toBeCloseTo(R, 5);
     }
   });
@@ -135,8 +135,8 @@ describe('buildRing at t=0 (pure square)', () => {
     // k=4 out of 32 → θ = (4/32)*2π = π/4
     const ring = buildRing(R, R, Y, 0, N);
     const k = 4; // 4/32 * 2π = π/4
-    const x = ring[k * 3]!;
-    const z = ring[k * 3 + 2]!;
+    const x = Number(ring[k * 3]);
+    const z = Number(ring[k * 3 + 2]);
     const dist = Math.sqrt(x * x + z * z);
     expect(dist).toBeCloseTo(Math.SQRT2 * R, 5);
   });
@@ -153,8 +153,8 @@ describe('buildRing at t=1 (pure circle)', () => {
   it('all vertices are at distance curR from axis', () => {
     const ring = buildRing(origR, curR, Y, 1, N);
     for (let k = 0; k < N; k++) {
-      const x = ring[k * 3]!;
-      const z = ring[k * 3 + 2]!;
+      const x = Number(ring[k * 3]);
+      const z = Number(ring[k * 3 + 2]);
       const dist = Math.sqrt(x * x + z * z);
       expect(dist).toBeCloseTo(curR, 5);
     }
@@ -187,7 +187,7 @@ describe('buildBlankBuffers', () => {
   it('all vertex positions are finite', () => {
     const { positions } = buildBlankBuffers(origProfile, curProfile, length);
     for (let i = 0; i < positions.length; i++) {
-      expect(Number.isFinite(positions[i]!)).toBe(true);
+      expect(Number.isFinite(Number(positions[i]))).toBe(true);
     }
   });
 
@@ -196,22 +196,23 @@ describe('buildBlankBuffers', () => {
     const maxIdx = stations * N + 1; // last valid vertex index
     const { indices } = buildBlankBuffers(origProfile, curProfile, length, N);
     for (let i = 0; i < indices.length; i++) {
-      expect(indices[i]!).toBeGreaterThanOrEqual(0);
-      expect(indices[i]!).toBeLessThanOrEqual(maxIdx);
+      const idx = Number(indices[i]);
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(idx).toBeLessThanOrEqual(maxIdx);
     }
   });
 
   it('headstock cap centre y ≈ -length/2', () => {
     const N = RING_SEGMENTS;
     const { positions } = buildBlankBuffers(origProfile, curProfile, length, N);
-    const headCapY = positions[(stations * N) * 3 + 1]!;
+    const headCapY = Number(positions[(stations * N) * 3 + 1]);
     expect(headCapY).toBeCloseTo(-length / 2, 6);
   });
 
   it('tailstock cap centre y ≈ +length/2', () => {
     const N = RING_SEGMENTS;
     const { positions } = buildBlankBuffers(origProfile, curProfile, length, N);
-    const tailCapY = positions[(stations * N + 1) * 3 + 1]!;
+    const tailCapY = Number(positions[(stations * N + 1) * 3 + 1]);
     expect(tailCapY).toBeCloseTo(length / 2, 6);
   });
 
@@ -221,8 +222,8 @@ describe('buildBlankBuffers', () => {
     for (let i = 0; i < stations; i++) {
       for (let k = 0; k < N; k++) {
         const base = (i * N + k) * 3;
-        const x = positions[base]!;
-        const z = positions[base + 2]!;
+        const x = Number(positions[base]);
+        const z = Number(positions[base + 2]);
         const maxCoord = Math.max(Math.abs(x), Math.abs(z));
         expect(maxCoord).toBeCloseTo(R, 5);
       }
@@ -238,8 +239,8 @@ describe('buildBlankBuffers', () => {
     for (let i = 0; i < stations; i++) {
       for (let k = 0; k < N; k++) {
         const base = (i * N + k) * 3;
-        const x = positions[base]!;
-        const z = positions[base + 2]!;
+        const x = Number(positions[base]);
+        const z = Number(positions[base + 2]);
         const dist = Math.sqrt(x * x + z * z);
         expect(dist).toBeCloseTo(curR, 4);
       }

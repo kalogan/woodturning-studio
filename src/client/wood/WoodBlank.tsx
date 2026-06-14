@@ -8,6 +8,7 @@ import { useLatheStore } from '../../workshop/index.js';
 import { visualSpinRevPerSec } from '../lathe/spinRate.js';
 // vite-plugin-glsl imports the file as a string at build time
 import grainGlsl from './grain.glsl';
+import { buildBlankBuffers, RING_SEGMENTS } from './blankGeometry.js';
 
 // Pre-compute to avoid per-frame recomputation (no allocation — just a const).
 const TWO_PI = 2 * Math.PI;
@@ -19,8 +20,6 @@ interface WoodBlankProps {
   /** Per-species visual params. Falls back to cherry-ish defaults if omitted. */
   visual?: WoodVisualParams;
 }
-
-const LATHE_SEGMENTS = 40;
 
 // ── Fallback visual (used when no species is specified) ───────────────────────
 const DEFAULT_VISUAL: WoodVisualParams = {
@@ -57,27 +56,42 @@ const FRAG_COLOR_REPLACEMENT = /* glsl */ `
 diffuseColor = vec4(computeWoodColor(v_localPos), opacity);
 `;
 
-// ── Geometry helpers ──────────────────────────────────────────────────────────
+// ── Geometry builder ──────────────────────────────────────────────────────────
 
-function buildLathePoints(
-  profile: Float32Array,
+/**
+ * Creates a THREE.BufferGeometry whose cross-section morphs SQUARE → ROUND
+ * per station, driven by how much material has been removed from each station.
+ *
+ * At a fresh blank (no cuts): profile == originalProfile → removed=0 → t=0
+ * → every station is a pure square cross-section.
+ *
+ * As the player roughs a section: radius drops, t rises toward 1, cross-section
+ * interpolates toward a circle of radius currentR.
+ */
+function buildBlankGeometry(
+  originalProfile: Float32Array,
+  currentProfile: Float32Array,
   length: number,
-): THREE.Vector2[] {
-  const stations = profile.length;
-  const points: THREE.Vector2[] = [];
-  for (let i = 0; i < stations; i++) {
-    const r = profile[i] ?? 0;
-    const z = (i / (stations - 1)) * length - length / 2;
-    points.push(new THREE.Vector2(r, z));
-  }
-  return points;
+): THREE.BufferGeometry {
+  const { positions, indices } = buildBlankBuffers(
+    originalProfile,
+    currentProfile,
+    length,
+    RING_SEGMENTS,
+  );
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  geo.computeVertexNormals();
+  return geo;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const geometryRef = useRef<THREE.LatheGeometry | null>(null);
+  const geometryRef = useRef<THREE.BufferGeometry | null>(null);
   const prevProfileRef = useRef<Float32Array | null>(null);
 
   // ── Build the custom material once (never re-created unless disposed) ──────
@@ -160,35 +174,33 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
     uniforms.u_tearout.value = Math.min(maxT, 1.0);
   }, [woodState.tearout, uniforms]);
 
-  // ── Initial geometry ──────────────────────────────────────────────────────
+  // ── Initial geometry (square stock — no cuts yet) ─────────────────────────
+  // Uses the custom square→round BufferGeometry. At a fresh blank,
+  // profile == originalProfile → removed=0 → t=0 → pure square cross-section.
   const initialGeometry = useMemo(() => {
-    const points = buildLathePoints(woodState.profile, length);
-    const geo = new THREE.LatheGeometry(points, LATHE_SEGMENTS);
-    geo.computeVertexNormals();
+    const geo = buildBlankGeometry(woodState.originalProfile, woodState.profile, length);
     geometryRef.current = geo;
     prevProfileRef.current = new Float32Array(woodState.profile);
     return geo;
-  }, []); // Geometry rebuilt each frame when profile changes (see useFrame)
+  }, []); // Geometry rebuilt in useFrame when profile changes; initial build only
 
   // ── Per-frame: spin + geometry rebuild on profile change ─────────────────
-  // Pre-allocate nothing here; buildLathePoints creates Vector2 only when profile
-  // changes (which is acceptable — it's not a hot every-frame alloc).
+  // The geometry rebuild allocates (acceptable — only on profile change, not
+  // every frame). The spin path has zero per-frame allocation.
   useFrame((_, dt) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    // Spin in place about the blank's own length/symmetry axis. LatheGeometry
-    // revolves the profile around Y, so Y IS the long axis — spinning about Y is
-    // "spin in place" (spinning about Z tumbled it end-over-end). The turning rig
-    // lays this Y axis onto the lathe's horizontal spindle axis (see TurningScene),
-    // so this reads as the wood spinning on the lathe.
+    // Spin in place about the blank's own length/symmetry axis. The custom
+    // geometry lays the length along Y (same axis convention as old LatheGeometry),
+    // so spinning about Y reads as the wood spinning on the lathe.
     // Read rpm imperatively (no hook subscription → no per-frame React re-render).
     // Use the COMPRESSED visual spin rate (not literal rpm/60) so the spin doesn't
     // alias/wagon-wheel at 60fps and stays monotonic with rpm — see lathe/spinRate.ts.
     const store = useLatheStore.getState();
     mesh.rotation.y += visualSpinRevPerSec(store.currentRpm, store.maxRpm) * TWO_PI * dt;
 
-    // Detect profile change
+    // Detect profile change (same logic as before)
     const prev = prevProfileRef.current;
     const cur = woodState.profile;
     let changed = false;
@@ -204,9 +216,9 @@ export function WoodBlank({ woodState, length, visual }: WoodBlankProps) {
     }
 
     if (changed) {
-      const points = buildLathePoints(cur, length);
-      const newGeo = new THREE.LatheGeometry(points, LATHE_SEGMENTS);
-      newGeo.computeVertexNormals();
+      // Rebuild the square→round geometry with the updated profile.
+      // Dispose old geometry to free GPU memory before swapping.
+      const newGeo = buildBlankGeometry(woodState.originalProfile, cur, length);
 
       if (geometryRef.current) {
         geometryRef.current.dispose();
