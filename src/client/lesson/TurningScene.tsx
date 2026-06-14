@@ -177,6 +177,7 @@ export function TurningScene({
         woodState={woodState}
         toolPose={poseContainer.pose}
         toolKind={lesson.tool}
+        rpm={useLatheStore.getState().currentRpm}
         cutProfile={cutProfile}
         onResult={handleResult}
       />
