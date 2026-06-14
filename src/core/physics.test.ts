@@ -125,19 +125,66 @@ describe('SpeciesCutProfile — golden scenario', () => {
     //   dt:          0.016 (one 60fps frame)
     //   cutProfile:  { cutRate: 0.8, tearout: 1, catch: 1 }
     //
-    // Per tick: depth = min(MAX_CUT_DEPTH * 0.5 * (0.016/0.016) * 0.8, currentRadius)
-    //   MAX_CUT_DEPTH['roughing-gouge'] = 0.0003
-    //         = min(0.0003 * 0.5 * 1 * 0.8, currentRadius)
-    //         = min(0.00012, currentRadius)
-    // Starting radius = 0.05; each of 10 ticks removes 0.00012 (well within radius).
-    // Final = 0.05 - 10 * 0.00012 = 0.04880
+    // Per tick: depth = min(MAX_CUT_DEPTH * 0.5 * (0.016/0.016) * cutRate^EXPONENT, currentRadius)
+    //   MAX_CUT_DEPTH['roughing-gouge'] = 0.000075  (real-world-pace slice: ~4× reduction)
+    //   HARDNESS_INFLUENCE_EXPONENT = 1.0 → cutRate^1 = 0.8
+    //         = min(0.000075 * 0.5 * 1 * 0.8, currentRadius)
+    //         = min(0.000030, currentRadius)
+    // Starting radius = 0.05; each of 10 ticks removes 0.000030 (well within radius).
+    // Final = 0.05 - 10 * 0.000030 = 0.04970
     const profile: SpeciesCutProfile = { cutRate: 0.8, tearout: 1, catch: 1 };
     const state = createWoodState(0.3, 0.05);
     const pose = { position: { x: 0, y: 0, z: 0 }, angleX: 0.3, angleY: 0, pressure: 0.5 };
     for (let i = 0; i < 10; i++) {
       tickPhysics(state, pose, 'roughing-gouge', 0.016, profile);
     }
-    expect(Math.abs((state.profile[32] ?? 0) - 0.04880)).toBeLessThan(1e-7);
+    expect(Math.abs((state.profile[32] ?? 0) - 0.04970)).toBeLessThan(1e-7);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hardness contrast — soft vs hard wood must feel meaningfully different
+// ---------------------------------------------------------------------------
+
+describe('Hardness contrast — soft vs hard wood removal rate', () => {
+  it('softwood (pine cutRate=1.55) removes significantly more than hardwood (maple cutRate=0.65)', () => {
+    // At real-world pace the ~2.4× cutRate ratio must be felt.
+    // Softwood should remove at least 1.5× more per tick than hardwood
+    // (the actual ratio is cutRate_soft / cutRate_hard = 1.55 / 0.65 ≈ 2.38).
+    const pineCutRate: SpeciesCutProfile   = { cutRate: 1.55, tearout: 1, catch: 1 };
+    const mapleCutRate: SpeciesCutProfile  = { cutRate: 0.65, tearout: 1, catch: 1 };
+    const pose = { position: { x: 0, y: 0, z: 0 }, angleX: 0.3, angleY: 0, pressure: 0.8 };
+
+    const sPine  = createWoodState(0.3, 0.05);
+    const sMaple = createWoodState(0.3, 0.05);
+    tickPhysics(sPine,  pose, 'roughing-gouge', 0.016, pineCutRate);
+    tickPhysics(sMaple, pose, 'roughing-gouge', 0.016, mapleCutRate);
+
+    const removedPine  = 0.05 - (sPine.profile[32]  ?? 0);
+    const removedMaple = 0.05 - (sMaple.profile[32] ?? 0);
+
+    // Softwood removes strictly more
+    expect(removedPine).toBeGreaterThan(removedMaple);
+    // And the ratio must be at least 1.5× (actual ~2.38×) — hardness is clearly felt
+    expect(removedPine / removedMaple).toBeGreaterThan(1.5);
+  });
+
+  it('frames to round a corner: hardwood ~4× slower than softwood (monotonicity, not exact timing)', () => {
+    // Verify the cutRate ratio is preserved across many ticks.
+    // Run 100 ticks at pressure=0.8 on a small blank; confirm pine removes more total.
+    const pineCutRate: SpeciesCutProfile   = { cutRate: 1.55, tearout: 1, catch: 1 };
+    const mapleCutRate: SpeciesCutProfile  = { cutRate: 0.65, tearout: 1, catch: 1 };
+    const pose = { position: { x: 0, y: 0, z: 0 }, angleX: 0.3, angleY: 0, pressure: 0.8 };
+
+    const sPine  = createWoodState(0.3, 0.05);
+    const sMaple = createWoodState(0.3, 0.05);
+    for (let i = 0; i < 100; i++) {
+      tickPhysics(sPine,  pose, 'roughing-gouge', 0.016, pineCutRate);
+      tickPhysics(sMaple, pose, 'roughing-gouge', 0.016, mapleCutRate);
+    }
+
+    // Pine blank should be noticeably smaller (more removed) after 100 ticks
+    expect((sPine.profile[32] ?? 0)).toBeLessThan(sMaple.profile[32] ?? 0);
   });
 });
 
@@ -372,17 +419,18 @@ describe('RPM — golden scenario (T3)', () => {
     //              ≈ 0.1 + 0.353430...
     //              ≈ 0.453430...
     //
-    // MAX_CUT_DEPTH['roughing-gouge'] = 0.0003  (updated from 0.004 — gradual-cut slice)
+    // MAX_CUT_DEPTH['roughing-gouge'] = 0.000075  (real-world-pace slice: ~4× reduction from 0.0003)
+    // HARDNESS_INFLUENCE_EXPONENT = 1.0 → cutRate^1 = 1.0 (NEUTRAL profile)
     //
-    // depth        = 0.0003 × 0.5 × (0.016/0.016) × 1.0 × speedFactor
-    //              = 0.00015 × speedFactor
-    //              ≈ 0.00015 × 0.453430...
-    //              ≈ 0.000068014...
+    // depth        = 0.000075 × 0.5 × (0.016/0.016) × 1.0 × speedFactor
+    //              = 0.0000375 × speedFactor
+    //              ≈ 0.0000375 × 0.453430...
+    //              ≈ 0.000017003...
     //
-    // finalRadius  = 0.05 - depth ≈ 0.049931985...
+    // finalRadius  = 0.05 - depth ≈ 0.049982996...
     //
     // We compute the expected value analytically to match float64 precision:
-    const MAX_CUT_DEPTH_ROUGHING = 0.0003; // must match physics.ts MAX_CUT_DEPTH['roughing-gouge']
+    const MAX_CUT_DEPTH_ROUGHING = 0.000075; // must match physics.ts MAX_CUT_DEPTH['roughing-gouge']
     const rpm = 300;
     const radius = 0.05;
     const idealSpeed = IDEAL_SURFACE_SPEED['roughing-gouge']; // 4.0
