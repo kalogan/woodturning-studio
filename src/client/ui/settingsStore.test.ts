@@ -2,11 +2,13 @@
  * settingsStore.test.ts — Tests for the settings Zustand store.
  *
  * Covers:
- * - Defaults
+ * - Defaults (audio, controls keymap, camera)
  * - Volume setters (clamping)
  * - Mute toggle
  * - isOpen / open / close / toggle
  * - localStorage persistence round-trip (via a mocked localStorage)
+ * - rebind() — basic, conflict-swap, reset
+ * - camera setters — clamping at SENS_MIN/SENS_MAX
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -33,9 +35,9 @@ vi.stubGlobal('localStorage', localStorageMock);
 // Now import the store (after the stub is in place for the initial load).
 // We use a dynamic import helper below to get a fresh store per test group.
 
-import { useSettingsStore } from './settingsStore.js';
+import { useSettingsStore, KEYMAP_DEFAULTS, KEY_ACTIONS } from './settingsStore.js';
 
-const STORAGE_KEY = 'wts:settings:v1';
+const STORAGE_KEY = 'wts:settings:v2';
 
 function readStorage(): Record<string, unknown> {
   const raw = localStorageMock.getItem(STORAGE_KEY);
@@ -57,6 +59,12 @@ beforeEach(() => {
   s.setMotorVolume(0.7);
   s.setSfxVolume(0.7);
   s.setMuted(false);
+  // Reset keymap to defaults
+  s.resetKeymap();
+  // Reset camera to defaults
+  s.setLookSensitivity(1.0);
+  s.setInvertY(false);
+  s.setDialSensitivity(1.0);
   // Clear storage again after those setter calls (they persist)
   localStorageMock.clear();
 });
@@ -249,5 +257,159 @@ describe('settingsStore — jsdom safety', () => {
       s.setMuted(true);
       s.setMuted(false);
     }).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Controls — keymap defaults
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — controls keymap defaults', () => {
+  it('KEY_ACTIONS contains all 5 actions', () => {
+    expect(KEY_ACTIONS).toHaveLength(5);
+    expect(KEY_ACTIONS).toContain('forward');
+    expect(KEY_ACTIONS).toContain('back');
+    expect(KEY_ACTIONS).toContain('left');
+    expect(KEY_ACTIONS).toContain('right');
+    expect(KEY_ACTIONS).toContain('interact');
+  });
+
+  it('default keymap is w/s/a/d/e', () => {
+    const { keymap } = useSettingsStore.getState().controls;
+    expect(keymap.forward).toBe('w');
+    expect(keymap.back).toBe('s');
+    expect(keymap.left).toBe('a');
+    expect(keymap.right).toBe('d');
+    expect(keymap.interact).toBe('e');
+  });
+
+  it('KEYMAP_DEFAULTS matches the store defaults', () => {
+    const { keymap } = useSettingsStore.getState().controls;
+    for (const action of KEY_ACTIONS) {
+      expect(keymap[action]).toBe(KEYMAP_DEFAULTS[action]);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Controls — rebind
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — rebind', () => {
+  it('rebind to unoccupied key returns ok and updates keymap', () => {
+    const s = useSettingsStore.getState();
+    const result = s.rebind('forward', 'i');
+    expect(result).toBe('ok');
+    expect(useSettingsStore.getState().controls.keymap.forward).toBe('i');
+  });
+
+  it('rebind lowercases the incoming key', () => {
+    useSettingsStore.getState().rebind('back', 'K');
+    expect(useSettingsStore.getState().controls.keymap.back).toBe('k');
+  });
+
+  it('rebind to currently-same key is a no-op and returns ok', () => {
+    // 'w' is already bound to forward — rebinding forward→w should be ok
+    const result = useSettingsStore.getState().rebind('forward', 'w');
+    expect(result).toBe('ok');
+    expect(useSettingsStore.getState().controls.keymap.forward).toBe('w');
+  });
+
+  it('rebind conflict: SWAP — target key swaps with conflict action', () => {
+    // forward=w, back=s. Rebind forward→s. Expected: forward=s, back=w.
+    const result = useSettingsStore.getState().rebind('forward', 's');
+    expect(result).toBe('swapped');
+    const km = useSettingsStore.getState().controls.keymap;
+    expect(km.forward).toBe('s');
+    expect(km.back).toBe('w');  // old forward key goes to back
+  });
+
+  it('after swap, all 5 actions still have distinct keys (bijection preserved)', () => {
+    useSettingsStore.getState().rebind('forward', 's');
+    const km = useSettingsStore.getState().controls.keymap;
+    const values = KEY_ACTIONS.map((a) => km[a]);
+    const unique = new Set(values);
+    expect(unique.size).toBe(KEY_ACTIONS.length);
+  });
+
+  it('resetKeymap() restores defaults', () => {
+    useSettingsStore.getState().rebind('forward', 'i');
+    useSettingsStore.getState().rebind('back', 'k');
+    useSettingsStore.getState().resetKeymap();
+    const km = useSettingsStore.getState().controls.keymap;
+    expect(km.forward).toBe('w');
+    expect(km.back).toBe('s');
+  });
+
+  it('rebind persists to localStorage', () => {
+    useSettingsStore.getState().rebind('interact', 'f');
+    const stored = readStorage();
+    const km = (stored.controls as { keymap: Record<string, string> }).keymap;
+    expect(km['interact']).toBe('f');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Camera — setters and clamping
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — camera settings', () => {
+  it('lookSensitivity defaults to 1.0', () => {
+    expect(useSettingsStore.getState().camera.lookSensitivity).toBeCloseTo(1.0);
+  });
+
+  it('invertY defaults to false', () => {
+    expect(useSettingsStore.getState().camera.invertY).toBe(false);
+  });
+
+  it('dialSensitivity defaults to 1.0', () => {
+    expect(useSettingsStore.getState().camera.dialSensitivity).toBeCloseTo(1.0);
+  });
+
+  it('setLookSensitivity accepts mid-range value', () => {
+    useSettingsStore.getState().setLookSensitivity(1.5);
+    expect(useSettingsStore.getState().camera.lookSensitivity).toBeCloseTo(1.5);
+  });
+
+  it('setLookSensitivity clamps below 0.25 to 0.25', () => {
+    useSettingsStore.getState().setLookSensitivity(0);
+    expect(useSettingsStore.getState().camera.lookSensitivity).toBeCloseTo(0.25);
+  });
+
+  it('setLookSensitivity clamps above 3 to 3', () => {
+    useSettingsStore.getState().setLookSensitivity(10);
+    expect(useSettingsStore.getState().camera.lookSensitivity).toBeCloseTo(3.0);
+  });
+
+  it('setDialSensitivity clamps below 0.25 to 0.25', () => {
+    useSettingsStore.getState().setDialSensitivity(-1);
+    expect(useSettingsStore.getState().camera.dialSensitivity).toBeCloseTo(0.25);
+  });
+
+  it('setDialSensitivity clamps above 3 to 3', () => {
+    useSettingsStore.getState().setDialSensitivity(99);
+    expect(useSettingsStore.getState().camera.dialSensitivity).toBeCloseTo(3.0);
+  });
+
+  it('setInvertY(true) flips flag', () => {
+    useSettingsStore.getState().setInvertY(true);
+    expect(useSettingsStore.getState().camera.invertY).toBe(true);
+  });
+
+  it('setInvertY(false) clears flag', () => {
+    useSettingsStore.getState().setInvertY(true);
+    useSettingsStore.getState().setInvertY(false);
+    expect(useSettingsStore.getState().camera.invertY).toBe(false);
+  });
+
+  it('camera settings persist to localStorage', () => {
+    useSettingsStore.getState().setLookSensitivity(2.0);
+    useSettingsStore.getState().setInvertY(true);
+    useSettingsStore.getState().setDialSensitivity(0.5);
+    const stored = readStorage();
+    const cam = stored.camera as { lookSensitivity: number; invertY: boolean; dialSensitivity: number };
+    expect(cam.lookSensitivity).toBeCloseTo(2.0);
+    expect(cam.invertY).toBe(true);
+    expect(cam.dialSensitivity).toBeCloseTo(0.5);
   });
 });

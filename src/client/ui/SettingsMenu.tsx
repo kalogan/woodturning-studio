@@ -5,16 +5,19 @@
  * DOM overlay with a high z-index. Uses inline styles consistent with the
  * app's dark UI (#1a1a1a / #2a2a2a / #c8873a colour palette).
  *
- * Tabs this slice:
- *   Audio  — fully functional (master/ambient/motor/sfx sliders + mute)
- *   Controls, Input, Camera & feel, Display, Accessibility — "Coming soon"
+ * Tabs:
+ *   Audio         — fully functional (master/ambient/motor/sfx sliders + mute)
+ *   Controls      — fully functional (WASD+interact rebinding, reset)
+ *   Camera & feel — fully functional (look sensitivity, dial sensitivity, invertY)
+ *   Input, Display, Accessibility — "Coming soon" (future slices)
  *
  * The Esc listener lives in App.tsx (global keydown). This component only
  * renders the close (×) button which calls settingsStore.close().
  */
 
-import React, { useCallback } from 'react';
-import { useSettingsStore } from './settingsStore.js';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { useSettingsStore, KEY_ACTIONS } from './settingsStore.js';
+import type { KeyAction } from './settingsStore.js';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -309,6 +312,318 @@ function AudioPanel(): React.ReactElement {
 }
 
 // ---------------------------------------------------------------------------
+// Shared style helpers
+// ---------------------------------------------------------------------------
+
+const SECTION_TITLE: React.CSSProperties = {
+  color: '#c8873a',
+  fontSize: '0.78rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  marginBottom: 14,
+  marginTop: 0,
+  fontWeight: 600,
+};
+
+const DIVIDER: React.CSSProperties = {
+  borderTop: '1px solid #2a2a2a',
+  margin: '10px 0 20px',
+};
+
+// ---------------------------------------------------------------------------
+// Controls panel — WASD + interact rebinding
+// ---------------------------------------------------------------------------
+
+/** Human-readable label for each action */
+const ACTION_LABELS: Record<KeyAction, string> = {
+  forward:  'Move forward',
+  back:     'Move back',
+  left:     'Strafe left',
+  right:    'Strafe right',
+  interact: 'Interact (grab / place)',
+};
+
+function ControlsPanel(): React.ReactElement {
+  const { controls, rebind, resetKeymap } = useSettingsStore();
+  const { keymap } = controls;
+
+  // The action currently awaiting a key press (capture mode)
+  const [capturing, setCapturing] = useState<KeyAction | null>(null);
+  // Transient feedback message (e.g. "Swapped forward ↔ back")
+  const [notice, setNotice] = useState<string>('');
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Listen for keydown during capture mode
+  useEffect(() => {
+    if (capturing === null) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      // Ignore modifier-only presses, Escape (cancel), and Enter
+      if (e.key === 'Escape') { setCapturing(null); return; }
+      if (e.key === 'Enter')  { setCapturing(null); return; }
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+
+      const result = rebind(capturing, e.key);
+      if (result === 'swapped') {
+        // Find which action was displaced (to build the notice)
+        const newKm = useSettingsStore.getState().controls.keymap;
+        const swappedAction = KEY_ACTIONS.find((a) => a !== capturing && newKm[a] !== keymap[a]);
+        const swappedLabel = swappedAction !== undefined ? ACTION_LABELS[swappedAction] : 'another action';
+        setNotice(`Swapped ${ACTION_LABELS[capturing]} and ${swappedLabel}`);
+      } else {
+        setNotice('');
+      }
+      setCapturing(null);
+      // Clear any previous timer
+      if (noticeTimer.current !== null) clearTimeout(noticeTimer.current);
+      if (result === 'swapped') {
+        noticeTimer.current = setTimeout(() => { setNotice(''); }, 3000);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); };
+  }, [capturing, rebind, keymap]);
+
+  // ── Static (non-remappable) bindings shown for reference
+  const STATIC_BINDINGS = [
+    { label: 'Open settings',  key: 'Esc' },
+  ];
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    padding: '7px 10px',
+    background: '#242424',
+    borderRadius: 6,
+    border: '1px solid #333',
+  };
+
+  const rowLabelStyle: React.CSSProperties = {
+    color: '#bbb',
+    fontSize: '0.87rem',
+    flex: 1,
+  };
+
+  const keyBadgeStyle = (isCapturing: boolean): React.CSSProperties => ({
+    display: 'inline-block',
+    padding: '3px 10px',
+    background: isCapturing ? '#c8873a' : '#333',
+    color: isCapturing ? '#1a1a1a' : '#ddd',
+    border: `1px solid ${isCapturing ? '#c8873a' : '#555'}`,
+    borderRadius: 4,
+    fontSize: '0.82rem',
+    fontFamily: 'monospace',
+    minWidth: 44,
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.1s',
+    letterSpacing: '0.02em',
+  });
+
+  const staticBadgeStyle: React.CSSProperties = {
+    display: 'inline-block',
+    padding: '3px 10px',
+    background: '#1e1e1e',
+    color: '#666',
+    border: '1px solid #333',
+    borderRadius: 4,
+    fontSize: '0.82rem',
+    fontFamily: 'monospace',
+    minWidth: 44,
+    textAlign: 'center',
+    letterSpacing: '0.02em',
+  };
+
+  const resetBtnStyle: React.CSSProperties = {
+    marginTop: 20,
+    padding: '7px 16px',
+    background: 'transparent',
+    border: '1px solid #555',
+    color: '#888',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontFamily: 'inherit',
+  };
+
+  return (
+    <div>
+      <p style={SECTION_TITLE}>Movement &amp; interaction</p>
+
+      {/* Remappable bindings */}
+      {KEY_ACTIONS.map((action) => {
+        const isCapturing = capturing === action;
+        return (
+          <div key={action} style={rowStyle}>
+            <span style={rowLabelStyle}>{ACTION_LABELS[action]}</span>
+            <button
+              style={keyBadgeStyle(isCapturing)}
+              onClick={() => { setCapturing(isCapturing ? null : action); }}
+              aria-label={`Rebind ${ACTION_LABELS[action]}`}
+              title={isCapturing ? 'Press any key — Esc to cancel' : 'Click to rebind'}
+            >
+              {isCapturing ? 'press a key…' : keymap[action].toUpperCase()}
+            </button>
+          </div>
+        );
+      })}
+
+      <div style={DIVIDER} />
+
+      <p style={{ ...SECTION_TITLE, marginTop: 0 }}>Fixed bindings</p>
+      {STATIC_BINDINGS.map(({ label, key }) => (
+        <div key={key} style={rowStyle}>
+          <span style={rowLabelStyle}>{label}</span>
+          <span style={staticBadgeStyle}>{key}</span>
+        </div>
+      ))}
+
+      {/* Transient swap notice */}
+      {notice !== '' && (
+        <p style={{ color: '#c8873a', fontSize: '0.82rem', marginTop: 12 }}>
+          {notice}
+        </p>
+      )}
+
+      <button
+        style={resetBtnStyle}
+        onClick={resetKeymap}
+      >
+        Reset to defaults
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Camera & feel panel
+// ---------------------------------------------------------------------------
+
+function SensSlider({
+  label,
+  value,
+  onChange,
+  min = 0.25,
+  max = 3.0,
+  step = 0.05,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}): React.ReactElement {
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 16,
+  };
+  const labelStyle: React.CSSProperties = {
+    color: '#bbb',
+    fontSize: '0.88rem',
+    width: 160,
+    flexShrink: 0,
+  };
+  const sliderStyle: React.CSSProperties = {
+    flex: 1,
+    accentColor: '#c8873a',
+    cursor: 'pointer',
+  };
+  const valueStyle: React.CSSProperties = {
+    color: '#888',
+    fontSize: '0.82rem',
+    width: 38,
+    textAlign: 'right',
+    flexShrink: 0,
+  };
+
+  return (
+    <div style={rowStyle}>
+      <span style={labelStyle}>{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        style={sliderStyle}
+        onChange={(e) => { onChange(parseFloat(e.target.value)); }}
+      />
+      <span style={valueStyle}>{value.toFixed(2)}x</span>
+    </div>
+  );
+}
+
+function CameraPanel(): React.ReactElement {
+  const { camera, setLookSensitivity, setInvertY, setDialSensitivity } = useSettingsStore();
+
+  const toggleRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    padding: '7px 0',
+  };
+  const toggleLabelStyle: React.CSSProperties = {
+    color: '#bbb',
+    fontSize: '0.88rem',
+  };
+  const toggleBtnStyle: React.CSSProperties = {
+    padding: '5px 14px',
+    background: camera.invertY ? '#c8873a' : '#2a2a2a',
+    color: camera.invertY ? '#1a1a1a' : '#bbb',
+    border: '1px solid #c8873a',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontFamily: 'inherit',
+    fontWeight: 600,
+  };
+
+  return (
+    <div>
+      <p style={SECTION_TITLE}>Mouse look</p>
+
+      <SensSlider
+        label="Look sensitivity"
+        value={camera.lookSensitivity}
+        onChange={setLookSensitivity}
+      />
+
+      <div style={toggleRowStyle}>
+        <span style={toggleLabelStyle}>Invert Y axis</span>
+        <button
+          style={toggleBtnStyle}
+          onClick={() => { setInvertY(!camera.invertY); }}
+        >
+          {camera.invertY ? 'On' : 'Off'}
+        </button>
+      </div>
+
+      <div style={DIVIDER} />
+
+      <p style={{ ...SECTION_TITLE, marginTop: 0 }}>Speed dial</p>
+
+      <SensSlider
+        label="Dial sensitivity"
+        value={camera.dialSensitivity}
+        onChange={setDialSensitivity}
+      />
+
+      <p style={{ color: '#555', fontSize: '0.80rem', marginTop: -8 }}>
+        Higher = less drag needed for full RPM range.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -359,8 +674,10 @@ export function SettingsMenu(): React.ReactElement | null {
 
           {/* Content */}
           <div style={CONTENT}>
-            {activeTab === 'audio' && <AudioPanel />}
-            {activeTab !== 'audio' && (
+            {activeTab === 'audio'    && <AudioPanel />}
+            {activeTab === 'controls' && <ControlsPanel />}
+            {activeTab === 'camera'   && <CameraPanel />}
+            {activeTab !== 'audio' && activeTab !== 'controls' && activeTab !== 'camera' && (
               <p style={COMING_SOON}>
                 {TABS.find((t) => t.id === activeTab)?.label} settings — coming soon.
               </p>

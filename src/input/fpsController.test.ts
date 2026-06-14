@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FPSController, keysToMovement, clampPitch, rightVectorXZ } from './fpsController.js';
+import {
+  FPSController,
+  keysToMovement,
+  clampPitch,
+  rightVectorXZ,
+} from './fpsController.js';
+import type { FPSKeymap } from './fpsController.js';
 
 // ---------------------------------------------------------------------------
 // Pure function tests
@@ -172,5 +178,96 @@ describe('FPSController', () => {
     expect(ctrl.getInput().forward).toBe(0);
     // Re-start for afterEach cleanup consistency
     ctrl.start();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// keysToMovement — custom keymap
+// ---------------------------------------------------------------------------
+
+describe('keysToMovement — custom keymap', () => {
+  const ARROW_KEYMAP: FPSKeymap = {
+    forward:  'arrowup',
+    back:     'arrowdown',
+    left:     'arrowleft',
+    right:    'arrowright',
+    interact: 'f',
+  };
+
+  it('uses custom forward key', () => {
+    expect(keysToMovement(new Set(['ArrowUp']), ARROW_KEYMAP)).toEqual({ forward: 1, strafe: 0 });
+  });
+
+  it('uses custom back key', () => {
+    expect(keysToMovement(new Set(['ArrowDown']), ARROW_KEYMAP)).toEqual({ forward: -1, strafe: 0 });
+  });
+
+  it('uses custom right key', () => {
+    expect(keysToMovement(new Set(['ArrowRight']), ARROW_KEYMAP)).toEqual({ forward: 0, strafe: 1 });
+  });
+
+  it('uses custom left key', () => {
+    expect(keysToMovement(new Set(['ArrowLeft']), ARROW_KEYMAP)).toEqual({ forward: 0, strafe: -1 });
+  });
+
+  it('default w key does NOT fire forward with custom keymap', () => {
+    expect(keysToMovement(new Set(['w']), ARROW_KEYMAP)).toEqual({ forward: 0, strafe: 0 });
+  });
+
+  it('diagonal: custom forward + right', () => {
+    expect(keysToMovement(new Set(['ArrowUp', 'ArrowRight']), ARROW_KEYMAP)).toEqual({ forward: 1, strafe: 1 });
+  });
+
+  it('case-insensitive: uppercase custom key matches', () => {
+    const ucKeymap: FPSKeymap = { forward: 'I', back: 'K', left: 'J', right: 'L', interact: 'F' };
+    expect(keysToMovement(new Set(['i']), ucKeymap)).toEqual({ forward: 1, strafe: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FPSController — setConfig() hot-swap
+// ---------------------------------------------------------------------------
+
+describe('FPSController.setConfig()', () => {
+  let ctrl: FPSController;
+
+  beforeEach(() => {
+    ctrl = new FPSController();
+    ctrl.start();
+  });
+
+  afterEach(() => {
+    ctrl.stop();
+  });
+
+  it('after setConfig({keymap}), custom forward key fires forward', () => {
+    const km: FPSKeymap = { forward: 'i', back: 'k', left: 'j', right: 'l', interact: 'f' };
+    ctrl.setConfig({ keymap: km });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i' }));
+    expect(ctrl.getInput().forward).toBe(1);
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'i' }));
+  });
+
+  it('after setConfig({keymap}), old w key no longer fires forward', () => {
+    const km: FPSKeymap = { forward: 'i', back: 'k', left: 'j', right: 'l', interact: 'f' };
+    ctrl.setConfig({ keymap: km });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }));
+    expect(ctrl.getInput().forward).toBe(0);
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'w' }));
+  });
+
+  it('after setConfig({keymap}), custom interact key edge-triggers', () => {
+    const km: FPSKeymap = { forward: 'i', back: 'k', left: 'j', right: 'l', interact: 'f' };
+    ctrl.setConfig({ keymap: km });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f' }));
+    expect(ctrl.getInput().interact).toBe(true);
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: 'f' }));
+  });
+
+  it('setConfig() can be called mid-flight (partial update — only keymap)', () => {
+    // Partial: only keymap, no lookSensitivity. Should not throw.
+    expect(() => {
+      ctrl.setConfig({ keymap: { forward: 't', back: 'g', left: 'f', right: 'h', interact: 'r' } });
+    }).not.toThrow();
   });
 });
