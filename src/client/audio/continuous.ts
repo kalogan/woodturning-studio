@@ -61,8 +61,8 @@ const MOTOR_MAX_WHIR_HZ      = 380;   // whir freq at maxRpm
 const MOTOR_MAX_GAIN          = 0.28;  // whir+bearing master gain at maxRpm
 const MOTOR_BEARING_HZ        = 1400; // bearing noise centre frequency
 const MOTOR_BEARING_Q         = 3.5;  // bearing noise filter Q
-// Bearing noise max gain — cut to ~1/4 of the old 0.10 so it's a faint texture.
-const MOTOR_BEARING_MAX_GAIN  = 0.025;
+// Bearing noise max gain — faint texture; halved again per director (was 0.025).
+const MOTOR_BEARING_MAX_GAIN  = 0.0125;
 // Hum direct gain — light, steady hum when the lathe is powered on.
 const MOTOR_HUM_ON_GAIN       = 0.05;
 // Relative mix of the whir inside the motor master bus.
