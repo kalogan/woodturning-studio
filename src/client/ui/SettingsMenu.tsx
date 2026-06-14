@@ -16,8 +16,13 @@
  */
 
 import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { useSettingsStore, KEY_ACTIONS } from './settingsStore.js';
-import type { KeyAction } from './settingsStore.js';
+import {
+  useSettingsStore,
+  KEY_ACTIONS,
+  FOV_MIN,
+  FOV_MAX,
+} from './settingsStore.js';
+import type { KeyAction, AssistLevel, Units } from './settingsStore.js';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -120,12 +125,6 @@ const CONTENT: React.CSSProperties = {
   flex: 1,
   overflowY: 'auto',
   padding: '20px 28px',
-};
-
-const COMING_SOON: React.CSSProperties = {
-  color: '#555',
-  fontSize: '0.9rem',
-  marginTop: 8,
 };
 
 // ---------------------------------------------------------------------------
@@ -624,6 +623,361 @@ function CameraPanel(): React.ReactElement {
 }
 
 // ---------------------------------------------------------------------------
+// Toggle row — reusable On/Off button
+// ---------------------------------------------------------------------------
+
+function ToggleRow({
+  label,
+  value,
+  onChange,
+  description,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  description?: string;
+}): React.ReactElement {
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: description !== undefined ? 6 : 16,
+    padding: '7px 0',
+  };
+  const labelStyle: React.CSSProperties = {
+    color: '#bbb',
+    fontSize: '0.88rem',
+    flex: 1,
+  };
+  const btnStyle: React.CSSProperties = {
+    padding: '5px 14px',
+    background: value ? '#c8873a' : '#2a2a2a',
+    color: value ? '#1a1a1a' : '#bbb',
+    border: '1px solid #c8873a',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontFamily: 'inherit',
+    fontWeight: 600,
+    flexShrink: 0,
+  };
+
+  return (
+    <>
+      <div style={rowStyle}>
+        <span style={labelStyle}>{label}</span>
+        <button style={btnStyle} onClick={() => { onChange(!value); }}>
+          {value ? 'On' : 'Off'}
+        </button>
+      </div>
+      {description !== undefined && (
+        <p style={{ color: '#555', fontSize: '0.80rem', margin: '-2px 0 14px' }}>
+          {description}
+        </p>
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Display panel
+// ---------------------------------------------------------------------------
+
+function DisplayPanel(): React.ReactElement {
+  const { display, setFov, setFullscreen } = useSettingsStore();
+
+  // Reflect actual fullscreen state from the document (not just the pref).
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(
+    typeof document !== 'undefined' && document.fullscreenElement !== null,
+  );
+
+  // Keep isFullscreen in sync with actual browser fullscreen state.
+  useEffect(() => {
+    const onFSChange = () => {
+      setIsFullscreen(document.fullscreenElement !== null);
+    };
+    document.addEventListener('fullscreenchange', onFSChange);
+    return () => { document.removeEventListener('fullscreenchange', onFSChange); };
+  }, []);
+
+  const handleFullscreenToggle = () => {
+    // Guard for API absence (some browsers / embedded contexts may not support it).
+    if (typeof document === 'undefined') return;
+    if (!isFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        setFullscreen(true);
+      }).catch(() => { /* permission denied or not supported */ });
+    } else {
+      document.exitFullscreen().then(() => {
+        setFullscreen(false);
+      }).catch(() => { /* no-op */ });
+    }
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 16,
+  };
+  const labelStyle: React.CSSProperties = {
+    color: '#bbb',
+    fontSize: '0.88rem',
+    width: 160,
+    flexShrink: 0,
+  };
+  const sliderStyle: React.CSSProperties = {
+    flex: 1,
+    accentColor: '#c8873a',
+    cursor: 'pointer',
+  };
+  const valueStyle: React.CSSProperties = {
+    color: '#888',
+    fontSize: '0.82rem',
+    width: 38,
+    textAlign: 'right',
+    flexShrink: 0,
+  };
+
+  const fsBtnStyle: React.CSSProperties = {
+    padding: '5px 14px',
+    background: isFullscreen ? '#c8873a' : '#2a2a2a',
+    color: isFullscreen ? '#1a1a1a' : '#bbb',
+    border: '1px solid #c8873a',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    fontFamily: 'inherit',
+    fontWeight: 600,
+  };
+
+  const fsRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    padding: '7px 0',
+  };
+
+  return (
+    <div>
+      <p style={SECTION_TITLE}>Walk camera</p>
+
+      <div style={rowStyle}>
+        <span style={labelStyle}>Field of view</span>
+        <input
+          type="range"
+          min={FOV_MIN}
+          max={FOV_MAX}
+          step={1}
+          value={display.fov}
+          style={sliderStyle}
+          onChange={(e) => { setFov(parseFloat(e.target.value)); }}
+        />
+        <span style={valueStyle}>{display.fov}°</span>
+      </div>
+      <p style={{ color: '#555', fontSize: '0.80rem', margin: '-8px 0 20px' }}>
+        Applies to walk mode only. AT_LATHE / TURNING cameras use a fixed framing.
+      </p>
+
+      <div style={DIVIDER} />
+
+      <p style={{ ...SECTION_TITLE, marginTop: 0 }}>Window</p>
+
+      <div style={fsRowStyle}>
+        <span style={{ color: '#bbb', fontSize: '0.88rem' }}>Fullscreen</span>
+        <button style={fsBtnStyle} onClick={handleFullscreenToggle}>
+          {isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        </button>
+      </div>
+      <p style={{ color: '#555', fontSize: '0.80rem', margin: '0 0 8px' }}>
+        {isFullscreen
+          ? 'Currently fullscreen — press Esc or click to exit.'
+          : 'Expands the game to fill your display.'}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Input panel
+// ---------------------------------------------------------------------------
+
+function InputPanel(): React.ReactElement {
+  const { input, setInputMode } = useSettingsStore();
+
+  const optionRowStyle = (active: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 10,
+    padding: '10px 14px',
+    background: active ? '#2a2a2a' : '#1a1a1a',
+    border: `1px solid ${active ? '#c8873a' : '#333'}`,
+    borderRadius: 8,
+    cursor: 'pointer',
+  });
+  const radioStyle = (active: boolean): React.CSSProperties => ({
+    width: 16,
+    height: 16,
+    borderRadius: '50%',
+    border: `2px solid ${active ? '#c8873a' : '#555'}`,
+    background: active ? '#c8873a' : 'transparent',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  });
+  const optionLabelStyle: React.CSSProperties = {
+    flex: 1,
+  };
+  const optionTitleStyle: React.CSSProperties = {
+    color: '#ddd',
+    fontSize: '0.88rem',
+    display: 'block',
+    marginBottom: 2,
+  };
+  const optionDescStyle: React.CSSProperties = {
+    color: '#666',
+    fontSize: '0.79rem',
+    display: 'block',
+  };
+
+  return (
+    <div>
+      <p style={SECTION_TITLE}>Turning tool input</p>
+      <p style={{ color: '#777', fontSize: '0.82rem', marginBottom: 16, marginTop: -8 }}>
+        Controls how your turning tool position is tracked while turning.
+      </p>
+
+      <button
+        style={{ ...optionRowStyle(input.mode === 'mouse'), width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
+        onClick={() => { setInputMode('mouse'); }}
+        role="radio"
+        aria-checked={input.mode === 'mouse'}
+      >
+        <div style={radioStyle(input.mode === 'mouse')} />
+        <span style={optionLabelStyle}>
+          <span style={optionTitleStyle}>Mouse</span>
+          <span style={optionDescStyle}>Move the mouse to position the tool. Works everywhere.</span>
+        </span>
+      </button>
+
+      <button
+        style={{ ...optionRowStyle(input.mode === 'camera'), width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
+        onClick={() => { setInputMode('camera'); }}
+        role="radio"
+        aria-checked={input.mode === 'camera'}
+      >
+        <div style={radioStyle(input.mode === 'camera')} />
+        <span style={optionLabelStyle}>
+          <span style={optionTitleStyle}>Webcam / MediaPipe</span>
+          <span style={optionDescStyle}>
+            Tracks a real tool or pencil with your webcam. Requires camera permission.
+          </span>
+        </span>
+      </button>
+
+      <p style={{ color: '#555', fontSize: '0.80rem', marginTop: 10 }}>
+        This setting also controls the HUD toggle in the turning view — both are always in sync.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Accessibility panel
+// ---------------------------------------------------------------------------
+
+const ASSIST_DESCRIPTIONS: Record<string, string> = {
+  beginner: 'Wider catch tolerance; extra coaching cues. Best for first-time turners.',
+  normal:   'Default physics. Recommended for most players.',
+  off:      'Real lathe physics — no extra forgiveness. For experienced turners.',
+};
+
+function AccessibilityPanel(): React.ReactElement {
+  const { gameplay, setCoachingOverlay, setAssistLevel, setUnits } = useSettingsStore();
+
+  const selectStyle: React.CSSProperties = {
+    background: '#2a2a2a',
+    color: '#ddd',
+    border: '1px solid #444',
+    borderRadius: 6,
+    padding: '6px 10px',
+    fontSize: '0.85rem',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    accentColor: '#c8873a',
+  };
+
+  return (
+    <div>
+      <p style={SECTION_TITLE}>Coaching</p>
+
+      <ToggleRow
+        label="Coaching overlay"
+        value={gameplay.coachingOverlay}
+        onChange={setCoachingOverlay}
+        description="Show tool-angle indicator and catch / tearout warnings while turning."
+      />
+
+      <div style={DIVIDER} />
+
+      <p style={{ ...SECTION_TITLE, marginTop: 0 }}>Assist level</p>
+      <p style={{ color: '#777', fontSize: '0.82rem', marginBottom: 12, marginTop: -8 }}>
+        {ASSIST_DESCRIPTIONS[gameplay.assistLevel]}
+      </p>
+      <p style={{ color: '#555', fontSize: '0.79rem', marginBottom: 10, marginTop: -4 }}>
+        TODO (follow-up): wire beginner/off → catch tolerance in src/core physics.
+      </p>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {(['beginner', 'normal', 'off'] as AssistLevel[]).map((level) => {
+          const active = gameplay.assistLevel === level;
+          return (
+            <button
+              key={level}
+              style={{
+                padding: '6px 14px',
+                background: active ? '#c8873a' : '#2a2a2a',
+                color: active ? '#1a1a1a' : '#bbb',
+                border: `1px solid ${active ? '#c8873a' : '#444'}`,
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontFamily: 'inherit',
+                fontWeight: active ? 600 : 400,
+                textTransform: 'capitalize',
+              }}
+              onClick={() => { setAssistLevel(level); }}
+            >
+              {level}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={DIVIDER} />
+
+      <p style={{ ...SECTION_TITLE, marginTop: 0 }}>Units</p>
+      <p style={{ color: '#555', fontSize: '0.79rem', marginBottom: 10, marginTop: -8 }}>
+        TODO (follow-up): wire units preference to dimension displays throughout the UI.
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <span style={{ color: '#bbb', fontSize: '0.88rem' }}>Measurement units</span>
+        <select
+          style={selectStyle}
+          value={gameplay.units}
+          onChange={(e) => { setUnits(e.target.value as Units); }}
+        >
+          <option value="metric">Metric (mm / cm)</option>
+          <option value="imperial">Imperial (in)</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -674,14 +1028,12 @@ export function SettingsMenu(): React.ReactElement | null {
 
           {/* Content */}
           <div style={CONTENT}>
-            {activeTab === 'audio'    && <AudioPanel />}
-            {activeTab === 'controls' && <ControlsPanel />}
-            {activeTab === 'camera'   && <CameraPanel />}
-            {activeTab !== 'audio' && activeTab !== 'controls' && activeTab !== 'camera' && (
-              <p style={COMING_SOON}>
-                {TABS.find((t) => t.id === activeTab)?.label} settings — coming soon.
-              </p>
-            )}
+            {activeTab === 'audio'         && <AudioPanel />}
+            {activeTab === 'controls'      && <ControlsPanel />}
+            {activeTab === 'camera'        && <CameraPanel />}
+            {activeTab === 'display'       && <DisplayPanel />}
+            {activeTab === 'input'         && <InputPanel />}
+            {activeTab === 'accessibility' && <AccessibilityPanel />}
           </div>
         </div>
       </div>
