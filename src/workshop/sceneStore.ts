@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getCurriculum } from '../session/curriculum.js';
+import type { ToolKind } from '../core/types.js';
 
 export type SceneState =
   | 'MENU'
@@ -13,21 +14,40 @@ interface SceneStore {
   activeLessonId: string | null;
   lastPassed: boolean | null;
 
+  /** The tool the player is currently holding (set when entering TURNING). */
+  heldTool: ToolKind | null;
+
+  /**
+   * Transient wrong-tool coaching nudge.
+   * Set when the player clicks the wrong rack tool; cleared after a timeout
+   * or on the next interaction. null = no hint showing.
+   */
+  toolHint: string | null;
+
   // Guarded transitions — no-op if source state is wrong
   startLesson: (lessonId: string) => void;
   enterLathe: () => void;
   stepBack: () => void;
-  pickUpTool: () => void;
+  /**
+   * Grab a specific tool from the rack.
+   * Guard: only AT_LATHE → TURNING. Sets heldTool to the grabbed tool.
+   */
+  pickUpTool: (tool: ToolKind) => void;
   setDownTool: () => void;
   completeLesson: (passed: boolean) => void;
   finishCutscene: (completedIds: Set<string>) => void;
   returnToMenu: () => void;
+
+  /** Show a transient coaching nudge; auto-cleared after 3 s. */
+  setToolHint: (hint: string | null) => void;
 }
 
 export const useSceneStore = create<SceneStore>((set, get) => ({
   state: 'MENU',
   activeLessonId: null,
   lastPassed: null,
+  heldTool: null,
+  toolHint: null,
 
   startLesson: (lessonId) => {
     if (get().state !== 'MENU') return;
@@ -44,14 +64,14 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
     set({ state: 'WORKSHOP_WALK' });
   },
 
-  pickUpTool: () => {
+  pickUpTool: (tool) => {
     if (get().state !== 'AT_LATHE') return;
-    set({ state: 'TURNING' });
+    set({ state: 'TURNING', heldTool: tool, toolHint: null });
   },
 
   setDownTool: () => {
     if (get().state !== 'TURNING') return;
-    set({ state: 'AT_LATHE' });
+    set({ state: 'AT_LATHE', heldTool: null });
   },
 
   completeLesson: (passed) => {
@@ -71,6 +91,10 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   },
 
   returnToMenu: () => {
-    set({ state: 'MENU', activeLessonId: null, lastPassed: null });
+    set({ state: 'MENU', activeLessonId: null, lastPassed: null, heldTool: null, toolHint: null });
+  },
+
+  setToolHint: (hint) => {
+    set({ toolHint: hint });
   },
 }));

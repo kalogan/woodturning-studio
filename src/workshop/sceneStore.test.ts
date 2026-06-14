@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSceneStore } from './sceneStore.js';
 
-const INITIAL = { state: 'MENU' as const, activeLessonId: null, lastPassed: null };
+const INITIAL = {
+  state: 'MENU' as const,
+  activeLessonId: null,
+  lastPassed: null,
+  heldTool: null,
+  toolHint: null,
+};
 
 beforeEach(() => {
   useSceneStore.setState(INITIAL);
@@ -36,16 +42,26 @@ describe('legal transitions', () => {
     expect(useSceneStore.getState().state).toBe('WORKSHOP_WALK');
   });
 
-  it('pickUpTool: AT_LATHE → TURNING', () => {
+  it('pickUpTool: AT_LATHE → TURNING, sets heldTool', () => {
     useSceneStore.setState({ state: 'AT_LATHE' });
-    useSceneStore.getState().pickUpTool();
-    expect(useSceneStore.getState().state).toBe('TURNING');
+    useSceneStore.getState().pickUpTool('roughing-gouge');
+    const s = useSceneStore.getState();
+    expect(s.state).toBe('TURNING');
+    expect(s.heldTool).toBe('roughing-gouge');
   });
 
-  it('setDownTool: TURNING → AT_LATHE', () => {
-    useSceneStore.setState({ state: 'TURNING' });
+  it('pickUpTool: clears toolHint when grabbing', () => {
+    useSceneStore.setState({ state: 'AT_LATHE', toolHint: 'wrong tool!' });
+    useSceneStore.getState().pickUpTool('spindle-gouge');
+    expect(useSceneStore.getState().toolHint).toBeNull();
+  });
+
+  it('setDownTool: TURNING → AT_LATHE, clears heldTool', () => {
+    useSceneStore.setState({ state: 'TURNING', heldTool: 'roughing-gouge' });
     useSceneStore.getState().setDownTool();
-    expect(useSceneStore.getState().state).toBe('AT_LATHE');
+    const s = useSceneStore.getState();
+    expect(s.state).toBe('AT_LATHE');
+    expect(s.heldTool).toBeNull();
   });
 
   it('completeLesson: TURNING → LESSON_COMPLETE, sets lastPassed', () => {
@@ -96,7 +112,7 @@ describe('legal transitions', () => {
 
 describe('illegal transitions are no-ops', () => {
   it('pickUpTool from MENU does nothing', () => {
-    useSceneStore.getState().pickUpTool();
+    useSceneStore.getState().pickUpTool('roughing-gouge');
     expect(useSceneStore.getState().state).toBe('MENU');
   });
 
@@ -133,5 +149,36 @@ describe('activeLessonId lifecycle', () => {
     expect(useSceneStore.getState().activeLessonId).toBe('lesson-01');
     useSceneStore.getState().returnToMenu();
     expect(useSceneStore.getState().activeLessonId).toBeNull();
+  });
+});
+
+describe('heldTool lifecycle', () => {
+  it('starts null', () => {
+    expect(useSceneStore.getState().heldTool).toBeNull();
+  });
+
+  it('returnToMenu clears heldTool', () => {
+    useSceneStore.setState({ state: 'TURNING', heldTool: 'parting-tool' });
+    useSceneStore.getState().returnToMenu();
+    expect(useSceneStore.getState().heldTool).toBeNull();
+  });
+});
+
+describe('toolHint', () => {
+  it('starts null', () => {
+    expect(useSceneStore.getState().toolHint).toBeNull();
+  });
+
+  it('setToolHint sets and clears the hint', () => {
+    useSceneStore.getState().setToolHint('That is the parting tool — this lesson needs the roughing gouge');
+    expect(useSceneStore.getState().toolHint).toBe('That is the parting tool — this lesson needs the roughing gouge');
+    useSceneStore.getState().setToolHint(null);
+    expect(useSceneStore.getState().toolHint).toBeNull();
+  });
+
+  it('returnToMenu clears toolHint', () => {
+    useSceneStore.setState({ toolHint: 'some nudge' });
+    useSceneStore.getState().returnToMenu();
+    expect(useSceneStore.getState().toolHint).toBeNull();
   });
 });
