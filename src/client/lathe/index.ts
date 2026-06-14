@@ -7,3 +7,6 @@ export { DriveCenter } from './DriveCenter.js';
 export { LiveCenter } from './LiveCenter.js';
 export { Stand } from './Stand.js';
 export { Lathe } from './Lathe.js';
+export type { MountedProps } from './Lathe.js';
+export { getMountPointWorldPositions, DRIVE_CENTER_TIP_X, TAILSTOCK_CENTRE_X } from './mountPoints.js';
+export type { MountPointKey } from './mountPoints.js';

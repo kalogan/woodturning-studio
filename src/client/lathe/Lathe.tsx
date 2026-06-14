@@ -26,6 +26,23 @@ import { DriveCenter } from './DriveCenter.js';
 import { LiveCenter } from './LiveCenter.js';
 import { Stand } from './Stand.js';
 
+/**
+ * Controls which of the three mountable accessories are rendered.
+ * Every flag defaults to `true` so that omitting `mounted` entirely keeps the
+ * lathe fully assembled (back-compat — no existing caller needs to change).
+ *
+ * Set a flag to `false` to hide that part, e.g. for Lesson 0 "Set Up Your
+ * Lathe" where the player mounts each accessory one by one.
+ */
+export interface MountedProps {
+  /** Drive center (spur drive) in the headstock spindle. Default: true. */
+  spurDrive?: boolean;
+  /** Live center in the tailstock quill. Default: true. */
+  liveCenter?: boolean;
+  /** Tool rest (banjo block + post + bar). Default: true. */
+  toolRest?: boolean;
+}
+
 interface LatheProps {
   position?: [number, number, number];
   rotation?: [number, number, number];
@@ -38,6 +55,12 @@ interface LatheProps {
   defaultBlankVisible?: boolean;
   /** When false, hides the floor stand (default true). */
   standVisible?: boolean;
+  /**
+   * Controls which of the three mountable accessories are rendered.
+   * Omitting this prop (or omitting individual flags) renders all parts —
+   * existing callers are fully backwards-compatible.
+   */
+  mounted?: MountedProps;
 }
 
 export function Lathe({
@@ -46,7 +69,12 @@ export function Lathe({
   quillExtension = 0,
   defaultBlankVisible = false,
   standVisible = true,
+  mounted,
 }: LatheProps) {
+  // Resolve per-accessory flags; default to true (show) when omitted.
+  const showSpurDrive  = mounted?.spurDrive  !== false;
+  const showLiveCenter = mounted?.liveCenter !== false;
+  const showToolRest   = mounted?.toolRest   !== false;
   const {
     bed,
     headstock,
@@ -172,8 +200,9 @@ export function Lathe({
         {/* ── Headstock ── left end of bed; internal origin = headstock left face */}
         <Headstock position={[headstockGroupX, bedTopY, 0]} />
 
-        {/* ── Drive Center ── in headstock spindle, pointing +X */}
-        <DriveCenter position={[driveCenterX, spindleY, 0]} />
+        {/* ── Drive Center ── in headstock spindle, pointing +X
+            Gated: hidden when mounted.spurDrive === false (bare-lathe state). */}
+        {showSpurDrive && <DriveCenter position={[driveCenterX, spindleY, 0]} />}
 
         {/* ── Tailstock ── toward right end, rotated 180° so quill faces headstock */}
         <Tailstock
@@ -182,25 +211,33 @@ export function Lathe({
           quillExtension={quillExtension}
         />
 
-        {/* ── Live Center ── in tailstock quill, pointing -X (toward headstock) */}
-        <LiveCenter
-          position={[liveCenterX, spindleY, 0]}
-          rotation={[0, Math.PI, 0]}
-        />
+        {/* ── Live Center ── in tailstock quill, pointing -X (toward headstock)
+            Gated: hidden when mounted.liveCenter === false. */}
+        {showLiveCenter && (
+          <LiveCenter
+            position={[liveCenterX, spindleY, 0]}
+            rotation={[0, Math.PI, 0]}
+          />
+        )}
 
-        {/* ── Banjo ── straddles the bed ways, centred on Z=0 */}
-        <Banjo position={[banjoCentreX, bedTopY, banjoCentreZ]} />
-
-        {/* ── Tool Rest ── bar top at spindle height, offset toward the operator
-            so the post and rail clear the blank surface (blankHalfSide + clearance) */}
-        <ToolRest
-          position={[
-            banjoCentreX,
-            toolRestBaseY,
-            banjoCentreZ + blankHalfSide + toolRest.barDiameter,
-          ]}
-          height={toolRestPostH}
-        />
+        {/* ── Banjo + Tool Rest ── toggled together via mounted.toolRest.
+            The banjo is the clamping block that sits on the bed; the tool rest
+            post+bar slots into it.  They are always co-present in real use, so
+            we treat them as a single logical "tool rest" mount point.
+            When showToolRest is false, both are hidden. */}
+        {showToolRest && (
+          <Banjo position={[banjoCentreX, bedTopY, banjoCentreZ]} />
+        )}
+        {showToolRest && (
+          <ToolRest
+            position={[
+              banjoCentreX,
+              toolRestBaseY,
+              banjoCentreZ + blankHalfSide + toolRest.barDiameter,
+            ]}
+            height={toolRestPostH}
+          />
+        )}
 
         {/* ── Optional blank placeholder ── square un-roughed stock             */}
         {/* Lesson 1 is "From Square to Round" — mount a SQUARE cross-section    */}
