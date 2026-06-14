@@ -13,7 +13,10 @@ interface Props { ctx: SceneCtx }
 export function MenuOverlay({ ctx }: Props) {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
-      <LessonSelect onStart={(id) => { ctx.startLesson(id); }} />
+      <LessonSelect
+        onStart={(id) => { ctx.startLesson(id); }}
+        onStartSetup={() => { ctx.startSetup(); }}
+      />
     </div>
   );
 }

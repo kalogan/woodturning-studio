@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
 import { getCurriculum, isLessonUnlocked } from '../../session/index.js';
 import { useSessionStore } from '../../session/index.js';
+import { getLatheSetup } from '../../session/setup.js';
 
 export interface LessonSelectProps {
   onStart: (lessonId: string) => void;
+  /** Lesson 0 — enter the lathe-setup flow. */
+  onStartSetup: () => void;
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -12,7 +15,7 @@ const TOOL_LABELS: Record<string, string> = {
   'parting-tool': 'Parting Tool',
 };
 
-export function LessonSelect({ onStart }: LessonSelectProps): React.ReactElement {
+export function LessonSelect({ onStart, onStartSetup }: LessonSelectProps): React.ReactElement {
   const record = useSessionStore((s) => s.record);
   const loadFromDB = useSessionStore((s) => s.loadFromDB);
 
@@ -65,6 +68,30 @@ export function LessonSelect({ onStart }: LessonSelectProps): React.ReactElement
       <h1 style={styles.header}>Woodturning Studio</h1>
       <p style={styles.subtitle}>Select a lesson to begin</p>
       <div style={styles.grid}>
+        {/* Lesson 0 — lathe setup (always available, distinct from the turning curriculum) */}
+        <div
+          style={{
+            background: '#2a2a2a', borderRadius: '10px', padding: '24px', width: '260px',
+            display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #c8873a55', position: 'relative',
+          }}
+        >
+          <h2 style={{ color: '#e0e0e0', fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>{getLatheSetup().title}</h2>
+          <span style={{ color: '#c8873a', fontSize: '0.8rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Lesson 0 · Setup</span>
+          <p style={{ color: '#aaa', fontSize: '0.85rem', lineHeight: 1.5, flexGrow: 1 }}>
+            Mount the workholding (drive centre, live centre), fit the tool rest, and plug in — get the lathe ready before you turn.
+          </p>
+          <button
+            style={{
+              marginTop: '8px', padding: '10px 20px', background: '#c8873a', color: '#1a1a1a', border: 'none',
+              borderRadius: '6px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', letterSpacing: '0.02em', alignSelf: 'flex-start',
+            }}
+            onClick={() => { onStartSetup(); }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#d9963f'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#c8873a'; }}
+          >
+            Start →
+          </button>
+        </div>
         {curriculum.map((lesson) => {
           const unlocked = isLessonUnlocked(lesson, completedIds);
           const completed = completedIds.has(lesson.id);

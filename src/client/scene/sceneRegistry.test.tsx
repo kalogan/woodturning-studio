@@ -13,6 +13,7 @@ import type { SceneState } from '../../workshop/index.js';
 // All valid SceneState values (mirrors sceneStore.ts union)
 const ALL_STATES: SceneState[] = [
   'MENU',
+  'SETUP',
   'WORKSHOP_WALK',
   'AT_LATHE',
   'TURNING',

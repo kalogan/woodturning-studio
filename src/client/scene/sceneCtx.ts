@@ -23,6 +23,8 @@ export interface SceneCtx {
 
   // ── Scene store actions ────────────────────────────────────────────────────
   startLesson: (lessonId: string) => void;
+  startSetup: () => void;
+  finishSetup: () => void;
   pickUpTool: (tool: import('../../core/types.js').ToolKind) => void;
   finishCutscene: (completedIds: Set<string>) => void;
   returnToMenu: () => void;

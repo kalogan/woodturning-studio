@@ -4,6 +4,7 @@ import type { ToolKind } from '../core/types.js';
 
 export type SceneState =
   | 'MENU'
+  | 'SETUP'
   | 'WORKSHOP_WALK'
   | 'AT_LATHE'
   | 'TURNING'
@@ -26,6 +27,10 @@ interface SceneStore {
 
   // Guarded transitions — no-op if source state is wrong
   startLesson: (lessonId: string) => void;
+  /** Lesson 0 — enter the lathe-setup flow (MENU → SETUP). */
+  startSetup: () => void;
+  /** Finish lathe setup (SETUP → MENU). */
+  finishSetup: () => void;
   enterLathe: () => void;
   stepBack: () => void;
   /**
@@ -52,6 +57,16 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   startLesson: (lessonId) => {
     if (get().state !== 'MENU') return;
     set({ state: 'WORKSHOP_WALK', activeLessonId: lessonId });
+  },
+
+  startSetup: () => {
+    if (get().state !== 'MENU') return;
+    set({ state: 'SETUP' });
+  },
+
+  finishSetup: () => {
+    if (get().state !== 'SETUP') return;
+    set({ state: 'MENU' });
   },
 
   enterLathe: () => {

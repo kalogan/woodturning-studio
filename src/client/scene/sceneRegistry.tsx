@@ -21,6 +21,7 @@ import type { FC } from 'react';
 import type { SceneState } from '../../workshop/index.js';
 import type { SceneCtx } from './sceneCtx.js';
 import { MenuOverlay } from './scenes/MenuScene.js';
+import { SetupScene3D, SetupOverlay } from './scenes/SetupScene.js';
 import { WalkScene } from './scenes/WalkScene.js';
 import { WalkOverlay } from './scenes/WalkOverlay.js';
 import { AtLatheScene } from './scenes/AtLatheScene.js';
@@ -41,6 +42,12 @@ export const sceneRegistry: SceneRegistry = {
   MENU: {
     // No 3D scene in the menu
     Overlay: MenuOverlay,
+  },
+
+  SETUP: {
+    // Lesson 0 — set up the lathe (grab + mount workholding) before turning.
+    Scene3D: SetupScene3D,
+    Overlay: SetupOverlay,
   },
 
   WORKSHOP_WALK: {

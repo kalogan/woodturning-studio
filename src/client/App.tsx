@@ -36,6 +36,8 @@ export default function App() {
     activeLessonId,
     lastPassed,
     startLesson,
+    startSetup,
+    finishSetup,
     pickUpTool,
     finishCutscene,
     returnToMenu,
@@ -142,6 +144,8 @@ export default function App() {
     activeLessonId,
     lastPassed,
     startLesson,
+    startSetup,
+    finishSetup,
     pickUpTool,
     finishCutscene,
     returnToMenu,
@@ -189,7 +193,7 @@ export default function App() {
       {/* Escape hatch — always available in non-MENU states
           (WORKSHOP_WALK has its own ← Menu button embedded in the HUD,
            so we only render this fixed button for the other non-MENU states) */}
-      {(state === 'AT_LATHE' || state === 'TURNING' || state === 'LESSON_COMPLETE') && (
+      {(state === 'SETUP' || state === 'AT_LATHE' || state === 'TURNING' || state === 'LESSON_COMPLETE') && (
         <button
           style={{ ...escapeBtnStyle, position: 'fixed', top: 12, left: 12, zIndex: 200 }}
           onClick={returnToMenu}
