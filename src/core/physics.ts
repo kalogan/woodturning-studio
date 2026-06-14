@@ -87,32 +87,44 @@ export const IDEAL_SURFACE_SPEED: Record<ToolKind, number> = {
 const TWO_PI = 2 * Math.PI;
 
 /**
- * Compute a [0..1] speed factor that scales cut efficiency based on surface speed.
+ * Above the ideal surface speed the cut keeps getting FASTER with RPM (director:
+ * "the faster the RPM, the faster the gouge cuts the wood round"). speedFactor climbs
+ * from 1.0 at ideal up to MAX_SPEED_FACTOR, reaching the cap at
+ * (1 + OVERSPEED_SPAN_RATIO)× the ideal surface speed (≈ the lathe's top ~3200 rpm at
+ * full 0.05 m radius). As the blank rounds and its radius shrinks, surface speed drops,
+ * so the cut naturally slows for smaller diameters — realistic.
+ *
+ * DIRECTOR TUNING: raise MAX_SPEED_FACTOR for a bigger high-RPM payoff; lower
+ * OVERSPEED_SPAN_RATIO to reach max cut speed at a lower RPM.
+ */
+const MAX_SPEED_FACTOR = 3.0;     // TUNABLE — cut-rate ceiling at high RPM (× the ideal-speed rate)
+const OVERSPEED_SPAN_RATIO = 3.0; // TUNABLE — reach MAX_SPEED_FACTOR at (1+this)× ideal surface speed
+
+/**
+ * Compute a speed factor that scales cut rate based on surface speed.
  *
  * Model rationale:
- *   - At or above the ideal surface speed the tool cuts at full efficiency (factor = 1.0).
- *     We don't punish running slightly fast — the lathe operator would simply take a
- *     lighter pass. Very high overspeed could cause minor tearout in reality, but the
- *     effect is secondary; we keep the model simple and cap factor at 1.0 to avoid
- *     rewarding arbitrarily high RPM.
- *   - Below ideal the factor falls linearly from 1.0 to a floor of 0.1 at zero speed.
- *     Linear is predictable, testable, and matches the practical observation that halving
- *     the surface speed roughly halves the clean chip formation rate.
- *   - Floor of 0.1 (not 0): even at near-zero speed there is a tiny amount of scraping.
+ *   - BELOW ideal the factor falls linearly from 1.0 (at ideal) to a floor of 0.1 at
+ *     zero speed. Linear is predictable, testable, and matches the practical observation
+ *     that halving the surface speed roughly halves the clean chip-formation rate.
+ *     Floor of 0.1 (not 0): even near-stopped there is a tiny amount of scraping.
  *     The stopped-blank gate (rpm ≤ 0) is enforced upstream before this is called.
+ *   - AT or ABOVE ideal the factor keeps CLIMBING from 1.0 up to MAX_SPEED_FACTOR as
+ *     surface speed (hence RPM) rises — faster spin removes material faster — reaching
+ *     the cap at (1 + OVERSPEED_SPAN_RATIO)× ideal speed, then holding so it stays bounded.
  *
- * Catch widening at low speed:
- *   Returns speedFactor directly; the caller uses it to widen the effective catch
- *   threshold when speedFactor < CATCH_SPEED_THRESHOLD (see usage below).
- *
- * Allocation-free: only arithmetic on pre-existing scalars.
+ * Used to scale the normal-cut depth, and (via CATCH_SPEED_THRESHOLD) to widen the
+ * catch window at low speed. Allocation-free: only arithmetic on pre-existing scalars.
  */
 function computeSpeedFactor(surfaceSpeed: number, idealSpeed: number): number {
-  if (surfaceSpeed >= idealSpeed) {
-    return 1.0;
+  if (surfaceSpeed < idealSpeed) {
+    // Below ideal: linear ramp from 0.1 (surfaceSpeed=0) to 1.0 (surfaceSpeed=ideal).
+    return 0.1 + 0.9 * (surfaceSpeed / idealSpeed);
   }
-  // Linear ramp from 0.1 (at surfaceSpeed=0) to 1.0 (at surfaceSpeed=idealSpeed)
-  return 0.1 + 0.9 * (surfaceSpeed / idealSpeed);
+  // At/above ideal: climb from 1.0 toward MAX_SPEED_FACTOR with overspeed, then cap.
+  const over = (surfaceSpeed - idealSpeed) / idealSpeed; // 0 at ideal, grows above
+  const factor = 1.0 + (over / OVERSPEED_SPAN_RATIO) * (MAX_SPEED_FACTOR - 1.0);
+  return factor < MAX_SPEED_FACTOR ? factor : MAX_SPEED_FACTOR;
 }
 
 /**

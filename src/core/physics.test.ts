@@ -206,7 +206,8 @@ const RPM_SLOW = 229;
 // surfaceSpeed = 4.0 m/s  →  rpm = 4.0×60/(2π×0.05) = 240/π ≈ 763.94 → use 764
 const RPM_IDEAL = 764;
 
-// RPM well above ideal (2× ideal) — speedFactor still clamped at 1.0
+// RPM well above ideal (2× ideal surface speed at radius 0.05) — speedFactor now
+// climbs ABOVE 1.0 here (faster spin cuts faster), no longer clamped.
 const RPM_FAST = 1528;
 
 describe('RPM — IDEAL_SURFACE_SPEED constants are exported and sane', () => {
@@ -386,14 +387,17 @@ describe('RPM — monotonicity: removal rises with rpm up to ideal, then plateau
     expect(removed[2]).toBeGreaterThan(removed[1] ?? 0); // ideal > medium
   });
 
-  it('removal plateaus: rpm above ideal does not increase removal further', () => {
-    // At rpm giving speedFactor = 1.0, further rpm increases should NOT increase removal.
+  it('rpm above ideal removes MORE: faster spin cuts faster (no plateau)', () => {
+    // Director: the faster the RPM, the faster the gouge roughs the wood round.
+    // Above the ideal surface speed the cut keeps climbing toward MAX_SPEED_FACTOR.
     const sIdeal = createWoodState(0.3, 0.05);
     const sFast  = createWoodState(0.3, 0.05);
     tickPhysics(sIdeal, RPM_CLEAN_POSE, 'roughing-gouge', 0.016, NEUTRAL, RPM_IDEAL);
     tickPhysics(sFast,  RPM_CLEAN_POSE, 'roughing-gouge', 0.016, NEUTRAL, RPM_FAST);
-    // Both should remove the same amount (factor capped at 1.0)
-    expect(sIdeal.profile[32]).toBeCloseTo(sFast.profile[32] ?? 0, 10);
+    const removedIdeal = 0.05 - (sIdeal.profile[32] ?? 0);
+    const removedFast  = 0.05 - (sFast.profile[32] ?? 0);
+    // Faster RPM (above ideal) removes strictly more material per tick.
+    expect(removedFast).toBeGreaterThan(removedIdeal);
   });
 });
 
