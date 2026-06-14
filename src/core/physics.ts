@@ -11,27 +11,54 @@ const BEVEL_THRESHOLD: Record<ToolKind, number> = {
 };
 
 /**
- * Max depth of cut per tick in meters (at full pressure, correct angle, dt=0.016 s).
+ * Max depth of cut per tick in meters (at full pressure, correct angle, dt=0.016 s,
+ * neutral cutProfile, ideal RPM).
  *
  * DIRECTOR TUNING: These values control how FAST the tool removes material.
  * Lower = more gradual / more satisfying shaving feel.
  * Higher = faster / more aggressive removal.
  *
- * Target feel: at pressure ≈ 0.8 and ideal RPM, the square corner of a fresh
- * blank (corner protrudes ≈ 0.021 m above the final cylinder) rounds over in
- * ≈ 1–2 seconds of held contact.  Derivation:
- *   corner_height = radius × (√2 − 1) ≈ 0.05 × 0.414 = 0.021 m
- *   frames_at_60fps = 1.5 s × 60 = 90 frames
- *   depth_needed_per_frame = 0.021 / 90 ≈ 0.000233 m  (at pressure=0.8)
- *   MAX_CUT_DEPTH = depth_per_frame / pressure = 0.000233 / 0.8 ≈ 0.00029 → 0.0003
+ * Target feel (real-world pace): holding the tool on ONE spot of a HARDWOOD blank
+ * (e.g. maple, cutRate ≈ 0.65) at pressure ≈ 0.8 and ideal RPM should take ~8-10 s
+ * to knock a corner down noticeably. Fully roughing the whole blank takes ~2-3 minutes.
  *
- * Previously: roughing=0.004, spindle=0.002, parting=0.003 (≈13× too fast).
+ * Derivation (roughing-gouge, hardwood maple, pressure=0.8, cutRate=0.65, speedFactor=1):
+ *   corner_height = radius × (√2 − 1) ≈ 0.05 × 0.414 = 0.021 m
+ *   target_frames = 9 s × 60 fps = 540 frames  (hardwood target)
+ *   depth_per_frame = 0.021 / 540 ≈ 0.0000389 m
+ *   MAX_CUT_DEPTH = depth_per_frame / (pressure × cutRate)
+ *                = 0.0000389 / (0.8 × 0.65) ≈ 0.0000748 → 0.000075
+ *
+ * Hardness contrast at pressure=0.8, speedFactor=1 (cutting-matrix cutRate values):
+ *   Softwood (pine,  cutRate=1.55): 0.021/(0.000075×0.8×1.55) ≈ 226 frames ≈  3.8 s
+ *   Hardwood (maple, cutRate=0.65): 0.021/(0.000075×0.8×0.65) ≈ 539 frames ≈  9.0 s
+ *   → ~2.4× ratio — soft vs hard is clearly perceptible.
+ *
+ * Full blank roughing estimate (hardwood, ~20 active stations × 9 s avg):
+ *   20 × 9 s ≈ 3 minutes — matches real-world pace.
+ *
+ * Previously: roughing=0.0003 (corners rounded in ~1-2 s — far too fast).
+ * This slice reduces the rate ~4× to reach real-world pace.
+ *
+ * HARDNESS LEVER: the cutRate in SpeciesCutProfile (from content/wood/cutting-matrix.json)
+ * is the primary hardness signal. To amplify or dampen the soft/hard contrast further,
+ * search for HARDNESS_INFLUENCE_EXPONENT in physics.ts (currently 1.0 = linear).
  */
 const MAX_CUT_DEPTH: Record<ToolKind, number> = {
-  'roughing-gouge': 0.0003,   // TUNABLE — was 0.004; rounds a square corner in ~1-2 s
-  'spindle-gouge':  0.00015,  // TUNABLE — was 0.002; detail tool, finer removal
-  'parting-tool':   0.000225, // TUNABLE — was 0.003; narrow kerf, medium rate
+  'roughing-gouge': 0.000075,  // TUNABLE — hardwood corner ~9 s, softwood ~3.8 s at pressure=0.8
+  'spindle-gouge':  0.0000375, // TUNABLE — detail tool, half roughing rate
+  'parting-tool':   0.0000563, // TUNABLE — narrow kerf, between roughing and spindle
 };
+
+/**
+ * Exponent applied to cutProfile.cutRate to scale the soft/hard contrast.
+ * 1.0 = linear (current matrix range 0.65–1.55 already gives ~2.4× contrast).
+ * Raise above 1.0 to make hard woods feel much slower (e.g. 1.5 → ~3.5× contrast).
+ * Lower below 1.0 to compress the contrast.
+ *
+ * DIRECTOR TUNING: set to 1.0 initially; tune from feel after real-world pace lands.
+ */
+const HARDNESS_INFLUENCE_EXPONENT = 1.0; // TUNABLE — 1.0 = linear cutRate scaling
 
 /**
  * Ideal surface speed (m/s) per tool — the sweet spot where chip formation is
@@ -192,10 +219,12 @@ export function tickPhysics(
 
   // ── Normal cut ──────────────────────────────────────────────────────────────
   // depth proportional to pressure × dt, capped by max cut depth.
-  // cutRate scales the removal; speedFactor applied after cutRate.
-  // Cap is applied after all scaling so we never exceed remaining radius.
+  // cutRate scales the removal via HARDNESS_INFLUENCE_EXPONENT (1.0 = linear).
+  // speedFactor applied after cutRate. Cap is applied after all scaling so we
+  // never exceed remaining radius.
+  const hardnessScale = Math.pow(cutProfile.cutRate, HARDNESS_INFLUENCE_EXPONENT);
   const depth = Math.min(
-    MAX_CUT_DEPTH[toolKind] * toolPose.pressure * (dt / 0.016) * cutProfile.cutRate * speedFactor,
+    MAX_CUT_DEPTH[toolKind] * toolPose.pressure * (dt / 0.016) * hardnessScale * speedFactor,
     woodState.profile[stationIndex] ?? 0
   );
 
