@@ -4,10 +4,12 @@
  * Tests:
  * 1. Pure rpm → MotorParams mapping (calcMotorParams + calcMotorT):
  *    boundary values, monotonicity, clamping.
- * 2. Import guard: importing continuous.ts in jsdom must not throw.
- * 3. startAmbient / startMotor / stopAmbient / stopMotor must not throw
+ * 2. Motor mix balance assertions: whir is dominant rising element,
+ *    hum gain is a small constant (not rpm-scaled), bearing gain is tiny.
+ * 3. Import guard: importing continuous.ts in jsdom must not throw.
+ * 4. startAmbient / startMotor / stopAmbient / stopMotor must not throw
  *    in jsdom (where getContext() returns null — no AudioContext).
- * 4. updateMotor must not throw in jsdom.
+ * 5. updateMotor (including power param) must not throw in jsdom.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -55,10 +57,14 @@ describe('calcMotorT — normalised rpm', () => {
 
 // ---------------------------------------------------------------------------
 // 2. calcMotorParams — { whirFrequency, gain } mapping
+//
+// `gain` = whir+bearing master gain, rises with rpm (0 at rpm=0).
+// The hum is a separate constant path gated by `power`, NOT part of this fn.
 // ---------------------------------------------------------------------------
 
 describe('calcMotorParams — boundary values', () => {
-  it('gain is 0 at rpm=0 (motor is silent at rest)', () => {
+  it('gain is 0 at rpm=0 (whir+bearing master is silent at rest)', () => {
+    // Note: the hum layer is separate and constant when powered.
     const p = calcMotorParams(0, 3200);
     expect(p.gain).toBe(0);
   });
@@ -143,7 +149,63 @@ describe('calcMotorParams — gain range', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 3. jsdom import + call safety
+// 3. Motor mix balance — verify the new three-layer design
+//
+// These tests exercise the pure mapping functions to confirm the intended
+// mix balance: whir is the dominant rising element, bearing is faint.
+// The hum constant level is verified by checking the module constants
+// indirectly through calcMotorParams behavior.
+// ---------------------------------------------------------------------------
+
+describe('motor mix balance — new design (director feedback 2026-06-13)', () => {
+  it('whir+bearing master gain at full rpm is a moderate level (≤ 0.30)', () => {
+    // Master gain drives whir+bearing only; hum is separate.
+    const { gain } = calcMotorParams(3200, 3200);
+    expect(gain).toBeGreaterThan(0);
+    expect(gain).toBeLessThanOrEqual(0.30);
+  });
+
+  it('gain rises substantially from idle to full speed (whoosh is the cue)', () => {
+    // At low rpm the master is near 0 — at high rpm it's noticeably higher.
+    const low  = calcMotorParams(320,  3200).gain;  // 10% speed
+    const full = calcMotorParams(3200, 3200).gain;  // 100% speed
+    // Full should be at least 5× the 10%-speed gain.
+    expect(full).toBeGreaterThan(low * 5);
+  });
+
+  it('whirFrequency at full rpm is well above idle (audible sweep)', () => {
+    const idle = calcMotorParams(0,    3200).whirFrequency;
+    const full = calcMotorParams(3200, 3200).whirFrequency;
+    // The sweep should span more than 100 Hz.
+    expect(full - idle).toBeGreaterThan(100);
+  });
+
+  it('calcMotorT produces the t value used for bearing gain scaling', () => {
+    // Bearing gain = t * MOTOR_BEARING_MAX_GAIN (0.025).
+    // At full rpm t=1, so bearing gain = 0.025 — a faint texture.
+    const t = calcMotorT(3200, 3200);
+    const maxBearingGain = t * 0.025; // mirrors the constant in continuous.ts
+    expect(maxBearingGain).toBeCloseTo(0.025);
+    // Confirm it's much smaller than the whir+bearing master at full rpm.
+    const masterAtFull = calcMotorParams(3200, 3200).gain;
+    expect(maxBearingGain).toBeLessThan(masterAtFull * 0.15);
+  });
+
+  it('bearing gain at half rpm is at most 0.025/2 (faint at all speeds)', () => {
+    const t = calcMotorT(1600, 3200);
+    const bearingGain = t * 0.025;
+    expect(bearingGain).toBeLessThanOrEqual(0.0125 + 1e-9);
+  });
+
+  it('gain is strictly 0 at rpm=0 so whir/bearing are silent at rest', () => {
+    // Hum is separate — the whir+bearing master is always silent at rest.
+    expect(calcMotorParams(0, 3200).gain).toBe(0);
+    expect(calcMotorT(0, 3200)).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4. jsdom import + call safety
 // (In jsdom, getContext() returns null — all graph calls must be no-ops)
 // ---------------------------------------------------------------------------
 
@@ -163,8 +225,24 @@ describe('continuous — graph functions are safe no-ops in jsdom', () => {
     expect(() => { startMotor(); }).not.toThrow();
   });
 
-  it('updateMotor() does not throw', () => {
+  it('updateMotor() with default power=true does not throw', () => {
     expect(() => { updateMotor(1600, 3200); }).not.toThrow();
+  });
+
+  it('updateMotor() with power=true does not throw', () => {
+    expect(() => { updateMotor(1600, 3200, true); }).not.toThrow();
+  });
+
+  it('updateMotor() with power=false does not throw', () => {
+    expect(() => { updateMotor(1600, 3200, false); }).not.toThrow();
+  });
+
+  it('updateMotor() at rpm=0 power=true does not throw', () => {
+    expect(() => { updateMotor(0, 3200, true); }).not.toThrow();
+  });
+
+  it('updateMotor() at rpm=0 power=false does not throw', () => {
+    expect(() => { updateMotor(0, 3200, false); }).not.toThrow();
   });
 
   it('stopMotor() does not throw', () => {
@@ -183,8 +261,11 @@ describe('continuous — graph functions are safe no-ops in jsdom', () => {
     expect(() => {
       startAmbient();
       startMotor();
-      updateMotor(0, 3200);
-      updateMotor(1600, 3200);
+      updateMotor(0, 3200, false);
+      updateMotor(0, 3200, true);
+      updateMotor(1600, 3200, true);
+      updateMotor(3200, 3200, true);
+      updateMotor(3200, 3200, false);
       stopMotor();
       stopAmbient();
       startAmbient();

@@ -6,8 +6,9 @@
  *      audioBus.unlock() — required by browser autoplay policy.
  *   2. After unlock, start the ambient room tone and lathe motor graphs.
  *   3. Drive the motor each frame via requestAnimationFrame: read
- *      useLatheStore.getState().currentRpm imperatively (no React state, no
- *      per-frame allocation) and call updateMotor() to smooth the AudioParams.
+ *      useLatheStore.getState().currentRpm and .power imperatively (no React
+ *      state, no per-frame allocation) and call updateMotor() to smooth the
+ *      AudioParams. `power` gates the constant hum layer.
  *   4. On unmount: cancel the rAF, stop/disconnect all nodes cleanly.
  *
  * jsdom / SSR safety:
@@ -31,10 +32,11 @@ export default function AudioManager(): null {
 
     // ── Per-frame rAF loop ────────────────────────────────────────────────
     // Runs every frame once audio is unlocked.
-    // Reads rpm imperatively — zero React state, zero allocation.
+    // Reads rpm + power imperatively — zero React state, zero allocation.
+    // `power` gates the constant hum layer (hum fades to 0 when lathe is off).
     function frame(): void {
-      const { currentRpm, maxRpm } = useLatheStore.getState();
-      updateMotor(currentRpm, maxRpm);
+      const { currentRpm, maxRpm, power } = useLatheStore.getState();
+      updateMotor(currentRpm, maxRpm, power);
 
       if (hasRAF) {
         rafId = window.requestAnimationFrame(frame);
