@@ -99,13 +99,14 @@ export default function App() {
 
   // ── Interact (E key) handler — called from FPSCamera frame loop ─────────
   // Tool-pickup seam: AT_LATHE + interact → TURNING
-  // FPSController edge-triggers interact, so this is only true for one frame.
-  // We read it inside FPSCamera's useFrame via onInteract prop.
+  // E is a shortcut that grabs the lesson's CORRECT tool directly —
+  // it bypasses the wrong-tool gate (the rack UI enforces that for mouse clicks).
+  // If no lesson is active we do nothing (lesson is null → no tool to grab).
   const handleInteract = useCallback(() => {
-    if (useSceneStore.getState().state === 'AT_LATHE') {
-      pickUpTool();
+    if (useSceneStore.getState().state === 'AT_LATHE' && lesson !== null) {
+      pickUpTool(lesson.tool);
     }
-  }, [pickUpTool]);
+  }, [pickUpTool, lesson]);
 
   const handleEvalResult = useCallback(
     (result: EvalResult) => {
