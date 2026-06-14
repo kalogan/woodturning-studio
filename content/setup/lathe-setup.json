@@ -1,0 +1,61 @@
+{
+  "id": "lathe-setup-v1",
+  "schemaVersion": 1,
+  "title": "Set Up Your Lathe",
+  "intro": "Before you can turn, the lathe needs mounting up. Grab each piece from the toolbox on the bench and fit it where it belongs.",
+  "steps": [
+    {
+      "id": "mount-spur-drive",
+      "order": 1,
+      "accessoryId": "spur-drive-center",
+      "accessoryName": "Spur drive centre",
+      "mountPoint": "headstock-spindle",
+      "instruction": "Seat the spur drive centre in the headstock spindle.",
+      "why": "Its four prongs bite into the end of the blank so the headstock can drive it round."
+    },
+    {
+      "id": "mount-live-center",
+      "order": 2,
+      "accessoryId": "live-center",
+      "accessoryName": "Live centre",
+      "mountPoint": "tailstock-quill",
+      "instruction": "Slot the live centre into the tailstock.",
+      "why": "A spinning point that supports the far end of the blank between centres."
+    },
+    {
+      "id": "fit-tool-rest",
+      "order": 3,
+      "accessoryId": "tool-rest",
+      "accessoryName": "Tool rest",
+      "mountPoint": "bed",
+      "instruction": "Clamp the tool rest onto the bed, just in front of the blank.",
+      "why": "The bar your tool rides on — set it close to the work so the tool is well supported."
+    },
+    {
+      "id": "plug-in",
+      "order": 4,
+      "accessoryId": "power-plug",
+      "accessoryName": "Power cord",
+      "mountPoint": "wall-outlet",
+      "instruction": "Plug the lathe into the wall outlet.",
+      "why": "No power, no spin. Always plug in last, after everything is mounted."
+    }
+  ],
+  "decoys": [
+    {
+      "accessoryId": "faceplate",
+      "accessoryName": "Faceplate",
+      "wrongReason": "A faceplate screws onto the spindle thread for bowls and platters — not for between-centres spindle work."
+    },
+    {
+      "accessoryId": "scroll-chuck",
+      "accessoryName": "Scroll chuck",
+      "wrongReason": "A scroll chuck grips a tenon for bowl work — you don't need it to turn between centres."
+    },
+    {
+      "accessoryId": "drill-chuck",
+      "accessoryName": "Drill chuck",
+      "wrongReason": "A drill chuck holds bits to bore down the centre — it isn't part of mounting a spindle blank."
+    }
+  ]
+}

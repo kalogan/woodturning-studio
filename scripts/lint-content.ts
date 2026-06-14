@@ -264,6 +264,35 @@ const CuttingMatrixSchema = z.object({
   ),
 });
 
+// ── Lathe-setup (Lesson 0) schema ─────────────────────────────────────────────
+
+const MOUNT_POINTS = ['headstock-spindle', 'tailstock-quill', 'bed', 'wall-outlet'] as const;
+
+const SetupStepSchema = z.object({
+  id: z.string().min(1),
+  order: z.number().int().positive(),
+  accessoryId: z.string().min(1),
+  accessoryName: z.string().min(1),
+  mountPoint: z.enum(MOUNT_POINTS),
+  instruction: z.string().min(1),
+  why: z.string().min(1),
+});
+
+const SetupDecoySchema = z.object({
+  accessoryId: z.string().min(1),
+  accessoryName: z.string().min(1),
+  wrongReason: z.string().min(1),
+});
+
+const LatheSetupSchema = z.object({
+  id: z.string().min(1),
+  schemaVersion: z.literal(1),
+  title: z.string().min(1),
+  intro: z.string().min(1),
+  steps: z.array(SetupStepSchema).min(1),
+  decoys: z.array(SetupDecoySchema),
+});
+
 // ── Validation helpers ────────────────────────────────────────────────────────
 
 let failures = 0;
@@ -296,6 +325,7 @@ function validateFile(filePath: string, schema: z.ZodTypeAny, label: string) {
 validateDir('content/tools', ToolSpecSchema, 'tools');
 validateDir('content/curriculum', LessonSchema, 'curriculum');
 validateDir('content/lathe', LatheSpecSchema, 'lathe');
+validateDir('content/setup', LatheSetupSchema, 'setup');
 
 // Wood species: species files validated as a group, cutting-matrix separately.
 // We use a custom loop so cutting-matrix.json is not fed to WoodSpeciesSchema.
