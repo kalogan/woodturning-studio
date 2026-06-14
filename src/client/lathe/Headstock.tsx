@@ -37,6 +37,7 @@ import { paintedCastIron, bareSteel, darkCastIron } from './materials.js';
 import { useLatheStore } from '../../workshop/index.js';
 import { formatRpm } from './rpmFormat.js';
 import { dialAngleFromT, ARC_SWEEP_RAD } from './dialAngle.js';
+import { useSettingsStore } from '../ui/settingsStore.js';
 
 interface HeadstockProps {
   position?: [number, number, number];
@@ -362,8 +363,13 @@ export function Headstock({ position = [0, 0, 0], rotation = [0, 0, 0] }: Headst
     if (!isDragging.current) return;
     const { maxRpm, setTargetRpm } = useLatheStore.getState();
     // Drag RIGHT (positive deltaX) = increase RPM.
+    // dialSensitivity > 1 means more sensitive: fewer pixels for the full range.
+    // We divide DRAG_PIXELS_FOR_FULL_RANGE by dialSensitivity so that a higher
+    // setting requires less physical drag to sweep the full RPM range.
+    const dialSensitivity = useSettingsStore.getState().camera.dialSensitivity;
+    const effectiveRange  = DRAG_PIXELS_FOR_FULL_RANGE / dialSensitivity;
     const deltaX   = e.clientX - dragStartX.current;
-    const deltaRpm = (deltaX / DRAG_PIXELS_FOR_FULL_RANGE) * maxRpm;
+    const deltaRpm = (deltaX / effectiveRange) * maxRpm;
     setTargetRpm(dragStartRpm.current + deltaRpm); // store clamps + guards power-off
   }, []);
 
