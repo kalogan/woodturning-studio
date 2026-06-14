@@ -37,6 +37,13 @@ import type { LessonRunState, EvalResult } from './LessonEvaluator.js';
 const MOUSE_WORK_PLANE_Z = 0.07;       // TUNABLE — world Z of the tool/work plane (≈ tool-rest depth, matches TOOL_REST_ANCHOR Z)
 const MOUSE_ANGLE_X_DEFAULT = 0.3;     // TUNABLE — default bevel angle (rad)
 
+// When the cursor leaves the blank (e.g. moving to the speed knob on the control
+// panel), the tool must NOT track over there and poke into the lathe. Instead it
+// stays within the blank's working span and lifts to a raised "ready" pose above the
+// wood — as if held clear while you adjust the machine.
+const TOOL_END_MARGIN = 0.05;     // TUNABLE — keep the tool this far (m) inside the blank ends so its body clears the headstock/tailstock
+const TOOL_READY_LIFT_Y = 0.16;   // TUNABLE — pose.y when the cursor is off the blank: tool lifts ~0.1 m above the wood surface, clear of the lathe
+
 // ─── Pre-allocated raycast scratch (module scope — no per-frame heap alloc) ───
 //
 // We raycast the cursor through the REAL camera (which is pitched down ~29°)
@@ -170,8 +177,21 @@ export function TurningScene({
         // the cursor; the contact gate in PhysicsLoop reads the same pose.z/pose.y.
         const p = poseContainer.pose;
         p.position.x = 0;
-        p.position.z = _hit.x - RIG_WORLD_POSITION[0];
-        p.position.y = _hit.y - RIG_WORLD_POSITION[1] - TOOL_REST_ANCHOR[1];
+        // Working span along the blank (world X), kept clear of the machine.
+        const workLeft = RIG_WORLD_POSITION[0] - BLANK_LENGTH / 2 + TOOL_END_MARGIN;
+        const workRight = RIG_WORLD_POSITION[0] + BLANK_LENGTH / 2 - TOOL_END_MARGIN;
+        if (_hit.x < workLeft || _hit.x > workRight) {
+          // Cursor off the blank (e.g. over the control panel adjusting the speed knob):
+          // clamp the tool over the nearest blank end and LIFT it to a raised ready pose
+          // above the wood — it should hang clear, not poke into the lathe.
+          const clampedX = _hit.x < workLeft ? workLeft : workRight;
+          p.position.z = clampedX - RIG_WORLD_POSITION[0];
+          p.position.y = TOOL_READY_LIFT_Y;
+        } else {
+          // Over the blank: tip tracks the cursor; lower onto the wood to cut.
+          p.position.z = _hit.x - RIG_WORLD_POSITION[0];
+          p.position.y = _hit.y - RIG_WORLD_POSITION[1] - TOOL_REST_ANCHOR[1];
+        }
         p.angleX = MOUSE_ANGLE_X_DEFAULT;
         // Pressure (mousedown/up) + angleY still come from the adapter.
         const adapterPose = adapter.getLatestPose();
