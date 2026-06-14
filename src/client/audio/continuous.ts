@@ -36,7 +36,7 @@
  * useLatheStore.getState().power alongside currentRpm each frame.
  */
 
-import { getContext, getMasterGain } from './audioBus.js';
+import { getContext, getMasterGain, getChannelGain } from './audioBus.js';
 
 // ---------------------------------------------------------------------------
 // Pure rpm → { whirFrequency, gain } mapping
@@ -152,7 +152,9 @@ function createNoiseBuffer(ctx: AudioContext): AudioBuffer {
  */
 export function startAmbient(): void {
   const ctx = getContext();
-  const dest = getMasterGain();
+  // Route through the ambient channel gain (→ master). Fall back to master
+  // if the channel gain isn't ready (shouldn't happen after unlock()).
+  const dest = getChannelGain('ambient') ?? getMasterGain();
   if (!ctx || !dest || ambientStarted) return;
   ambientStarted = true;
 
@@ -171,7 +173,7 @@ export function startAmbient(): void {
   ambientGainNode = ctx.createGain();
   ambientGainNode.gain.value = AMBIENT_GAIN;
 
-  // Graph: noise → filter → gain → master
+  // Graph: noise → filter → gain → ambientChannel → master → destination
   ambientNoiseSource.connect(ambientFilter);
   ambientFilter.connect(ambientGainNode);
   ambientGainNode.connect(dest);
@@ -207,7 +209,9 @@ export function stopAmbient(): void {
  */
 export function startMotor(): void {
   const ctx = getContext();
-  const dest = getMasterGain();
+  // Route through the motor channel gain (→ master). Fall back to master
+  // if the channel gain isn't ready (shouldn't happen after unlock()).
+  const dest = getChannelGain('motor') ?? getMasterGain();
   if (!ctx || !dest || motorStarted) return;
   motorStarted = true;
 
@@ -217,9 +221,9 @@ export function startMotor(): void {
   motorMasterGain.connect(dest);
 
   // ── 1. Fundamental hum ── direct path, constant when lathe is powered ─────
-  // Connects directly to dest (not via motorMasterGain) so the hum is
-  // independent of rpm. updateMotor() fades it to MOTOR_HUM_ON_GAIN when
-  // power=true, and to 0 when power=false.
+  // Connects directly to the motor channel dest (not via motorMasterGain) so
+  // the hum is independent of rpm. updateMotor() fades it to MOTOR_HUM_ON_GAIN
+  // when power=true, and to 0 when power=false.
   motorHumOsc = ctx.createOscillator();
   motorHumOsc.type = 'sawtooth';
   motorHumOsc.frequency.value = MOTOR_FUNDAMENTAL_HZ;
@@ -228,7 +232,7 @@ export function startMotor(): void {
   motorHumDirectGain.gain.value = 0; // starts silent; updateMotor gates it
 
   motorHumOsc.connect(motorHumDirectGain);
-  motorHumDirectGain.connect(dest); // direct to master — NOT through motorMasterGain
+  motorHumDirectGain.connect(dest); // direct to motorChannel — NOT through motorMasterGain
   motorHumOsc.start();
 
   // ── 2. Whir oscillator — dominant rising cue ─────────────────────────────

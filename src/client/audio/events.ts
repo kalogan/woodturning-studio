@@ -11,7 +11,7 @@
  *   - no AudioContext exists (jsdom / before user gesture)
  */
 
-import { getContext, getMasterGain } from './audioBus.js';
+import { getContext, getMasterGain, getChannelGain } from './audioBus.js';
 import { useAudioSettings } from './audioSettings.js';
 import { playSound } from './sfxRegistry.js';
 import type { SfxId } from './sfxRegistry.js';
@@ -45,7 +45,9 @@ export function emit(event: SfxEvent): void {
   if (!enabled || muted) return;
 
   const ctx = getContext();
-  const dest = getMasterGain();
+  // Route SFX through the sfx channel gain (→ master). Fall back to master
+  // if the channel gain isn't ready (shouldn't happen after unlock()).
+  const dest = getChannelGain('sfx') ?? getMasterGain();
   if (!ctx || !dest) return;
 
   playSound(event, ctx, dest);
