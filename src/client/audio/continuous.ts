@@ -12,16 +12,28 @@
  *   through a lowpass filter (~200 Hz) to give it a dull, pressure-like quality.
  *   Gain is constant at ~0.04 — barely perceptible but fills the silence.
  *
- * Lathe motor:
- *   Three layered sources, all modulated by rpm:
- *   1. Fundamental hum   — sawtooth at motorFundamentalHz (80 Hz at rest,
- *                           kept fixed; this is mains-frequency motor hum).
- *   2. Whir oscillator   — sine whose frequency sweeps with rpm
- *                           (motorMinWhirHz at 0 rpm → motorMaxWhirHz at maxRpm).
- *   3. Bearing noise     — bandpass-filtered noise at a constant centre
- *                           (bearing.filterHz), whose gain also rises with rpm.
- *   A single motor gain node (motorGainNode) controls overall motor level;
- *   it goes to 0 when rpm = 0 (completely silent at rest).
+ * Lathe motor (three-layer mix):
+ *   1. Fundamental HUM  — sawtooth at motorFundamentalHz (80 Hz).
+ *                          Routes through motorHumDirectGain → dest DIRECTLY
+ *                          (NOT through motorMasterGain) so it stays constant
+ *                          while the motor is on. Gated by `power` flag:
+ *                          fades to ~0.05 when on, fades to 0 when off.
+ *                          This is a light, steady background hum — it does NOT
+ *                          swell with rpm.
+ *   2. Whir oscillator  — sine whose frequency sweeps with rpm
+ *                          (motorMinWhirHz → motorMaxWhirHz). Routes through
+ *                          motorMasterGain which scales 0→max with rpm.
+ *                          This is the DOMINANT rising cue as speed increases.
+ *   3. Bearing noise    — bandpass-filtered noise (faint texture only).
+ *                          Max gain ~0.025 (cut to ~1/4 of the old 0.10) so
+ *                          it never becomes prominent — just a faint hiss
+ *                          texture at high rpm.
+ *   motorMasterGain scales 0→0.28 with rpm — controls whir + bearing only.
+ *   The HUM is on its own direct path, constant when powered.
+ *
+ * updateMotor() signature now accepts a `power` boolean so the hum can be
+ * gated by lathe power state (not just rpm). AudioManager passes
+ * useLatheStore.getState().power alongside currentRpm each frame.
  */
 
 import { getContext, getMasterGain } from './audioBus.js';
@@ -35,26 +47,36 @@ import { getContext, getMasterGain } from './audioBus.js';
 export interface MotorParams {
   /** Frequency of the whir oscillator in Hz */
   whirFrequency: number;
-  /** Overall motor gain [0, 1] */
+  /**
+   * Whir + bearing master gain [0, 1] — rises with rpm.
+   * Does NOT include the hum (which has its own constant path).
+   */
   gain: number;
 }
 
 // Motor timbre constants — tunable by the director.
-const MOTOR_FUNDAMENTAL_HZ = 80;    // fixed hum frequency (motor/mains tone)
-const MOTOR_MIN_WHIR_HZ    = 60;    // whir freq at 0 rpm (unused because gain=0)
-const MOTOR_MAX_WHIR_HZ    = 380;   // whir freq at maxRpm
-const MOTOR_MAX_GAIN        = 0.28;  // gain at maxRpm (moderate; not loud)
-const MOTOR_BEARING_HZ      = 1400; // bearing noise centre frequency
-const MOTOR_BEARING_Q       = 3.5;  // bearing noise filter Q
-const MOTOR_BEARING_GAIN    = 0.10; // bearing noise gain at maxRpm
+const MOTOR_FUNDAMENTAL_HZ   = 80;    // fixed hum frequency (motor/mains tone)
+const MOTOR_MIN_WHIR_HZ      = 60;    // whir freq at 0 rpm
+const MOTOR_MAX_WHIR_HZ      = 380;   // whir freq at maxRpm
+const MOTOR_MAX_GAIN          = 0.28;  // whir+bearing master gain at maxRpm
+const MOTOR_BEARING_HZ        = 1400; // bearing noise centre frequency
+const MOTOR_BEARING_Q         = 3.5;  // bearing noise filter Q
+// Bearing noise max gain — cut to ~1/4 of the old 0.10 so it's a faint texture.
+const MOTOR_BEARING_MAX_GAIN  = 0.025;
+// Hum direct gain — light, steady hum when the lathe is powered on.
+const MOTOR_HUM_ON_GAIN       = 0.05;
+// Relative mix of the whir inside the motor master bus.
+const MOTOR_WHIR_REL_GAIN     = 0.7;  // dominant voice — louder relative mix
 
 // Ambient constants — tunable by the director.
 const AMBIENT_FILTER_HZ = 180;   // lowpass cutoff for the shop noise bed
 const AMBIENT_GAIN      = 0.04;  // very quiet constant level
 
 /**
- * Map currentRpm → MotorParams for the motor graph.
+ * Map currentRpm → MotorParams for the whir/bearing portion of the motor graph.
  * Pure function — no Web Audio dependency.
+ *
+ * The hum is NOT included here; it has a constant gain gated by `power`.
  *
  * @param currentRpm  Live spindle speed (0..maxRpm)
  * @param maxRpm      Maximum spindle speed (from latheStore)
@@ -65,7 +87,7 @@ export function calcMotorParams(currentRpm: number, maxRpm: number): MotorParams
   // Normalised speed 0..1
   const t = maxRpm > 0 ? rpm / maxRpm : 0;
 
-  // Linear interpolation for both frequency and gain.
+  // Linear interpolation for frequency; gain scales linearly with rpm.
   const whirFrequency = MOTOR_MIN_WHIR_HZ + t * (MOTOR_MAX_WHIR_HZ - MOTOR_MIN_WHIR_HZ);
   const gain = t * MOTOR_MAX_GAIN;
 
@@ -82,7 +104,7 @@ export function calcMotorT(currentRpm: number, maxRpm: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Internal graph state — modules-level singletons (one context lifetime)
+// Internal graph state — module-level singletons (one context lifetime)
 // ---------------------------------------------------------------------------
 
 // Ambient nodes
@@ -94,12 +116,14 @@ let ambientGainNode: GainNode | null = null;
 // Motor nodes
 let motorStarted = false;
 let motorHumOsc: OscillatorNode | null = null;
+// Direct (constant) hum gain — NOT through motorMasterGain.
+let motorHumDirectGain: GainNode | null = null;
 let motorWhirOsc: OscillatorNode | null = null;
 let motorWhirGain: GainNode | null = null;
 let motorBearingSource: AudioBufferSourceNode | null = null;
 let motorBearingFilter: BiquadFilterNode | null = null;
 let motorBearingGain: GainNode | null = null;
-let motorHumGain: GainNode | null = null;
+// Master gain for whir + bearing only (scales with rpm).
 let motorMasterGain: GainNode | null = null;
 
 // ---------------------------------------------------------------------------
@@ -177,7 +201,8 @@ export function stopAmbient(): void {
 
 /**
  * Start the lathe motor sustained graph.
- * Nodes are connected but gain=0 — call updateMotor() each frame to animate.
+ * Nodes are connected; hum starts at gain 0, whir+bearing master at 0.
+ * Call updateMotor() each frame to animate.
  * Safe no-op if already started or no AudioContext exists.
  */
 export function startMotor(): void {
@@ -186,36 +211,39 @@ export function startMotor(): void {
   if (!ctx || !dest || motorStarted) return;
   motorStarted = true;
 
-  // ── Motor master gain (controlled per-frame) ─────────────────────────────
+  // ── Motor master gain (whir + bearing, controlled per-frame by rpm) ───────
   motorMasterGain = ctx.createGain();
   motorMasterGain.gain.value = 0; // silent until rpm > 0
   motorMasterGain.connect(dest);
 
-  // ── 1. Fundamental hum ───────────────────────────────────────────────────
+  // ── 1. Fundamental hum ── direct path, constant when lathe is powered ─────
+  // Connects directly to dest (not via motorMasterGain) so the hum is
+  // independent of rpm. updateMotor() fades it to MOTOR_HUM_ON_GAIN when
+  // power=true, and to 0 when power=false.
   motorHumOsc = ctx.createOscillator();
   motorHumOsc.type = 'sawtooth';
   motorHumOsc.frequency.value = MOTOR_FUNDAMENTAL_HZ;
 
-  motorHumGain = ctx.createGain();
-  motorHumGain.gain.value = 0.6; // relative mix within the motor bus
+  motorHumDirectGain = ctx.createGain();
+  motorHumDirectGain.gain.value = 0; // starts silent; updateMotor gates it
 
-  motorHumOsc.connect(motorHumGain);
-  motorHumGain.connect(motorMasterGain);
+  motorHumOsc.connect(motorHumDirectGain);
+  motorHumDirectGain.connect(dest); // direct to master — NOT through motorMasterGain
   motorHumOsc.start();
 
-  // ── 2. Whir oscillator ───────────────────────────────────────────────────
+  // ── 2. Whir oscillator — dominant rising cue ─────────────────────────────
   motorWhirOsc = ctx.createOscillator();
   motorWhirOsc.type = 'sine';
   motorWhirOsc.frequency.value = MOTOR_MIN_WHIR_HZ;
 
   motorWhirGain = ctx.createGain();
-  motorWhirGain.gain.value = 0.45; // relative mix
+  motorWhirGain.gain.value = MOTOR_WHIR_REL_GAIN; // dominant relative mix
 
   motorWhirOsc.connect(motorWhirGain);
   motorWhirGain.connect(motorMasterGain);
   motorWhirOsc.start();
 
-  // ── 3. Bearing / air noise ───────────────────────────────────────────────
+  // ── 3. Bearing / air noise — faint texture only ───────────────────────────
   const noiseBuffer = createNoiseBuffer(ctx);
 
   motorBearingSource = ctx.createBufferSource();
@@ -247,7 +275,7 @@ export function stopMotor(): void {
   try { motorBearingSource?.stop(); } catch { /* already stopped */ }
 
   motorHumOsc?.disconnect();
-  motorHumGain?.disconnect();
+  motorHumDirectGain?.disconnect();
   motorWhirOsc?.disconnect();
   motorWhirGain?.disconnect();
   motorBearingSource?.disconnect();
@@ -256,7 +284,7 @@ export function stopMotor(): void {
   motorMasterGain?.disconnect();
 
   motorHumOsc = null;
-  motorHumGain = null;
+  motorHumDirectGain = null;
   motorWhirOsc = null;
   motorWhirGain = null;
   motorBearingSource = null;
@@ -271,7 +299,7 @@ export function stopMotor(): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Update motor AudioParams to reflect the current RPM.
+ * Update motor AudioParams to reflect the current RPM and power state.
  * MUST be called each animation frame — no React state, no allocation.
  * Uses setTargetAtTime for smooth ramps (no clicks/zipper noise).
  *
@@ -279,11 +307,15 @@ export function stopMotor(): void {
  *
  * @param currentRpm  Live spindle speed
  * @param maxRpm      Maximum spindle speed
+ * @param power       Whether the lathe is switched on (gates the hum).
+ *                    When false the hum fades out even if rpm > 0 (spin-down).
+ *                    Defaults to true for backward-compat callers that only
+ *                    pass rpm.
  */
-export function updateMotor(currentRpm: number, maxRpm: number): void {
+export function updateMotor(currentRpm: number, maxRpm: number, power = true): void {
   const ctx = getContext();
   if (!ctx || !motorStarted) return;
-  if (!motorMasterGain || !motorWhirOsc || !motorBearingGain) return;
+  if (!motorMasterGain || !motorWhirOsc || !motorBearingGain || !motorHumDirectGain) return;
 
   const { whirFrequency, gain } = calcMotorParams(currentRpm, maxRpm);
   const t = calcMotorT(currentRpm, maxRpm);
@@ -293,15 +325,23 @@ export function updateMotor(currentRpm: number, maxRpm: number): void {
   // slow enough to avoid zipper/click artifacts.
   const TC = 0.05;
 
-  // Master motor gain
+  // ── Whir + bearing master (scales with rpm) ───────────────────────────────
   motorMasterGain.gain.setTargetAtTime(gain, now, TC);
 
-  // Whir frequency sweep
+  // ── Whir frequency sweep ──────────────────────────────────────────────────
   motorWhirOsc.frequency.setTargetAtTime(whirFrequency, now, TC);
 
-  // Bearing noise gain (scales with rpm, relative to master)
-  const bearingGainValue = t * MOTOR_BEARING_GAIN;
+  // ── Bearing noise gain (faint texture — max MOTOR_BEARING_MAX_GAIN) ───────
+  const bearingGainValue = t * MOTOR_BEARING_MAX_GAIN;
   motorBearingGain.gain.setTargetAtTime(bearingGainValue, now, TC);
+
+  // ── Hum direct gain — constant when powered, silent when off ─────────────
+  // Gated by `power` (latheStore.power): the lathe may be spinning down
+  // (rpm > 0 but power=false) — in that case let the hum fade with the machine.
+  // Using a slightly slower TC for the hum so it doesn't snap off.
+  const HUM_TC = 0.15;
+  const humTarget = power ? MOTOR_HUM_ON_GAIN : 0;
+  motorHumDirectGain.gain.setTargetAtTime(humTarget, now, HUM_TC);
 }
 
 // ---------------------------------------------------------------------------
