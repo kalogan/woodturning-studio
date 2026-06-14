@@ -20,6 +20,7 @@
 import { useEffect } from 'react';
 import { unlock } from './audioBus.js';
 import { startAmbient, startMotor, stopAmbient, stopMotor, updateMotor } from './continuous.js';
+import { startCutting, stopCutting } from './cutting.js';
 import { useLatheStore } from '../../workshop/latheStore.js';
 
 export default function AudioManager(): null {
@@ -58,6 +59,7 @@ export default function AudioManager(): null {
         // Start sustained graphs.
         startAmbient();
         startMotor();
+        startCutting();
 
         // Kick off the rAF motor loop.
         if (hasRAF) {
@@ -89,6 +91,7 @@ export default function AudioManager(): null {
       }
 
       // Stop and disconnect all continuous audio nodes.
+      stopCutting();
       stopMotor();
       stopAmbient();
     };

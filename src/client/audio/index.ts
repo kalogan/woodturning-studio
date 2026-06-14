@@ -39,5 +39,8 @@ export type { SfxEvent } from './events.js';
 export { calcMotorParams, calcMotorT, startAmbient, startMotor, stopAmbient, stopMotor, updateMotor } from './continuous.js';
 export type { MotorParams } from './continuous.js';
 
+// Cutting sound — sustained tool-on-wood texture, intensity-driven
+export { startCutting, stopCutting, setCutIntensity, cutIntensityFromRemoval } from './cutting.js';
+
 // AudioManager — mounts once in App.tsx (always-on, renders null)
 export { default as AudioManager } from './AudioManager.js';
