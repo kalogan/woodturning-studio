@@ -16,13 +16,16 @@
  * See the comment block below for guidance.
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Lighting, Room, Furniture } from '../../workshop/index.js';
 import { Lathe } from '../../lathe/index.js';
+import { ToolRack } from '../../lathe/ToolRack.js';
 import { useLatheStore } from '../../../workshop/index.js';
+import { useSceneStore } from '../../../workshop/index.js';
+import type { ToolKind } from '../../../core/types.js';
 import type { SceneCtx } from '../sceneCtx.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
@@ -57,14 +60,49 @@ const _camTarget = new THREE.Vector3(...ATLATHE_CAM_TARGET);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Display names for coaching messages
+const TOOL_DISPLAY_NAMES: Record<ToolKind, string> = {
+  'roughing-gouge': 'roughing gouge',
+  'spindle-gouge': 'spindle gouge',
+  'parting-tool': 'parting tool',
+};
+
+// Hint auto-clear timer id (module-level scalar — no heap object per render)
+let _hintTimerId = 0;
+
 interface Props { ctx: SceneCtx }
 
-export function AtLatheScene({ ctx: _ctx }: Props) {
-  // ctx is threaded for registry conformance; AtLatheScene doesn't need turning
-  // session fields (those live in TurningScene3D). E-to-pickup is handled
-  // by App's existing keyboard listener via ctx.pickUpTool → FPSCamera onInteract.
-
+export function AtLatheScene({ ctx }: Props) {
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
+
+  // Grab handler: called by ToolRack with the clicked tool.
+  // Correct tool → pickUpTool (AT_LATHE → TURNING).
+  // Wrong tool   → transient coaching nudge, no grab.
+  const handleGrab = useCallback((clickedTool: ToolKind) => {
+    const expectedTool = ctx.lesson?.tool ?? null;
+
+    if (expectedTool === null) {
+      // No active lesson — grab anything (fallback safety)
+      useSceneStore.getState().pickUpTool(clickedTool);
+      return;
+    }
+
+    if (clickedTool === expectedTool) {
+      useSceneStore.getState().pickUpTool(clickedTool);
+    } else {
+      // Wrong tool — show coaching nudge, do NOT grab
+      const clickedName = TOOL_DISPLAY_NAMES[clickedTool];
+      const expectedName = TOOL_DISPLAY_NAMES[expectedTool];
+      const hint = `That's the ${clickedName} — this lesson needs the ${expectedName}`;
+      useSceneStore.getState().setToolHint(hint);
+
+      // Auto-clear after 3 s; cancel any previous timer (scalar, no object)
+      window.clearTimeout(_hintTimerId);
+      _hintTimerId = window.setTimeout(() => {
+        useSceneStore.getState().setToolHint(null);
+      }, 3000);
+    }
+  }, [ctx.lesson]);
 
   // Point the camera at the control panel once after mount.
   useEffect(() => {
@@ -105,6 +143,13 @@ export function AtLatheScene({ ctx: _ctx }: Props) {
        * Headstock's interactive START button + speed dial live inside <Lathe>.
        */}
       <Lathe position={[0, 0, 0]} defaultBlankVisible />
+
+      {/*
+       * Tool rack on the wall to the operator's left.
+       * Position defined by RACK_POS in ToolRack.tsx — director-tunable.
+       * onGrab wires the right-tool gate: correct → TURNING; wrong → nudge.
+       */}
+      <ToolRack onGrab={handleGrab} />
 
       {/*
        * NOTE: a static "reaching hand" was removed here — a single disembodied
