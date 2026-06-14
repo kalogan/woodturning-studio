@@ -35,9 +35,9 @@ vi.stubGlobal('localStorage', localStorageMock);
 // Now import the store (after the stub is in place for the initial load).
 // We use a dynamic import helper below to get a fresh store per test group.
 
-import { useSettingsStore, KEYMAP_DEFAULTS, KEY_ACTIONS } from './settingsStore.js';
+import { useSettingsStore, KEYMAP_DEFAULTS, KEY_ACTIONS, FOV_MIN, FOV_MAX } from './settingsStore.js';
 
-const STORAGE_KEY = 'wts:settings:v2';
+const STORAGE_KEY = 'wts:settings:v3';
 
 function readStorage(): Record<string, unknown> {
   const raw = localStorageMock.getItem(STORAGE_KEY);
@@ -65,6 +65,15 @@ beforeEach(() => {
   s.setLookSensitivity(1.0);
   s.setInvertY(false);
   s.setDialSensitivity(1.0);
+  // Reset display to defaults
+  s.setFov(75);
+  s.setFullscreen(false);
+  // Reset input to defaults
+  s.setInputMode('mouse');
+  // Reset gameplay to defaults
+  s.setCoachingOverlay(true);
+  s.setAssistLevel('normal');
+  s.setUnits('metric');
   // Clear storage again after those setter calls (they persist)
   localStorageMock.clear();
 });
@@ -411,5 +420,153 @@ describe('settingsStore — camera settings', () => {
     expect(cam.lookSensitivity).toBeCloseTo(2.0);
     expect(cam.invertY).toBe(true);
     expect(cam.dialSensitivity).toBeCloseTo(0.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Display — FOV + fullscreen
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — display settings', () => {
+  it('fov defaults to 75', () => {
+    expect(useSettingsStore.getState().display.fov).toBe(75);
+  });
+
+  it('fullscreen defaults to false', () => {
+    expect(useSettingsStore.getState().display.fullscreen).toBe(false);
+  });
+
+  it('setFov accepts a value within range', () => {
+    useSettingsStore.getState().setFov(90);
+    expect(useSettingsStore.getState().display.fov).toBe(90);
+  });
+
+  it('setFov clamps below FOV_MIN (55) to FOV_MIN', () => {
+    useSettingsStore.getState().setFov(10);
+    expect(useSettingsStore.getState().display.fov).toBe(FOV_MIN);
+  });
+
+  it('setFov clamps above FOV_MAX (100) to FOV_MAX', () => {
+    useSettingsStore.getState().setFov(200);
+    expect(useSettingsStore.getState().display.fov).toBe(FOV_MAX);
+  });
+
+  it('setFov clamps at exactly FOV_MIN boundary', () => {
+    useSettingsStore.getState().setFov(FOV_MIN);
+    expect(useSettingsStore.getState().display.fov).toBe(FOV_MIN);
+  });
+
+  it('setFov clamps at exactly FOV_MAX boundary', () => {
+    useSettingsStore.getState().setFov(FOV_MAX);
+    expect(useSettingsStore.getState().display.fov).toBe(FOV_MAX);
+  });
+
+  it('setFullscreen(true) sets flag', () => {
+    useSettingsStore.getState().setFullscreen(true);
+    expect(useSettingsStore.getState().display.fullscreen).toBe(true);
+  });
+
+  it('setFullscreen(false) clears flag', () => {
+    useSettingsStore.getState().setFullscreen(true);
+    useSettingsStore.getState().setFullscreen(false);
+    expect(useSettingsStore.getState().display.fullscreen).toBe(false);
+  });
+
+  it('display settings persist to localStorage', () => {
+    useSettingsStore.getState().setFov(80);
+    useSettingsStore.getState().setFullscreen(true);
+    const stored = readStorage();
+    const disp = stored.display as { fov: number; fullscreen: boolean };
+    expect(disp.fov).toBe(80);
+    expect(disp.fullscreen).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Input — mode
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — input settings', () => {
+  it('input.mode defaults to mouse', () => {
+    expect(useSettingsStore.getState().input.mode).toBe('mouse');
+  });
+
+  it('setInputMode("camera") switches to camera', () => {
+    useSettingsStore.getState().setInputMode('camera');
+    expect(useSettingsStore.getState().input.mode).toBe('camera');
+  });
+
+  it('setInputMode("mouse") switches back to mouse', () => {
+    useSettingsStore.getState().setInputMode('camera');
+    useSettingsStore.getState().setInputMode('mouse');
+    expect(useSettingsStore.getState().input.mode).toBe('mouse');
+  });
+
+  it('input.mode persists to localStorage', () => {
+    useSettingsStore.getState().setInputMode('camera');
+    const stored = readStorage();
+    const inp = stored.input as { mode: string };
+    expect(inp.mode).toBe('camera');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gameplay / Accessibility
+// ---------------------------------------------------------------------------
+
+describe('settingsStore — gameplay settings', () => {
+  it('coachingOverlay defaults to true', () => {
+    expect(useSettingsStore.getState().gameplay.coachingOverlay).toBe(true);
+  });
+
+  it('assistLevel defaults to "normal"', () => {
+    expect(useSettingsStore.getState().gameplay.assistLevel).toBe('normal');
+  });
+
+  it('units defaults to "metric"', () => {
+    expect(useSettingsStore.getState().gameplay.units).toBe('metric');
+  });
+
+  it('setCoachingOverlay(false) turns off overlay', () => {
+    useSettingsStore.getState().setCoachingOverlay(false);
+    expect(useSettingsStore.getState().gameplay.coachingOverlay).toBe(false);
+  });
+
+  it('setCoachingOverlay(true) turns on overlay', () => {
+    useSettingsStore.getState().setCoachingOverlay(false);
+    useSettingsStore.getState().setCoachingOverlay(true);
+    expect(useSettingsStore.getState().gameplay.coachingOverlay).toBe(true);
+  });
+
+  it('setAssistLevel("beginner") updates assist level', () => {
+    useSettingsStore.getState().setAssistLevel('beginner');
+    expect(useSettingsStore.getState().gameplay.assistLevel).toBe('beginner');
+  });
+
+  it('setAssistLevel("off") updates assist level', () => {
+    useSettingsStore.getState().setAssistLevel('off');
+    expect(useSettingsStore.getState().gameplay.assistLevel).toBe('off');
+  });
+
+  it('setUnits("imperial") updates units', () => {
+    useSettingsStore.getState().setUnits('imperial');
+    expect(useSettingsStore.getState().gameplay.units).toBe('imperial');
+  });
+
+  it('setUnits("metric") updates units', () => {
+    useSettingsStore.getState().setUnits('imperial');
+    useSettingsStore.getState().setUnits('metric');
+    expect(useSettingsStore.getState().gameplay.units).toBe('metric');
+  });
+
+  it('gameplay settings persist to localStorage', () => {
+    useSettingsStore.getState().setCoachingOverlay(false);
+    useSettingsStore.getState().setAssistLevel('beginner');
+    useSettingsStore.getState().setUnits('imperial');
+    const stored = readStorage();
+    const gp = stored.gameplay as { coachingOverlay: boolean; assistLevel: string; units: string };
+    expect(gp.coachingOverlay).toBe(false);
+    expect(gp.assistLevel).toBe('beginner');
+    expect(gp.units).toBe('imperial');
   });
 });

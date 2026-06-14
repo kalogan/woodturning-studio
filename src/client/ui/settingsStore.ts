@@ -1,9 +1,9 @@
 /**
  * settingsStore.ts — Zustand store for all user-facing settings.
  *
- * Persisted to localStorage under the key `wts:settings:v2`.
- * (Bumped from v1 to v2 because we added `controls` + `camera` sections.
- *  A shape mismatch on parse falls back silently to defaults.)
+ * Persisted to localStorage under the key `wts:settings:v3`.
+ * (Bumped from v2 to v3 because we added `display`, `input`, and `gameplay`
+ *  sections.  A shape mismatch on parse falls back silently to defaults.)
  *
  * Design:
  * - isOpen controls the modal visibility (toggled by Escape in App.tsx).
@@ -14,12 +14,19 @@
  *   the key and SWAPS keys if the requested key is already bound to another
  *   action (avoids silent holes in the keymap — every action always has a key).
  * - camera holds look/dial sensitivity multipliers and invertY flag.
+ * - display holds FOV (55..100) and fullscreen preference.
+ * - input.mode is the SINGLE source of truth for turning-tool input source
+ *   ('mouse' | 'camera'). Both the in-turning InputToggle HUD and the
+ *   Settings > Input tab read/write this field.
+ * - gameplay holds coachingOverlay toggle, assistLevel, and units preference.
+ *   assistLevel / units are stored-pref-only for now:
+ *   TODO: wire assistLevel → catch tolerance in src/core (brief §9 follow-up).
+ *   TODO: wire units → any dimension display that needs metric/imperial.
  * - All Web Audio calls are import-safe: guarded behind typeof window checks
  *   in audioBus — no throw in jsdom.
  * - localStorage is guarded: typeof localStorage check before every access.
  *
- * Sections: audio, controls, camera.
- * Future slices: input, display, accessibility.
+ * Sections: audio, controls, camera, display, input, gameplay.
  */
 
 import { create } from 'zustand';
@@ -33,7 +40,7 @@ import {
 // Persistence helpers (localStorage-guarded)
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'wts:settings:v2';
+const STORAGE_KEY = 'wts:settings:v3';
 
 function loadPersistedSettings(): Partial<PersistedSettings> {
   if (typeof localStorage === 'undefined') return {};
@@ -66,6 +73,9 @@ interface PersistedSettings {
   audio: AudioSettings;
   controls: ControlsSettings;
   camera: CameraSettings;
+  display: DisplaySettings;
+  input: InputSettings;
+  gameplay: GameplaySettings;
 }
 
 export interface AudioSettings {
@@ -92,6 +102,42 @@ export interface CameraSettings {
   invertY: boolean;
   /** Multiplier on the speed-dial drag sensitivity. Range: 0.25–3. */
   dialSensitivity: number;
+}
+
+export interface DisplaySettings {
+  /** Vertical field-of-view for the walk (FPS) camera. Clamped 55..100. */
+  fov: number;
+  /**
+   * Persisted fullscreen preference.
+   * Actual fullscreen state is driven via the Fullscreen API in the Display tab;
+   * this field reflects the last-requested value across sessions.
+   */
+  fullscreen: boolean;
+}
+
+/** Turning-tool input source. Single source of truth — see module JSDoc. */
+export type InputMode = 'mouse' | 'camera';
+
+export interface InputSettings {
+  mode: InputMode;
+}
+
+export type AssistLevel = 'beginner' | 'normal' | 'off';
+export type Units = 'metric' | 'imperial';
+
+export interface GameplaySettings {
+  /** Show/hide the CoachingOverlay HUD during turning. */
+  coachingOverlay: boolean;
+  /**
+   * Assist level for catching / coaching feedback.
+   * TODO: wire → catch tolerance in src/core (brief §9 follow-up).
+   */
+  assistLevel: AssistLevel;
+  /**
+   * Measurement unit preference for any displayed dimensions.
+   * TODO: wire → dimension displays throughout the UI (follow-up).
+   */
+  units: Units;
 }
 
 export interface SettingsStore {
@@ -129,6 +175,24 @@ export interface SettingsStore {
   setLookSensitivity: (v: number) => void;
   setInvertY: (v: boolean) => void;
   setDialSensitivity: (v: number) => void;
+
+  // ── Display ────────────────────────────────────────────────────────────────
+  display: DisplaySettings;
+  /** Set vertical FOV for the walk camera. Clamped to 55..100. */
+  setFov: (v: number) => void;
+  /** Record the fullscreen preference (actual API calls happen in the UI). */
+  setFullscreen: (v: boolean) => void;
+
+  // ── Input ──────────────────────────────────────────────────────────────────
+  input: InputSettings;
+  /** Switch the turning-tool input source. Single source of truth. */
+  setInputMode: (mode: InputMode) => void;
+
+  // ── Gameplay / Accessibility ───────────────────────────────────────────────
+  gameplay: GameplaySettings;
+  setCoachingOverlay: (v: boolean) => void;
+  setAssistLevel: (v: AssistLevel) => void;
+  setUnits: (v: Units) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +225,25 @@ const CAMERA_DEFAULTS: CameraSettings = {
   dialSensitivity: 1.0,
 };
 
+// FOV range for the walk camera (AT_LATHE / TURNING cameras are fixed framings)
+export const FOV_MIN = 55;
+export const FOV_MAX = 100;
+
+const DISPLAY_DEFAULTS: DisplaySettings = {
+  fov:        75,
+  fullscreen: false,
+};
+
+const INPUT_DEFAULTS: InputSettings = {
+  mode: 'mouse',
+};
+
+const GAMEPLAY_DEFAULTS: GameplaySettings = {
+  coachingOverlay: true,
+  assistLevel:     'normal',
+  units:           'metric',
+};
+
 // Sensitivity range clamp (0.25x – 3x)
 const SENS_MIN = 0.25;
 const SENS_MAX = 3.0;
@@ -175,6 +258,10 @@ function clampAudio(v: number): number {
 
 function clampSens(v: number): number {
   return Math.max(SENS_MIN, Math.min(SENS_MAX, v));
+}
+
+function clampFov(v: number): number {
+  return Math.max(FOV_MIN, Math.min(FOV_MAX, v));
 }
 
 function applyAudioToBus(audio: AudioSettings): void {
@@ -221,6 +308,46 @@ function mergeCameraSettings(saved: unknown): CameraSettings {
   };
 }
 
+function mergeDisplaySettings(saved: unknown): DisplaySettings {
+  if (typeof saved !== 'object' || saved === null) return { ...DISPLAY_DEFAULTS };
+  const m = saved as Record<string, unknown>;
+  return {
+    fov: typeof m['fov'] === 'number'
+      ? clampFov(m['fov'])
+      : DISPLAY_DEFAULTS.fov,
+    fullscreen: typeof m['fullscreen'] === 'boolean'
+      ? m['fullscreen']
+      : DISPLAY_DEFAULTS.fullscreen,
+  };
+}
+
+function mergeInputSettings(saved: unknown): InputSettings {
+  if (typeof saved !== 'object' || saved === null) return { ...INPUT_DEFAULTS };
+  const m = saved as Record<string, unknown>;
+  const mode = m['mode'];
+  return {
+    mode: (mode === 'mouse' || mode === 'camera') ? mode : INPUT_DEFAULTS.mode,
+  };
+}
+
+function mergeGameplaySettings(saved: unknown): GameplaySettings {
+  if (typeof saved !== 'object' || saved === null) return { ...GAMEPLAY_DEFAULTS };
+  const m = saved as Record<string, unknown>;
+  const assistLevel = m['assistLevel'];
+  const units = m['units'];
+  return {
+    coachingOverlay: typeof m['coachingOverlay'] === 'boolean'
+      ? m['coachingOverlay']
+      : GAMEPLAY_DEFAULTS.coachingOverlay,
+    assistLevel: (assistLevel === 'beginner' || assistLevel === 'normal' || assistLevel === 'off')
+      ? assistLevel
+      : GAMEPLAY_DEFAULTS.assistLevel,
+    units: (units === 'metric' || units === 'imperial')
+      ? units
+      : GAMEPLAY_DEFAULTS.units,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Load persisted state (once at module evaluation)
 // ---------------------------------------------------------------------------
@@ -237,16 +364,32 @@ const initialControls: ControlsSettings = {
 };
 
 const initialCamera: CameraSettings = mergeCameraSettings(persisted.camera);
+const initialDisplay: DisplaySettings = mergeDisplaySettings(persisted.display);
+const initialInput: InputSettings = mergeInputSettings(persisted.input);
+const initialGameplay: GameplaySettings = mergeGameplaySettings(persisted.gameplay);
 
 // Suppress unused-var lint: CONTROLS_DEFAULTS exists as a doc anchor.
 void CONTROLS_DEFAULTS;
 
 // ---------------------------------------------------------------------------
-// Shared persist helper — always snapshots all three sections together
+// Shared persist helper — always snapshots all six sections together
 // ---------------------------------------------------------------------------
 
-function persist(audio: AudioSettings, controls: ControlsSettings, camera: CameraSettings): void {
-  persistSettings({ audio, controls, camera });
+function persist(
+  audio: AudioSettings,
+  controls: ControlsSettings,
+  camera: CameraSettings,
+  display: DisplaySettings,
+  input: InputSettings,
+  gameplay: GameplaySettings,
+): void {
+  persistSettings({ audio, controls, camera, display, input, gameplay });
+}
+
+/** Convenience: read all six sections from the current store state and persist. */
+function persistAll(get: () => SettingsStore): void {
+  const s = get();
+  persist(s.audio, s.controls, s.camera, s.display, s.input, s.gameplay);
 }
 
 // ---------------------------------------------------------------------------
@@ -267,35 +410,35 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const audio: AudioSettings = { ...get().audio, masterVolume: clampAudio(v) };
     set({ audio });
     applyAudioToBus(audio);
-    persist(audio, get().controls, get().camera);
+    persistAll(get);
   },
 
   setAmbientVolume: (v) => {
     const audio: AudioSettings = { ...get().audio, ambientVolume: clampAudio(v) };
     set({ audio });
     applyAudioToBus(audio);
-    persist(audio, get().controls, get().camera);
+    persistAll(get);
   },
 
   setMotorVolume: (v) => {
     const audio: AudioSettings = { ...get().audio, motorVolume: clampAudio(v) };
     set({ audio });
     applyAudioToBus(audio);
-    persist(audio, get().controls, get().camera);
+    persistAll(get);
   },
 
   setSfxVolume: (v) => {
     const audio: AudioSettings = { ...get().audio, sfxVolume: clampAudio(v) };
     set({ audio });
     applyAudioToBus(audio);
-    persist(audio, get().controls, get().camera);
+    persistAll(get);
   },
 
   setMuted: (muted) => {
     const audio: AudioSettings = { ...get().audio, muted };
     set({ audio });
     applyAudioToBus(audio);
-    persist(audio, get().controls, get().camera);
+    persistAll(get);
   },
 
   // ── Controls (keymap) ─────────────────────────────────────────────────────
@@ -329,14 +472,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
     const controls: ControlsSettings = { keymap: newKeymap };
     set({ controls });
-    persist(get().audio, controls, get().camera);
+    persistAll(get);
     return result;
   },
 
   resetKeymap: () => {
     const controls: ControlsSettings = { keymap: { ...KEYMAP_DEFAULTS } };
     set({ controls });
-    persist(get().audio, controls, get().camera);
+    persistAll(get);
   },
 
   // ── Camera & feel ─────────────────────────────────────────────────────────
@@ -346,18 +489,66 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setLookSensitivity: (v) => {
     const camera: CameraSettings = { ...get().camera, lookSensitivity: clampSens(v) };
     set({ camera });
-    persist(get().audio, get().controls, camera);
+    persistAll(get);
   },
 
   setInvertY: (v) => {
     const camera: CameraSettings = { ...get().camera, invertY: v };
     set({ camera });
-    persist(get().audio, get().controls, camera);
+    persistAll(get);
   },
 
   setDialSensitivity: (v) => {
     const camera: CameraSettings = { ...get().camera, dialSensitivity: clampSens(v) };
     set({ camera });
-    persist(get().audio, get().controls, camera);
+    persistAll(get);
+  },
+
+  // ── Display ───────────────────────────────────────────────────────────────
+
+  display: initialDisplay,
+
+  setFov: (v) => {
+    const display: DisplaySettings = { ...get().display, fov: clampFov(v) };
+    set({ display });
+    persistAll(get);
+  },
+
+  setFullscreen: (v) => {
+    const display: DisplaySettings = { ...get().display, fullscreen: v };
+    set({ display });
+    persistAll(get);
+  },
+
+  // ── Input ─────────────────────────────────────────────────────────────────
+
+  input: initialInput,
+
+  setInputMode: (mode) => {
+    const input: InputSettings = { mode };
+    set({ input });
+    persistAll(get);
+  },
+
+  // ── Gameplay / Accessibility ──────────────────────────────────────────────
+
+  gameplay: initialGameplay,
+
+  setCoachingOverlay: (v) => {
+    const gameplay: GameplaySettings = { ...get().gameplay, coachingOverlay: v };
+    set({ gameplay });
+    persistAll(get);
+  },
+
+  setAssistLevel: (v) => {
+    const gameplay: GameplaySettings = { ...get().gameplay, assistLevel: v };
+    set({ gameplay });
+    persistAll(get);
+  },
+
+  setUnits: (v) => {
+    const gameplay: GameplaySettings = { ...get().gameplay, units: v };
+    set({ gameplay });
+    persistAll(get);
   },
 }));
