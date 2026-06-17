@@ -12,6 +12,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
+import { useScrollZoom } from '../useScrollZoom.js';
 import * as THREE from 'three';
 import { Lighting, Room, Furniture } from '../../workshop/index.js';
 import { Lathe } from '../../lathe/index.js';
@@ -82,6 +83,11 @@ export function TurningScene3D({ ctx }: Props) {
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
   const [camIdx, setCamIdx] = useState(0);
 
+  // Tracks the active preset's base FOV so useScrollZoom knows the zoom-out ceiling.
+  // Updated synchronously in the preset-apply effect below (before the next paint).
+  // Pre-initialised to the default preset (index 0 = operator).
+  const activeBaseFovRef = useRef<number>(CAM_PRESETS[0]?.fov ?? OPERATOR_CAM_FOV);
+
   // V cycles the camera preset (operator ↔ overhead) while turning.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,6 +102,8 @@ export function TurningScene3D({ ctx }: Props) {
   }, []);
 
   // Apply the active preset (position + fov + look-at) whenever it changes.
+  // Also updates activeBaseFovRef so the scroll-zoom ceiling reflects the new preset.
+  // Toggling V resets camera fov to the preset — zoom resets naturally.
   useEffect(() => {
     const cam = camRef.current;
     if (cam === null) return;
@@ -107,7 +115,13 @@ export function TurningScene3D({ ctx }: Props) {
     // _camTarget was pre-allocated above — mutate in place, zero heap cost.
     _camTarget.set(preset.target[0], preset.target[1], preset.target[2]);
     cam.lookAt(_camTarget);
+    // Update the zoom ceiling for useScrollZoom — no re-render needed (ref mutation).
+    activeBaseFovRef.current = preset.fov;
   }, [camIdx]);
+
+  // Scroll-wheel zoom: "original" FOV = current preset's fov (read via ref).
+  // Toggling V resets fov to preset.fov, so zoom resets on view change.
+  useScrollZoom(() => activeBaseFovRef.current);
 
   return (
     <>
