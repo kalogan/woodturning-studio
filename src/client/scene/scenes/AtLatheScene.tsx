@@ -19,6 +19,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
+import { useScrollZoom } from '../useScrollZoom.js';
 import * as THREE from 'three';
 import { Lighting, Room, Furniture } from '../../workshop/index.js';
 import { Lathe } from '../../lathe/index.js';
@@ -111,6 +112,10 @@ export function AtLatheScene({ ctx }: Props) {
     // _camTarget was pre-allocated above — zero heap cost here.
     cam.lookAt(_camTarget);
   }, []);
+
+  // Scroll-wheel zoom: scroll up = zoom in (lower FOV), scroll down = return to
+  // ATLATHE_CAM_FOV. The getter is a stable lambda — no re-render on zoom.
+  useScrollZoom(() => ATLATHE_CAM_FOV);
 
   // Tick the lathe motor each frame so currentRpm eases toward targetRpm
   // and the Headstock's live RPM readout canvas stays current.
