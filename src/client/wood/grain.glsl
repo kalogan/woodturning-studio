@@ -69,33 +69,47 @@ vec3 computeWoodColor(vec3 localPos) {
   // Use distance from the lathe axis (X-Z plane) to form radial rings.
   float dist = length(localPos.xz);
 
-  // Slight turbulence along Y gives an organic non-uniform ring shape.
-  float turb = g_noise2(vec2(localPos.y * 6.0, dist * 3.0)) * 0.08;
+  // Turbulence: two octaves for more organic, non-concentric rings.
+  float turb  = g_noise2(vec2(localPos.y * 6.0,  dist * 3.0))  * 0.12;
+  turb       += g_noise2(vec2(localPos.y * 18.0, dist * 9.0))  * 0.04;
 
-  // Ring wave: sin maps to 0..1; scale by ringFrequency (rings per unit).
-  float ringWave = sin((dist + turb) * u_ringFrequency * 6.2832) * 0.5 + 0.5;
+  // Raw ring phase mapped to 0..1 via sine.
+  float rawRing = sin((dist + turb) * u_ringFrequency * 6.2832) * 0.5 + 0.5;
 
-  // Mix base ↔ grain color by ringWave × contrast.
-  vec3 woodCol = mix(u_baseColor, u_grainColor, ringWave * u_ringContrast);
+  // Sharpen rings: push the mid-grey sine toward distinct dark/light bands.
+  // smoothstep with a tight band around 0.5 produces a crisp early/latewood contrast.
+  float ringSharp = smoothstep(0.35, 0.65, rawRing);
+
+  // Blend sharpened and smooth ring — controlled by contrast.
+  // At ringContrast=0 → no effect; at 1.0 → full sharpened mix.
+  float ringMix = mix(rawRing, ringSharp, clamp(u_ringContrast * 1.5, 0.0, 1.0));
+
+  // Mix base ↔ grain color.  Drive the blend with contrast so low values still
+  // produce some visible ring banding.
+  float blendT = ringMix * clamp(u_ringContrast + 0.25, 0.0, 1.0);
+  vec3 woodCol = mix(u_baseColor, u_grainColor, blendT);
 
   // ── Fine longitudinal grain lines ─────────────────────────────────────────
-  float grainNoise = g_noise2(vec2(localPos.y * 40.0, dist * 20.0)) * 0.06;
-  woodCol *= (1.0 - grainNoise);
+  // Two-octave noise for visible medullary-ray style grain texture.
+  float grainNoise  = g_noise2(vec2(localPos.y * 40.0,  dist * 20.0)) * 0.10;
+  grainNoise       += g_noise2(vec2(localPos.y * 120.0, dist * 60.0)) * 0.04;
+  // Mix toward grain color rather than plain darkening — warmer result.
+  woodCol = mix(woodCol, u_grainColor, grainNoise);
 
   // ── Figure (fleck or streak) ───────────────────────────────────────────────
   if (u_figureType == 1) {
     // Fleck: small scattered specks — e.g. quartersawn ray fleck (maple/cherry)
-    float fleckThresh = 1.0 - u_figureIntensity * 0.6;
+    float fleckThresh = 1.0 - u_figureIntensity * 0.65;
     float speckA = g_noise3(localPos * vec3(80.0, 12.0, 80.0));
     float speckB = g_noise3(localPos * vec3(60.0, 8.0, 60.0) + 17.3);
     float fleck = step(fleckThresh, speckA * speckB);
     // Flecks are lighter than the base (ray cells reflect more light)
-    woodCol = mix(woodCol, woodCol * 1.35, fleck * u_figureIntensity);
+    woodCol = mix(woodCol, woodCol * 1.45, fleck * u_figureIntensity);
   } else if (u_figureType == 2) {
     // Streak: elongated darker streaks aligned to the long axis (walnut, ash)
     float streakNoise = g_noise2(vec2(localPos.x * 30.0 + localPos.z * 30.0, localPos.y * 2.0));
-    float streakFactor = smoothstep(0.55, 0.75, streakNoise) * u_figureIntensity;
-    woodCol *= (1.0 - streakFactor * 0.4);
+    float streakFactor = smoothstep(0.45, 0.70, streakNoise) * u_figureIntensity;
+    woodCol = mix(woodCol, u_grainColor * 0.7, streakFactor * 0.55);
   }
 
   // ── Tearout cue ───────────────────────────────────────────────────────────

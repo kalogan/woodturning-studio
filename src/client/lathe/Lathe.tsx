@@ -250,7 +250,11 @@ export function Lathe({
             {/* Square prism: X = spindle axis (length), Y/Z = square cross-section */}
             <mesh>
               <boxGeometry args={[blankLength, BLANK_SIDE, BLANK_SIDE]} />
-              <meshStandardMaterial color="#c8a96e" roughness={0.8} metalness={0.0} />
+              {/* Warm amber-tan: pine-like sapwood tone so the square stock
+                  visually reads as wood at AT_LATHE before turning begins.
+                  A full grain shader here would require onBeforeCompile on a
+                  one-off mesh; pine.json baseColor is the reference hue. */}
+              <meshStandardMaterial color="#dfc890" roughness={0.82} metalness={0.0} />
             </mesh>
           </group>
         )}
