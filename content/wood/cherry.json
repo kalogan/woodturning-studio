@@ -5,9 +5,9 @@
   "density": 580,
   "visual": {
     "baseColor": "#c07850",
-    "grainColor": "#8a4828",
+    "grainColor": "#7a3818",
     "ringFrequency": 8.0,
-    "ringContrast": 0.28,
-    "figure": { "type": "fleck", "intensity": 0.15 }
+    "ringContrast": 0.42,
+    "figure": { "type": "fleck", "intensity": 0.20 }
   }
 }

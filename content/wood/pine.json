@@ -4,10 +4,10 @@
   "janka": 380,
   "density": 350,
   "visual": {
-    "baseColor": "#e8d8a8",
-    "grainColor": "#c8a870",
-    "ringFrequency": 4.5,
-    "ringContrast": 0.45,
+    "baseColor": "#dfc890",
+    "grainColor": "#a06830",
+    "ringFrequency": 5.5,
+    "ringContrast": 0.62,
     "figure": { "type": "none", "intensity": 0.0 }
   }
 }
