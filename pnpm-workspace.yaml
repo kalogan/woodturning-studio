@@ -1,2 +1,8 @@
 allowBuilds:
   esbuild: set this to true or false
+# pnpm 10+ reads build-script approvals (and other settings) from here, not the
+# package.json "pnpm" field. esbuild needs its postinstall to fetch its native binary
+# (Vite depends on esbuild); without this, a clean install (e.g. Vercel CI) fails with
+# ERR_PNPM_IGNORED_BUILDS.
+onlyBuiltDependencies:
+  - esbuild
