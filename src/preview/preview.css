@@ -1,0 +1,150 @@
+/**
+ * preview.css — harness shell styling ONLY.
+ *
+ * Imported solely by the preview entry (src/preview/main.tsx) and therefore
+ * never reaches the product bundle (PREVIEW_HARNESS.md §A "forbidden").
+ */
+
+:root {
+  --bg: #1a1a1a;
+  --panel: #232323;
+  --panel-border: #383838;
+  --text: #e8e3d8;
+  --text-dim: #9a948a;
+  --accent: #c98a3a;
+  --accent-text: #1a1a1a;
+  --error: #e25c4a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.harness {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  width: 100vw;
+  height: 100vh;
+}
+
+.harness__sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.harness__title {
+  padding: 14px 16px 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.harness__count {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.harness__list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 6px 0;
+}
+
+.harness__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+
+.harness__item:hover { background: rgba(255, 255, 255, 0.05); }
+
+.harness__item--active {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.harness__main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.harness__topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));
+  pointer-events: none;
+}
+
+.harness__active-name {
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.harness__btn {
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.harness__btn:hover { border-color: var(--accent); }
+
+.harness__error {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  max-width: 520px;
+  background: var(--panel);
+  border: 1px solid var(--error);
+  border-radius: 6px;
+  padding: 16px 20px;
+  color: var(--text);
+}
+
+.harness__error-title {
+  color: var(--error);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.harness__error-msg {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  color: var(--text-dim);
+}
