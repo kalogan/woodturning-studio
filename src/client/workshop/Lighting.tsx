@@ -1,74 +1,164 @@
 /**
  * Lighting.tsx — Workshop lighting rig
  *
- * Design intent: warm workshop at dusk with the task light on.
- *   - Very low warm ambient: lifts shadow floors without flattening contrast
- *   - Overhead fluorescents: cooler, moderate — give the room shape and depth
- *   - Tungsten task spot (HERO): bright, warm, focused pool over the lathe
- *     at world origin. This is the primary light source the eye reads.
+ * Design intent: bright fluorescent shop like a real woodturning classroom.
+ *   - Moderate warm ambient: lifts the whole hall without flattening contrast
+ *   - Two parallel rows of overhead shop fluorescents down the hall length —
+ *     one over the lathe row (near back wall) and one over the aisle centre.
+ *     Each fixture = emissive panel + pointLight underneath.
+ *   - Tungsten task spot (HERO): bright, warm, focused pool over the player lathe.
  *
- * Light budget: 1 ambient + 3 fluorescent pointLights + 1 task spotLight = 5
- *   (fluorescents share one shadow map; task spot casts its own)
- * Shadow maps: 1024 on task spot + one fluorescent — perf budget per brief.
+ * Hall extents (from Hall.tsx constants):
+ *   X ∈ [-16, +2]   — long axis (18 m); player lathe at origin end
+ *   Z ∈ [-2.5, +4]  — short axis (6.5 m wide)
+ *   Ceiling: 3.6 m
+ *
+ * Light budget:
+ *   1 ambient
+ *   + 6 fixtures × row A (lathe row)  = 6 pointLights
+ *   + 6 fixtures × row B (aisle)      = 6 pointLights
+ *   + 1 task spotLight
+ *   = 14 lights total (well within WebGL 16-light default limit for forward pass)
+ *
+ * No per-frame heap allocation — all positions are static module-scope constants.
  */
 
-// Overhead fixture positions [x, z] — spread across ceiling, away from lathe
-const FLUORESCENT_POSITIONS: [number, number][] = [
-  [-1.6, -1.5],
-  [0, -1.8],
-  [1.6, -1.5],
-];
+// ─── Hall dimensions (must match Hall.tsx) ─────────────────────────────────
+// Copied as constants here so Lighting.tsx stays self-contained and doesn't
+// import from Hall.tsx (avoids a circular dep risk through the client/ tree).
+const HALL_X_MIN = -16.0;
+const HALL_X_MAX =   2.0;
+const HALL_H     =  3.6;   // ceiling height
+const HALL_Z_MIN = -2.5;   // back wall (lathe row)
+const HALL_Z_MAX =  4.0;   // front wall (aisle/windows)
 
-const CEILING_Y = 3.0; // must match Room ROOM_H
-const FIXTURE_Y = CEILING_Y - 0.05; // just below ceiling
+// ─── Fixture layout ─────────────────────────────────────────────────────────
+// FIXTURE_COUNT: number of fixtures per row down the long X axis.
+const FIXTURE_COUNT = 6;
 
-// Task lamp hangs above the lathe station at origin, slightly toward operator
-const TASK_LAMP_OFFSET: [number, number, number] = [0, CEILING_Y - 0.15, 0.3];
+// X positions: evenly spaced from near the entrance end to the lathe at origin.
+// We leave ~1 m margin at each end so fixtures don't clip into end walls.
+const FIXTURE_X_START = HALL_X_MIN + 1.0;   // ~ -15
+const FIXTURE_X_END   = HALL_X_MAX - 1.5;   // ~  0.5
+
+// Build the X array once at module scope — no per-render allocation.
+const FIXTURE_XS: number[] = [];
+for (let i = 0; i < FIXTURE_COUNT; i++) {
+  FIXTURE_XS.push(
+    FIXTURE_X_START + (i / (FIXTURE_COUNT - 1)) * (FIXTURE_X_END - FIXTURE_X_START),
+  );
+}
+
+// Row A — over the lathe row, just in from the back (-Z) wall.
+const ROW_A_Z = HALL_Z_MIN + 1.0;   // ≈ -1.5  (above the lathe operators)
+
+// Row B — over the aisle, roughly 1/3 from the front (+Z) wall.
+const ROW_B_Z = HALL_Z_MIN + (HALL_Z_MAX - HALL_Z_MIN) * 0.62; // ≈ +1.5
+
+// Fixture Y — mount panels tight to the ceiling, lights just below
+const FIXTURE_PANEL_Y = HALL_H - 0.06;   // emissive panel flush to ceiling
+const FIXTURE_LIGHT_Y = HALL_H - 0.15;   // point light just below panel
+
+// ─── Fixture visual parameters ───────────────────────────────────────────────
+// Tube housing: long thin box, bright cool-white emissive
+const TUBE_W  = 1.4;   // length along X (tube runs down the hall axis)
+const TUBE_D  = 0.14;  // depth along Z
+const TUBE_H  = 0.05;  // thin panel height
+
+const TUBE_COLOR    = '#d8e4f8';   // slightly blue-white
+const TUBE_EMISSIVE = '#c4d8ff';
+const TUBE_EMISSIVE_INTENSITY = 2.2;
+
+// ─── Light parameters ────────────────────────────────────────────────────────
+// Each fixture has a pointLight directly below the panel.
+// distance=12 means it reaches across ~3.3 m of hall width and ~6 m down the
+// hall from each fixture; adjacent fixtures overlap nicely so the floor is even.
+const FLUORO_COLOR     = '#dde8ff';   // cool-white fluorescent tint
+const FLUORO_INTENSITY = 14;          // bright enough to light the floor clearly
+const FLUORO_DISTANCE  = 12;          // metres, covers half-gap between fixtures
+const FLUORO_DECAY     = 2;
+
+// ─── Ambient ─────────────────────────────────────────────────────────────────
+// Lifted from 0.14 → 0.40 for bright-shop feel. Slightly warm so brick walls
+// still read warm even without direct light; the fluorescents cool it back.
+const AMBIENT_INTENSITY = 0.40;
+const AMBIENT_COLOR     = '#fff5e8';  // very slightly warm white
+
+// ─── Task lamp ───────────────────────────────────────────────────────────────
+// Spot centred above the player lathe at world origin. Keeps the work surface
+// as a visually distinct warm pool even in the brighter room.
+const TASK_LAMP_POS: [number, number, number] = [0, HALL_H - 0.15, 0.3];
 
 export function Lighting() {
   return (
     <group name="lighting">
-      {/* ── Warm ambient — floor for shadows, not a fill light ── */}
-      {/* Intentionally low so the task spot creates real contrast */}
-      <ambientLight intensity={0.14} color="#ffe4c4" />
 
-      {/* ── Overhead fluorescent fixtures ── */}
-      {/* Cool-white, moderate intensity — room shape fill, NOT stadium lights */}
-      {FLUORESCENT_POSITIONS.map(([x, z], i) => (
-        <group key={i} position={[x, FIXTURE_Y, z]}>
-          {/* Visible tube — emissive cool-white rectangle, bloom-ready */}
-          <mesh>
-            <boxGeometry args={[0.9, 0.04, 0.12]} />
-            <meshStandardMaterial
-              color="#c8d4f0"
-              emissive="#b8c8ee"
-              emissiveIntensity={1.8}
-              roughness={0.3}
-              metalness={0.1}
+      {/* ── Warm ambient — raised to bright-shop level ── */}
+      <ambientLight intensity={AMBIENT_INTENSITY} color={AMBIENT_COLOR} />
+
+      {/* ── Row A: overhead fluorescents over the lathe row ── */}
+      <group name="fluoro-row-a">
+        {FIXTURE_XS.map((x, i) => (
+          <group key={`a${String(i)}`} position={[x, FIXTURE_PANEL_Y, ROW_A_Z]}>
+            {/* Visible fluorescent tube housing */}
+            <mesh>
+              <boxGeometry args={[TUBE_W, TUBE_H, TUBE_D]} />
+              <meshStandardMaterial
+                color={TUBE_COLOR}
+                emissive={TUBE_EMISSIVE}
+                emissiveIntensity={TUBE_EMISSIVE_INTENSITY}
+                roughness={0.25}
+                metalness={0.05}
+              />
+            </mesh>
+            {/* Light source — every fixture gets a light; total 6+6=12 point lights */}
+            <pointLight
+              position={[0, FIXTURE_LIGHT_Y - FIXTURE_PANEL_Y, 0]}
+              color={FLUORO_COLOR}
+              intensity={FLUORO_INTENSITY}
+              distance={FLUORO_DISTANCE}
+              decay={FLUORO_DECAY}
             />
-          </mesh>
-          {/* Point light — moderate, cooler white, gives room depth */}
-          <pointLight
-            color="#dde6ff"
-            intensity={8}
-            distance={6}
-            decay={2}
-            castShadow={i === 1} /* only centre fixture casts shadow */
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
-          />
-        </group>
-      ))}
+          </group>
+        ))}
+      </group>
+
+      {/* ── Row B: overhead fluorescents over the aisle ── */}
+      <group name="fluoro-row-b">
+        {FIXTURE_XS.map((x, i) => (
+          <group key={`b${String(i)}`} position={[x, FIXTURE_PANEL_Y, ROW_B_Z]}>
+            {/* Visible fluorescent tube housing */}
+            <mesh>
+              <boxGeometry args={[TUBE_W, TUBE_H, TUBE_D]} />
+              <meshStandardMaterial
+                color={TUBE_COLOR}
+                emissive={TUBE_EMISSIVE}
+                emissiveIntensity={TUBE_EMISSIVE_INTENSITY}
+                roughness={0.25}
+                metalness={0.05}
+              />
+            </mesh>
+            {/* Light source */}
+            <pointLight
+              position={[0, FIXTURE_LIGHT_Y - FIXTURE_PANEL_Y, 0]}
+              color={FLUORO_COLOR}
+              intensity={FLUORO_INTENSITY}
+              distance={FLUORO_DISTANCE}
+              decay={FLUORO_DECAY}
+            />
+          </group>
+        ))}
+      </group>
 
       {/* ── Tungsten task spot — HERO light over lathe at origin ── */}
       {/*
-       * At intensity=120 vs fluorescents at 8 each, the task spot is the
-       * dominant source. The warm pool (~1.2m radius at floor) makes the
-       * lathe station visually pop against the cooler, dimmer shop floor.
+       * At intensity=120 vs fluorescents at 14 each, the task spot is still
+       * dominant close-up — its warm pool makes the lathe station pop even
+       * in the now-brighter ambient room.
        * angle=0.52 rad (~30°) with penumbra=0.45 → soft focused circle.
-       * Target is lathe centre at [0, 0.9, 0] (spindle height).
+       * Target offset centres cone on lathe spindle at origin.
        */}
-      <group position={TASK_LAMP_OFFSET}>
+      <group position={TASK_LAMP_POS}>
         {/* Shade housing — dark metal exterior */}
         <mesh>
           <cylinderGeometry args={[0.06, 0.22, 0.26, 16, 1, true]} />
@@ -108,13 +198,13 @@ export function Lighting() {
           />
         </mesh>
         {/*
-         * SpotLight — warm tungsten #ffb86b, high intensity creates the
-         * focused warm pool. Target offset corrects for lamp overhang so
-         * the cone centres on the lathe spindle axis at origin floor.
+         * SpotLight — warm tungsten, stays as HERO light for the work surface.
+         * Toned slightly from 120→90 since ambient is now brighter, but the
+         * warm pool contrast is preserved.
          */}
         <spotLight
           color="#ffb86b"
-          intensity={120}
+          intensity={90}
           angle={0.52}
           penumbra={0.45}
           distance={7}
@@ -127,6 +217,7 @@ export function Lighting() {
           shadow-bias={-0.001}
         />
       </group>
+
     </group>
   );
 }
