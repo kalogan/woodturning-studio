@@ -12,3 +12,4 @@ export { GrinderStation, GRINDER_POS, GRINDER_ROT } from './GrinderStation.js';
 export { ShopClutter } from './ShopClutter.js';
 export { TurnedDisplay, TURNED_DISPLAY_POS, TURNED_DISPLAY_ROT } from './TurnedDisplay.js';
 export { ToolWall } from './ToolWall.js';
+export { DustCollection } from './DustCollection.js';
