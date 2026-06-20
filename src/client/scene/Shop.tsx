@@ -7,6 +7,9 @@
  *   • Back-wall Casework (cabinets, shelving, blanks)
  *   • Furniture (tool cabinet, workbench, blank rack, safety gear)
  *   • DemoStation (monitor on right wall)
+ *   • DemoBench (instructor demo stand, centre aisle)
+ *   • StockCubbies (wood offcut pigeonhole shelving, right wall)
+ *   • GrinderStation (bench grinder on pedestal, left wall)
  *
  * What is NOT included here:
  *   • The player's interactive <Lathe> — each scene adds its own.
@@ -17,7 +20,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture, HallLathes } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -35,6 +38,15 @@ export function Shop() {
 
       {/* Prop lathes filling the hall + anti-fatigue mat at the player's lathe */}
       <HallLathes />
+
+      {/* Instructor demo stand — centre aisle, camera arm + TV overhead */}
+      <DemoBench />
+
+      {/* Wood stock cubbies — pigeonhole shelving packed with offcuts, right wall */}
+      <StockCubbies />
+
+      {/* Bench grinder station — pedestal grinder with two wheels, left wall */}
+      <GrinderStation />
     </group>
   );
 }
