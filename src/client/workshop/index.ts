@@ -5,7 +5,7 @@ export { Casework, BaseCabinets, UpperCabinets, OpenShelving } from './Casework.
 export { DemoStation } from './DemoStation.js';
 export { Hall, HALL_X_MIN, HALL_X_MAX, HALL_Z_MIN, HALL_Z_MAX, HALL_H } from './Hall.js';
 export { PropLathe } from './PropLathe.js';
-export { HallLathes } from './HallLathes.js';
+export { HallLathes, LATHE_YAW } from './HallLathes.js';
 export { DemoBench, DEMO_BENCH_POS, DEMO_BENCH_ROT } from './DemoBench.js';
 export { StockCubbies, CUBBIES_POS, CUBBIES_ROT } from './StockCubbies.js';
 export { GrinderStation, GRINDER_POS, GRINDER_ROT } from './GrinderStation.js';

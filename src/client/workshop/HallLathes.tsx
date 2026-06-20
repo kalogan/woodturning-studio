@@ -29,6 +29,20 @@ import { PropLathe } from './PropLathe.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
+/**
+ * Yaw (radians, about Y) applied to every lathe so the beds sit at an angle to
+ * the wall — matching the real Hamester Hall, where the machines are turned off
+ * the wall line (headstock toward the wall, tailstock/operator end swung out
+ * toward the aisle) rather than running parallel to it.
+ *
+ * Sign: negative yaw swings each lathe's tailstock (+X end) toward the aisle
+ * (+Z) and the headstock (-X end) toward the wall (-Z) — see PropLathe local
+ * axes. Flip the sign to mirror the angle direction; change the magnitude to
+ * make the angle shallower/steeper. This same constant angles the player's
+ * interactive lathe in WORKSHOP_WALK (see WalkScene) so the whole row matches.
+ */
+export const LATHE_YAW = -0.45;   // ≈ -26°
+
 /** Z position of all prop lathes — against the -Z back wall, same as player lathe */
 const ROW_Z = 0.0;
 
@@ -108,6 +122,7 @@ export function HallLathes() {
         <PropLathe
           key={i}
           position={[ROW_START_X + i * ROW_SPACING_X, ROW_Y, ROW_Z]}
+          rotation={[0, LATHE_YAW, 0]}
           color={ROW_COLORS[i] ?? '#e8e6dc'}
         />
       ))}
