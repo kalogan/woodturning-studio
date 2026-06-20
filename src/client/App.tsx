@@ -41,6 +41,7 @@ export default function App() {
     pickUpTool,
     finishCutscene,
     returnToMenu,
+    leaveLathe,
   } = useSceneStore();
 
   const lesson = getCurriculum().find((l) => l.id === activeLessonId) ?? null;
@@ -149,6 +150,7 @@ export default function App() {
     pickUpTool,
     finishCutscene,
     returnToMenu,
+    leaveLathe,
     lesson,
     adapter,
     adapterReady,
@@ -190,10 +192,11 @@ export default function App() {
       {/* ── DOM overlays by state (via registry) ─────────────────────── */}
       {Overlay !== undefined && <Overlay ctx={ctx} />}
 
-      {/* Escape hatch — always available in non-MENU states
-          (WORKSHOP_WALK has its own ← Menu button embedded in the HUD,
-           so we only render this fixed button for the other non-MENU states) */}
-      {(state === 'SETUP' || state === 'AT_LATHE' || state === 'TURNING' || state === 'LESSON_COMPLETE') && (
+      {/* Escape hatch — available for SETUP / AT_LATHE / LESSON_COMPLETE.
+          TURNING is excluded: TurningOverlay's bottom bar provides both
+          "Step away" and "Menu" so no duplicate button is needed here.
+          WORKSHOP_WALK has its own ← Menu button embedded in the HUD. */}
+      {(state === 'SETUP' || state === 'AT_LATHE' || state === 'LESSON_COMPLETE') && (
         <button
           style={{ ...escapeBtnStyle, position: 'fixed', top: 12, left: 12, zIndex: 200 }}
           onClick={returnToMenu}
