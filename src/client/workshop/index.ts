@@ -15,3 +15,4 @@ export { ToolWall } from './ToolWall.js';
 export { DustCollection } from './DustCollection.js';
 export { ClassroomSignage } from './ClassroomSignage.js';
 export { CeilingEquipment } from './CeilingEquipment.js';
+export { ShopFurniture } from './ShopFurniture.js';
