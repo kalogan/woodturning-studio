@@ -45,7 +45,7 @@ const CEILING_Y = 3.6;   // HALL_H — rods/flue terminate here
 // ── Air filtration units (×2) ────────────────────────────────────────────────
 /** X positions of the two hanging air cleaners (between light X-positions). */
 const FILTER_XS: readonly number[] = [-4.5, -10.5];
-const FILTER_Z = 0.3;    // clear centre band, just shy of the duct spine (Z≥0.525)
+const FILTER_Z = 0.15;   // clear centre band; box rear (Z≈0.36) clears the duct spine (Z≥0.525) by ~0.16m
 
 const FILT_L = 0.85;     // length along X
 const FILT_H = 0.45;     // body height
