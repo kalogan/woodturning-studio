@@ -19,6 +19,9 @@ import { Canvas } from '@react-three/fiber';
 import { Grid, OrbitControls } from '@react-three/drei';
 import { PROP_REGISTRY } from './propRegistry.js';
 import { PropErrorBoundary } from './PropErrorBoundary.js';
+import { PropertiesPanel } from './PropertiesPanel.js';
+import { EditedProp } from './EditedProp.js';
+import { useEditStore } from './editStore.js';
 import './preview.css';
 
 function InspectionLights() {
@@ -37,6 +40,10 @@ export function PreviewApp() {
   const controlsRef = useRef<ComponentRef<typeof OrbitControls> | null>(null);
 
   const active = PROP_REGISTRY.find((p) => p.name === activeName) ?? PROP_REGISTRY[0];
+
+  // Subscribe to this prop's edit so the Canvas re-renders the transform/tint live.
+  const activeEdit = useEditStore((s) => s.getEdit(activeName));
+  useEditStore((s) => s.edits[activeName]); // re-render trigger on edit change
 
   const select = useCallback((name: string) => {
     setError(null);
@@ -110,12 +117,16 @@ export function PreviewApp() {
 
           {ActiveComponent && (
             <PropErrorBoundary key={activeName} name={activeName} onError={setError}>
-              <ActiveComponent />
+              <EditedProp key={activeName} activeName={activeName} edit={activeEdit}>
+                <ActiveComponent />
+              </EditedProp>
             </PropErrorBoundary>
           )}
 
           <OrbitControls ref={controlsRef} makeDefault />
         </Canvas>
+
+        {activeName !== '' && <PropertiesPanel activeName={activeName} />}
       </main>
     </div>
   );
