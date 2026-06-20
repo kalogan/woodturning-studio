@@ -16,6 +16,7 @@ import {
   cabinetPaint,
   laminateCounter,
   brushedSteelHandle,
+  paintedSteelCabinet,
 } from '../lathe/materials.js';
 import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
@@ -27,13 +28,16 @@ const BASE_TOP_T = 0.04;   // countertop thickness
 const UPPER_H = 0.7;       // upper cabinet height
 const UPPER_D = 0.3;       // upper cabinet depth
 const UPPER_Y = 1.55 + UPPER_H / 2; // centre Y of upper cabs (bottom at ~1.55)
+// Front face of base cabinets (cabinet centre Z + half-depth)
+const BASE_FRONT_Z = WALL_Z + BASE_D;  // = −1.9
 
 // Material props — pre-allocated at module scope
 const cabMat      = cabinetPaint();                     // painted MDF white body
 const cabShadowMat = cabinetPaint('#d0cdc6');           // slightly darker inset lines
 const handleMat   = brushedSteelHandle('#b0a888');      // warm brushed-steel pulls
 const counterMat  = laminateCounter();                  // grey laminate top
-const woodMat     = makeBoardMaterial('#9B6B3F');        // open-shelving carcass (grained)
+// Open-shelving CARCASS: painted-steel (grey/neutral metal, not wood-grain)
+const shelfCarcassMat = paintedSteelCabinet('#878d8a'); // neutral grey painted steel
 
 // Glass-front door: kept as literal since it has unique transparent props
 const GLASS_COL = '#7090a8';       // bluish-grey for glass-front doors
@@ -44,7 +48,6 @@ export function BaseCabinets() {
   // One long carcass, then door/drawer lines on front face
   const totalW = 5.4;
   const centreX = 0;
-  const frontZ = WALL_Z + BASE_D / 2;
 
   // Door-line X positions (dividers every ~0.6 m, 9 sections)
   const doorDividers: number[] = [];
@@ -73,23 +76,25 @@ export function BaseCabinets() {
         <meshStandardMaterial {...counterMat} />
       </mesh>
 
-      {/* Vertical door-line dividers (inset strips on front face) */}
+      {/* Vertical door-line dividers (inset strips on front face).
+          Placed at BASE_FRONT_Z + epsilon to avoid z-fighting with carcass face. */}
       {doorDividers.map((x, i) => (
-        <mesh key={`div-${String(i)}`} position={[x, BASE_H / 2, frontZ + 0.001]}>
+        <mesh key={`div-${String(i)}`} position={[x, BASE_H / 2, BASE_FRONT_Z + 0.003]}>
           <boxGeometry args={[0.012, BASE_H - 0.04, 0.008]} />
           <meshStandardMaterial {...cabShadowMat} />
         </mesh>
       ))}
 
-      {/* Horizontal mid-rail (separates upper drawer from lower door) */}
-      <mesh position={[centreX, 0.52, frontZ + 0.001]}>
+      {/* Horizontal mid-rail (separates upper drawer from lower door).
+          Same epsilon offset off the front face. */}
+      <mesh position={[centreX, 0.52, BASE_FRONT_Z + 0.003]}>
         <boxGeometry args={[totalW - 0.02, 0.012, 0.008]} />
         <meshStandardMaterial {...cabShadowMat} />
       </mesh>
 
-      {/* Handles — one per section */}
+      {/* Handles — one per section (mounted proud of divider layer) */}
       {handles.map((x, i) => (
-        <mesh key={`h-${String(i)}`} position={[x, 0.62, frontZ + 0.016]}>
+        <mesh key={`h-${String(i)}`} position={[x, 0.62, BASE_FRONT_Z + 0.016]}>
           <boxGeometry args={[0.1, 0.018, 0.012]} />
           <meshStandardMaterial {...handleMat} />
         </mesh>
@@ -212,25 +217,25 @@ export function OpenShelving() {
 
   return (
     <group name="open-shelving" position={[centreX, 0, centreZ]}>
-      {/* Side uprights */}
+      {/* Side uprights — painted steel carcass (not wood-grain) */}
       {([-unitW / 2, unitW / 2] as const).map((x, i) => (
         <mesh key={i} castShadow position={[x, unitH / 2, 0]}>
           <boxGeometry args={[0.025, unitH, unitD]} />
-          <primitive object={woodMat} attach="material" />
+          <meshStandardMaterial {...shelfCarcassMat} />
         </mesh>
       ))}
 
-      {/* Back panel */}
+      {/* Back panel — painted steel carcass */}
       <mesh receiveShadow position={[0, unitH / 2, -unitD / 2 + 0.015]}>
         <boxGeometry args={[unitW, unitH, 0.018]} />
-        <primitive object={woodMat} attach="material" />
+        <meshStandardMaterial {...shelfCarcassMat} />
       </mesh>
 
-      {/* Shelves */}
+      {/* Shelves — painted steel carcass */}
       {shelfYs.map((y, i) => (
         <mesh key={i} receiveShadow position={[0, y, 0]}>
           <boxGeometry args={[unitW - 0.05, 0.025, unitD]} />
-          <primitive object={woodMat} attach="material" />
+          <meshStandardMaterial {...shelfCarcassMat} />
         </mesh>
       ))}
 
