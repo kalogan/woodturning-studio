@@ -28,15 +28,15 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 //
 // LONG HALLWAY layout — X is the long axis of the hall.
-//   X ∈ [-2, +16]  — player lathe at origin is the FAR/left (-X) end of the
-//                    lathe row; the +X end is the entrance.
+//   X ∈ [-16, +2]  — player lathe at origin is the FAR/right (+X) end of the
+//                    lathe row; the -X end is the entrance.
 //   Z ∈ [-2.5, +4] — lathe row hugs the BACK (-Z) wall; aisle toward +Z.
 //   Ceiling 3.6 m.
 //
-// HAMESTER HALL sign lives on the SHORT -X END wall (no lathes there).
+// HAMESTER HALL sign lives on the SHORT +X END wall (no lathes there).
 // Windows on the +Z (aisle/front) long wall.
-export const HALL_X_MIN = -2.0;   // short end wall (sign wall, no lathes)
-export const HALL_X_MAX = 16.0;   // entrance end (short wall, open or future door)
+export const HALL_X_MIN = -16.0;  // entrance end (short wall, open or future door)
+export const HALL_X_MAX =   2.0;  // short end wall (sign wall, no lathes)
 export const HALL_Z_MIN = -2.5;   // back long wall (lathe row)
 export const HALL_Z_MAX =  4.0;   // front long wall (aisle side, windows)
 export const HALL_H     =  3.6;   // ceiling height
@@ -68,8 +68,8 @@ type DuctRun = { cx: number; cz: number; lx: number; lz: number; w: number; h: n
 const DUCT_RUNS: DuctRun[] = [
   // Main spine along X direction (down the hall length), over the aisle centre
   { cx: HALL_CX, cz: HALL_CZ, lx: HALL_W * 0.85, lz: 0.45, w: 0.45, h: 0.20 },
-  // Branch run along Z direction (wall-to-wall), at X ≈ 7 m (mid-hall)
-  { cx: 7.0, cz: HALL_CZ, lx: 0.40, lz: HALL_D * 0.80, w: 0.38, h: 0.18 },
+  // Branch run along Z direction (wall-to-wall), at X ≈ -7 m (mid-hall)
+  { cx: -7.0, cz: HALL_CZ, lx: 0.40, lz: HALL_D * 0.80, w: 0.38, h: 0.18 },
 ];
 
 // ─── Window parameters (front / +Z long wall) ─────────────────────────────────
@@ -78,16 +78,16 @@ const WIN_W = 1.2;   // window width (metres)
 const WIN_H = 0.9;   // window height
 const WIN_Y = 2.1;   // sill height
 // X positions for windows along the +Z front long wall
-const WIN_POSITIONS_X: number[] = [2.0, 5.5, 9.0, 12.5];
+const WIN_POSITIONS_X: number[] = [-2.0, -5.5, -9.0, -12.5];
 
 // ─── Sign parameters ─────────────────────────────────────────────────────────
-// Sign is on the SHORT -X END WALL (the wall the player walks toward; no lathes).
-// It faces +X (into the hall) — players approaching from +X see it straight ahead.
+// Sign is on the SHORT +X END WALL (the wall the player walks toward; no lathes).
+// It faces -X (into the hall) — players approaching from -X see it straight ahead.
 const SIGN_W   = 2.4;    // sign panel width
 const SIGN_H   = 0.45;   // sign panel height
 const SIGN_Y   = HALL_H - 0.55;   // near top of the end wall
 const SIGN_Z   = HALL_CZ;         // centred on the short wall depth
-const SIGN_X   = HALL_X_MIN + 0.025;  // just proud of the -X end wall
+const SIGN_X   = HALL_X_MAX - 0.025;  // just proud of the +X end wall
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Module-scope materials — allocated once, never inside tick
@@ -339,23 +339,23 @@ export function Hall() {
         <BrickWall wallW={HALL_W} />
       </group>
 
-      {/* ── SIGN END WALL (−X short wall, brick) ────────────────────────────── */}
+      {/* ── SIGN END WALL (+X short wall, brick) ────────────────────────────── */}
       {/* HAMESTER HALL sign is on THIS wall — the far end the player walks toward. */}
-      {/* No lathes on this wall. Rotation +π/2 so face points into the hall (+X). */}
+      {/* No lathes on this wall. Rotation -π/2 so face points into the hall (-X). */}
       <group
         name="wall-sign-end"
-        position={[HALL_X_MIN, HALL_H / 2, HALL_CZ]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[HALL_X_MAX, HALL_H / 2, HALL_CZ]}
+        rotation={[0, -Math.PI / 2, 0]}
       >
         <BrickWall wallW={HALL_D} />
       </group>
 
-      {/* ── ENTRANCE END WALL (+X short wall, brick) ─────────────────────────── */}
-      {/* Player spawns near here. Rotation -π/2 so face points into the hall (-X). */}
+      {/* ── ENTRANCE END WALL (−X short wall, brick) ─────────────────────────── */}
+      {/* Player spawns near here. Rotation +π/2 so face points into the hall (+X). */}
       <group
         name="wall-entrance-end"
-        position={[HALL_X_MAX, HALL_H / 2, HALL_CZ]}
-        rotation={[0, -Math.PI / 2, 0]}
+        position={[HALL_X_MIN, HALL_H / 2, HALL_CZ]}
+        rotation={[0, Math.PI / 2, 0]}
       >
         <BrickWall wallW={HALL_D} />
       </group>
@@ -400,15 +400,15 @@ export function Hall() {
       ))}
 
       {/* ── HAMESTER HALL SIGN ─────────────────────────────────────────── */}
-      {/* Canvas-texture panel on the SHORT -X END WALL — the wall at the      */}
+      {/* Canvas-texture panel on the SHORT +X END WALL — the wall at the      */}
       {/* far end of the lathe row, which has NO lathes on it.                 */}
-      {/* Sign faces +X into the hall (rotation Y = π/2).                     */}
+      {/* Sign faces -X into the hall (rotation Y = -π/2).                    */}
       {/* The sign material is lazily created so the canvas API is only        */}
       {/* called in a browser context (safe for SSR / test environments).      */}
       <group
         name="sign-hamester-hall"
         position={[SIGN_X, SIGN_Y, SIGN_Z]}
-        rotation={[0, Math.PI / 2, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
       >
         {/* Panel backing (depth protrudes in local +Z = world +X) */}
         <mesh position={[0, 0, 0.01]}>

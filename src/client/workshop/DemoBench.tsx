@@ -27,7 +27,7 @@ import { makeBoardMaterial } from '../wood/woodMaterial.js';
 // Demo bench sits in the mid-aisle, mid-hall, facing the lathe row (-Z direction).
 
 /** World position of the demo bench group centre. */
-export const DEMO_BENCH_POS: [number, number, number] = [7.0, 0, 2.5];
+export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 2.5];
 
 /** Rotation (radians). Faces the lathe row (-Z direction, toward Z=0). */
 export const DEMO_BENCH_ROT: [number, number, number] = [0, Math.PI, 0];

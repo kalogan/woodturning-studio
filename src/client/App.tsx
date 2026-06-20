@@ -77,7 +77,7 @@ export default function App() {
 
   // ── FPS walk + proximity ────────────────────────────────────────────────
   // Player position stored as scalars in refs — no per-frame object allocation.
-  const playerX = useRef(14); // Match WALK_SPAWN.x in FPSCamera — entrance end of long hall
+  const playerX = useRef(-14); // Match WALK_SPAWN.x in FPSCamera — entrance end of long hall
   const playerZ = useRef(1.5); // Match WALK_SPAWN.z in FPSCamera
 
   // Called every frame by FPSCamera with updated XZ position (scalars only).
