@@ -20,7 +20,10 @@ const BEZEL_D = 0.06;
 const SCREEN_INSET = 0.03;
 
 export function DemoStation({
-  position = [2.94, 1.65, -0.6],
+  // X pulled inward from 2.94 → 2.80: the mount arm back-stub (local-Z = −0.13)
+  // maps to world X ≈ 2.80 + 0.13 = 2.93, well clear of the right wall inner face
+  // at X = 2.975 (wall centre 3.0, half-thickness 0.025).
+  position = [2.80, 1.65, -0.6],
   rotation = [0, -Math.PI / 2 + 0.18, 0],
 }: DemoStationProps) {
   return (
