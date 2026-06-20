@@ -10,19 +10,34 @@
  * fill), NOT the product's <Lighting> — isolated props read better under neutral
  * light. <Lighting> itself is still previewable as a list entry.
  *
+ * FOCAL-POINT FRAMING: each selected prop is centred at the origin by EditedProp
+ * (its measured AABB is offset onto the grid). EditedProp reports that same
+ * measurement up via `onMeasured`, and we aim OrbitControls at the prop's vertical
+ * centre and pull the camera back proportional to the prop's max dimension — so a
+ * tiny clock and the whole Shop both fill a comfortable portion of the view.
+ * "Reset view" re-applies this framing for the current prop (not a fixed camera).
+ *
  * Dual-consumer (§5): the picker items carry stable data-testid selectors and the
  * root carries data-active-prop, so an agent can drive the harness, while the
  * director uses the same UI by hand.
  */
-import { useCallback, useRef, useState, type ComponentRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import { PROP_REGISTRY } from './propRegistry.js';
 import { PropErrorBoundary } from './PropErrorBoundary.js';
 import { PropertiesPanel } from './PropertiesPanel.js';
 import { EditedProp } from './EditedProp.js';
 import { useEditStore, IDENTITY_EDIT } from './editStore.js';
 import './preview.css';
+
+type OrbitControlsRef = ComponentRef<typeof OrbitControls>;
+
+/** Smallest framing distance, so a tiny prop (a clock) isn't jammed into the lens. */
+const MIN_DIST = 1.2;
+/** How far back the camera sits, as a multiple of the prop's max dimension. */
+const DIST_FACTOR = 1.8;
 
 function InspectionLights() {
   return (
@@ -34,10 +49,75 @@ function InspectionLights() {
   );
 }
 
+/**
+ * Aim OrbitControls + the camera at the (already-recentred) prop using its
+ * measured size. The prop spans x/z around 0 and y in [0, size.y]; we target its
+ * vertical centre and back off proportional to its largest dimension.
+ */
+function frameProp(
+  controls: OrbitControlsRef | null,
+  camera: THREE.Camera,
+  size: THREE.Vector3,
+): void {
+  if (controls === null) return;
+  const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+  const dist = Math.max(maxDim * DIST_FACTOR, MIN_DIST);
+
+  // OrbitControls' target is its `.target` Vector3.
+  const target = (controls as unknown as { target: THREE.Vector3 }).target;
+  target.set(0, size.y / 2, 0);
+
+  // A pleasant 3/4 view: equal +X/+Z, lifted above the prop's mid-height.
+  // (Only position/target change here — no projection params — so no
+  // updateProjectionMatrix is needed; controls.update() applies the look-at.)
+  camera.position.set(dist * 0.7, size.y * 0.6 + dist * 0.4, dist * 0.7);
+
+  (controls as unknown as { update: () => void }).update();
+}
+
+/**
+ * Bridge component (lives inside the Canvas) that re-frames the camera whenever
+ * the active prop's measured size changes, and exposes a frame() to the reset
+ * button via a ref callback. Pure scaffolding — renders nothing.
+ */
+function CameraFramer({
+  controlsRef,
+  size,
+  registerFrame,
+}: {
+  readonly controlsRef: React.RefObject<OrbitControlsRef | null>;
+  readonly size: THREE.Vector3 | null;
+  readonly registerFrame: (fn: () => void) => void;
+}): null {
+  const camera = useThree((s) => s.camera);
+
+  // Re-frame when the measured size changes (i.e. on prop switch).
+  useEffect(() => {
+    if (size === null) return;
+    frameProp(controlsRef.current, camera, size);
+  }, [controlsRef, camera, size]);
+
+  // Expose a stable frame() so "Reset view" re-applies framing for THIS prop.
+  useEffect(() => {
+    registerFrame(() => {
+      if (size !== null) frameProp(controlsRef.current, camera, size);
+    });
+  }, [registerFrame, controlsRef, camera, size]);
+
+  return null;
+}
+
 export function PreviewApp() {
   const [activeName, setActiveName] = useState<string>(PROP_REGISTRY[0]?.name ?? '');
   const [error, setError] = useState<string | null>(null);
-  const controlsRef = useRef<ComponentRef<typeof OrbitControls> | null>(null);
+  const controlsRef = useRef<OrbitControlsRef | null>(null);
+
+  // The measured size of the active prop, lifted out of EditedProp so the camera
+  // framing shares the SAME measurement (no double measure).
+  const [measuredSize, setMeasuredSize] = useState<THREE.Vector3 | null>(null);
+
+  // Latest frame() implementation, kept current by CameraFramer.
+  const frameRef = useRef<() => void>(() => {});
 
   const active = PROP_REGISTRY.find((p) => p.name === activeName) ?? PROP_REGISTRY[0];
 
@@ -50,11 +130,20 @@ export function PreviewApp() {
 
   const select = useCallback((name: string) => {
     setError(null);
+    setMeasuredSize(null); // clear stale size so framing waits for the new measure
     setActiveName(name);
   }, []);
 
   const resetView = useCallback(() => {
-    controlsRef.current?.reset();
+    frameRef.current();
+  }, []);
+
+  const registerFrame = useCallback((fn: () => void) => {
+    frameRef.current = fn;
+  }, []);
+
+  const onMeasured = useCallback((size: THREE.Vector3) => {
+    setMeasuredSize(size);
   }, []);
 
   const ActiveComponent = active?.Component;
@@ -120,13 +209,23 @@ export function PreviewApp() {
 
           {ActiveComponent && (
             <PropErrorBoundary key={activeName} name={activeName} onError={setError}>
-              <EditedProp key={activeName} activeName={activeName} edit={activeEdit}>
+              <EditedProp
+                key={activeName}
+                activeName={activeName}
+                edit={activeEdit}
+                onMeasured={onMeasured}
+              >
                 <ActiveComponent />
               </EditedProp>
             </PropErrorBoundary>
           )}
 
           <OrbitControls ref={controlsRef} makeDefault />
+          <CameraFramer
+            controlsRef={controlsRef}
+            size={measuredSize}
+            registerFrame={registerFrame}
+          />
         </Canvas>
 
         {activeName !== '' && <PropertiesPanel activeName={activeName} />}
