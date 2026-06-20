@@ -20,7 +20,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, TurnedDisplay, ToolWall, DustCollection } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -59,6 +59,9 @@ export function Shop() {
 
       {/* Dust collection — corner collector, overhead duct trunk, drops + gates */}
       <DustCollection />
+
+      {/* Classroom signage — rolling whiteboard near demo bench + wall safety posters */}
+      <ClassroomSignage />
     </group>
   );
 }
