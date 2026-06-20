@@ -21,14 +21,14 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 // Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
-// Grinder station is placed near the +X entrance end, in the middle of the aisle,
-// facing down the hall toward the player's lathe (-X direction).
+// Grinder station is placed near the -X entrance end, in the middle of the aisle,
+// facing down the hall toward the player's lathe (+X direction).
 
 /** World position of the grinder station (base centre). */
-export const GRINDER_POS: [number, number, number] = [14.5, 0, 1.5];
+export const GRINDER_POS: [number, number, number] = [-14.5, 0, 1.5];
 
-/** Rotation (radians). Faces down the hall toward player lathe (-X direction). */
-export const GRINDER_ROT: [number, number, number] = [0, -Math.PI / 2, 0];
+/** Rotation (radians). Faces down the hall toward player lathe (+X direction). */
+export const GRINDER_ROT: [number, number, number] = [0, Math.PI / 2, 0];
 
 // Pedestal stand
 const STAND_W  = 0.28;  // stand width

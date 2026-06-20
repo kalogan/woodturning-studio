@@ -31,25 +31,25 @@ const EYE_HEIGHT = 1.6;  // metres
  *
  * CONSTRAINT: this position MUST sit > 1.2 m from the tool rest (world XZ ≈
  * 0.062, 0.092) to stay outside the proximity-exit hysteresis distance.
- * At x = 14, z = 1.5 the distance is ≈ √((14-0.062)² + (1.5-0.092)²) ≈ 14 m — safe.
+ * At x = -14, z = 1.5 the distance is ≈ √((-14-0.062)² + (1.5-0.092)²) ≈ 14 m — safe.
  *
- * Long-hallway layout: hall X ∈ [-2, +16]. Entrance end is at +X; player lathe
- * is at origin (the -X end of the row). Spawn at +X entrance, facing -X (down the
- * hall toward the sign + player lathe). WALK_SPAWN_YAW = +π/2 rotates the
- * FPSController yaw so the camera looks in the -X world direction on first frame.
+ * Long-hallway layout: hall X ∈ [-16, +2]. Entrance end is at -X; player lathe
+ * is at origin (the +X end of the row). Spawn at -X entrance, facing +X (down the
+ * hall toward the sign + player lathe). WALK_SPAWN_YAW = -π/2 rotates the
+ * FPSController yaw so the camera looks in the +X world direction on first frame.
  */
-const WALK_SPAWN     = { x: 14, z: 1.5 } as const;
-// Yaw offset to face -X on spawn: in the 'YXZ' Euler convention used by FPSCamera,
-// yaw = 0 → looking -Z; yaw = +π/2 → looking -X (player faces down the hall).
-const WALK_SPAWN_YAW = Math.PI / 2;
+const WALK_SPAWN     = { x: -14, z: 1.5 } as const;
+// Yaw offset to face +X on spawn: in the 'YXZ' Euler convention used by FPSCamera,
+// yaw = 0 → looking -Z; yaw = -π/2 → looking +X (player faces down the hall).
+const WALK_SPAWN_YAW = -Math.PI / 2;
 
 /**
  * Hall AABB bounds — player position (XZ) is clamped inside these limits.
- * Hall: X ∈ [-2, +16], Z ∈ [-2.5, +4].
+ * Hall: X ∈ [-16, +2], Z ∈ [-2.5, +4].
  * A 0.3 m wall-buffer keeps the camera from clipping the walls.
  */
-const ROOM_MIN_X = -1.7;
-const ROOM_MAX_X = 15.7;
+const ROOM_MIN_X = -15.7;
+const ROOM_MAX_X =   1.7;
 const ROOM_MIN_Z = -2.2;
 const ROOM_MAX_Z =  3.7;
 

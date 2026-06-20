@@ -33,10 +33,10 @@ import { PropLathe } from './PropLathe.js';
 const ROW_Z = 0.0;
 
 /** X of the first prop lathe in the row (2.5 m along the hall from the player lathe) */
-const ROW_START_X = 2.5;
+const ROW_START_X = -2.5;
 
 /** Spacing between adjacent prop lathes along X */
-const ROW_SPACING_X = 2.5;
+const ROW_SPACING_X = -2.5;
 
 /** Shared Y (floor level — PropLathe positions its own stand) */
 const ROW_Y = 0.0;
