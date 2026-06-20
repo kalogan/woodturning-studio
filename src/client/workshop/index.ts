@@ -17,3 +17,5 @@ export { DustCollection } from './DustCollection.js';
 export { ClassroomSignage } from './ClassroomSignage.js';
 export { CeilingEquipment } from './CeilingEquipment.js';
 export { ShopFurniture } from './ShopFurniture.js';
+export { ShopMachines } from './ShopMachines.js';
+export { WallConduit } from './WallConduit.js';
