@@ -79,29 +79,28 @@ vec3 computeBoardColor(vec3 lp) {
   float cDir = dot(lp, u_grainC);   // across the board face
 
   // ── Cathedral arch figure (plain-sawn growth rings) ──────────────────────
-  // Warp the cross-grain coordinate with low-frequency noise along the length
-  // to produce the characteristic cathedral arches of a plain-sawn board.
-  float warp1 = b_noise2(vec2(gDir * 0.8,  cDir * 1.2)) * 0.18;
-  float warp2 = b_noise2(vec2(gDir * 2.2 + 5.3, cDir * 3.0)) * 0.06;
-  float warpedC = cDir + warp1 + warp2;
+  // Gently warp the cross-grain coordinate along the length so the rings bow
+  // into cathedral arches. Amplitudes are SMALL (metres) because the ring
+  // frequency below is high — a big warp would smear the rings into noise.
+  float warp  = (b_noise2(vec2(gDir * 7.0,        cDir * 9.0))       - 0.5) * 0.010;
+  warp       += (b_noise2(vec2(gDir * 17.0 + 5.3, cDir * 20.0))      - 0.5) * 0.004;
+  float warpedC = cDir + warp;
 
-  // Growth rings: sine of the warped cross-axis.
-  // 40.0 rad/unit ≈ ring every ~0.16 m on a 1-m wide board — visible and tight.
-  float ringPhase = sin(warpedC * 40.0) * 0.5 + 0.5;
+  // Growth rings: PHYSICAL spacing — ~350 rad/unit ≈ a ring every ~18 mm, so the
+  // grain is visible on small stock (a 0.1 m block shows ~5 rings) AND consistent
+  // across the bench. (The old 40 rad/unit gave <1 ring on a 0.1 m block → flat.)
+  float ringPhase = sin(warpedC * 350.0) * 0.5 + 0.5;
   // Sharpen to distinct latewood (dark) / earlywood (light) bands.
-  float ringSharp = smoothstep(0.3, 0.7, ringPhase);
-  float ring = mix(ringPhase, ringSharp, 0.65);
+  float ringSharp = smoothstep(0.30, 0.70, ringPhase);
+  float ring = mix(ringPhase, ringSharp, 0.70);
 
-  // ── Fine longitudinal grain streaks ──────────────────────────────────────
-  // High-frequency noise, heavily stretched along the grain axis.
-  float streak1 = b_noise2(vec2(gDir * 4.0,         cDir * 40.0)) * 0.10;
-  float streak2 = b_noise2(vec2(gDir * 8.0 + 3.7,   cDir * 90.0 + 1.2)) * 0.04;
+  // ── Fine longitudinal grain streaks (high cross-frequency) ────────────────
+  float streak1 = b_noise2(vec2(gDir * 5.0,        cDir * 280.0))       * 0.13;
+  float streak2 = b_noise2(vec2(gDir * 11.0 + 3.7, cDir * 620.0 + 1.2)) * 0.05;
   float streaks = streak1 + streak2;
 
-  // ── Combine layers ────────────────────────────────────────────────────────
-  // Ring banding drives the primary base ↔ grain colour blend.
-  vec3 col = mix(u_boardBase, u_boardGrain, ring * 0.50);
-  // Fine streaks add further depth toward the grain colour.
+  // ── Combine layers (stronger contrast so the grain actually reads) ────────
+  vec3 col = mix(u_boardBase, u_boardGrain, ring * 0.78);
   col = mix(col, u_boardGrain, streaks);
 
   return col;
@@ -150,8 +149,8 @@ export function deriveGrainColor(baseHex: string): string {
   const c = hexToThreeColor(baseHex);
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
-  const newL = Math.max(0, hsl.l * 0.72);          // darken ~28 %
-  const newS = Math.min(1, hsl.s + 0.06);           // slightly richer
+  const newL = Math.max(0, hsl.l * 0.58);          // darken ~42 % for clearer grain contrast
+  const newS = Math.min(1, hsl.s + 0.10);           // richer latewood
   const derived = new THREE.Color().setHSL(hsl.h, newS, newL);
   return '#' + derived.getHexString();
 }

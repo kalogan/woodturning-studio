@@ -152,21 +152,35 @@ export function UpperCabinets() {
 
 // ── Open shelving unit with blanks + sandpaper ─────────────────────────────────
 
-// Wood blanks on the open shelves
+// Wood blanks STACKED as a tidy lumber pile on the open shelves.
+// Each board lays along X (length); squared stock of side BLANK_T; layered in Y
+// (sits on the board below) and slotted across the shelf depth in Z. All centred
+// in X within the 0.85 m shelf, so nothing overhangs the edges.
+const BLANK_T = 0.07;                  // square stock side (thickness)
+const BLANK_Z_PITCH = BLANK_T + 0.006; // side-by-side spacing across the shelf depth
+
 const SHELF_BLANKS: Array<{
-  r: number;
   len: number;
   color: string;
-  shelf: number; // shelf index 0=bottom
-  xOff: number;
-  rot: [number, number, number];
+  shelf: number;   // 0 = bottom
+  layer: number;   // stack course (0 = resting on the shelf)
+  slot: number;    // index across the shelf depth (Z)
+  slots: number;   // boards in this course (to centre them in Z)
+  xCenter: number; // small X jitter, kept well inside the shelf
 }> = [
-  { r: 0.055, len: 0.28, color: '#8B5E3C', shelf: 0, xOff: -0.25, rot: [0, 0, Math.PI / 2] },
-  { r: 0.048, len: 0.24, color: '#a0703a', shelf: 0, xOff:  0.05, rot: [0, 0, Math.PI / 2] },
-  { r: 0.065, len: 0.32, color: '#6b4020', shelf: 0, xOff:  0.32, rot: [0, 0, Math.PI / 2] },
-  { r: 0.042, len: 0.20, color: '#c09055', shelf: 1, xOff: -0.2,  rot: [0, 0, Math.PI / 2] },
-  { r: 0.058, len: 0.30, color: '#7a4e28', shelf: 1, xOff:  0.12, rot: [0, 0, Math.PI / 2] },
-  { r: 0.052, len: 0.26, color: '#9a6535', shelf: 2, xOff: -0.28, rot: [0, 0, Math.PI / 2] },
+  // Shelf 0 — a 3-wide base course + a 2-wide top course
+  { len: 0.54, color: '#8B5E3C', shelf: 0, layer: 0, slot: 0, slots: 3, xCenter:  0.00 },
+  { len: 0.50, color: '#a0703a', shelf: 0, layer: 0, slot: 1, slots: 3, xCenter:  0.02 },
+  { len: 0.52, color: '#6b4020', shelf: 0, layer: 0, slot: 2, slots: 3, xCenter: -0.01 },
+  { len: 0.48, color: '#9a6535', shelf: 0, layer: 1, slot: 0, slots: 2, xCenter:  0.01 },
+  { len: 0.52, color: '#7a4e28', shelf: 0, layer: 1, slot: 1, slots: 2, xCenter: -0.02 },
+  // Shelf 1 — a 2 + 1 stack
+  { len: 0.46, color: '#c09055', shelf: 1, layer: 0, slot: 0, slots: 2, xCenter:  0.00 },
+  { len: 0.50, color: '#7a4e28', shelf: 1, layer: 0, slot: 1, slots: 2, xCenter:  0.02 },
+  { len: 0.44, color: '#6b4020', shelf: 1, layer: 1, slot: 0, slots: 1, xCenter:  0.00 },
+  // Shelf 2 — two boards side by side
+  { len: 0.42, color: '#9a6535', shelf: 2, layer: 0, slot: 0, slots: 2, xCenter:  0.00 },
+  { len: 0.46, color: '#a0703a', shelf: 2, layer: 0, slot: 1, slots: 2, xCenter:  0.02 },
 ];
 
 // Rolled sandpaper: short wide cylinders standing upright or lying
@@ -177,11 +191,10 @@ const SANDPAPER: Array<{
   xOff: number;
   upright: boolean;
 }> = [
-  { r: 0.04,  h: 0.055, shelf: 1, xOff:  0.32, upright: true },
-  { r: 0.038, h: 0.05,  shelf: 1, xOff:  0.38, upright: true },
-  { r: 0.042, h: 0.06,  shelf: 2, xOff:  0.1,  upright: true },
-  { r: 0.036, h: 0.045, shelf: 2, xOff:  0.16, upright: true },
-  { r: 0.04,  h: 0.05,  shelf: 2, xOff:  0.22, upright: false },
+  { r: 0.04,  h: 0.055, shelf: 1, xOff:  0.31, upright: true },
+  { r: 0.038, h: 0.05,  shelf: 1, xOff:  0.37, upright: true },
+  { r: 0.042, h: 0.06,  shelf: 2, xOff:  0.31, upright: true },
+  { r: 0.036, h: 0.045, shelf: 2, xOff:  0.37, upright: true },
 ];
 
 export function OpenShelving() {
@@ -227,20 +240,26 @@ export function OpenShelving() {
         <meshStandardMaterial {...counterMat} />
       </mesh>
 
-      {/* Wood blanks — each gets a per-blank grained material (same colour, board grain) */}
-      {SHELF_BLANKS.map((b, i) => (
-        <mesh
-          key={`blank-${String(i)}`}
-          castShadow
-          position={[b.xOff, (shelfYs[b.shelf] ?? 0) + b.r + 0.013, 0]}
-          rotation={b.rot}
-        >
-          {/* Square stock — not yet roughed round (that's the roughing-gouge lesson) */}
-          {/* Grain axis 'y': box height (b.len) is the long axis in local space */}
-          <boxGeometry args={[b.r * 2, b.len, b.r * 2]} />
-          <primitive object={makeBoardMaterial(b.color, undefined, { grainAxis: 'y' })} attach="material" />
-        </mesh>
-      ))}
+      {/* Stacked wood blanks — board grain runs along each board's length. */}
+      {SHELF_BLANKS.map((b, i) => {
+        const shelfY = shelfYs[b.shelf] ?? 0;
+        // Sit on the shelf, then stack each course on top of the one below.
+        const y = shelfY + 0.0125 + BLANK_T / 2 + b.layer * BLANK_T;
+        // Centre the course across the shelf depth (Z).
+        const z = (b.slot - (b.slots - 1) / 2) * BLANK_Z_PITCH;
+        return (
+          <mesh
+            key={`blank-${String(i)}`}
+            castShadow
+            position={[b.xCenter, y, z]}
+            rotation={[0, 0, Math.PI / 2]}
+          >
+            {/* Square stock laid along X; grain axis 'y' = the box's long (length) axis */}
+            <boxGeometry args={[BLANK_T, b.len, BLANK_T]} />
+            <primitive object={makeBoardMaterial(b.color, undefined, { grainAxis: 'y' })} attach="material" />
+          </mesh>
+        );
+      })}
 
       {/* Rolled sandpaper */}
       {SANDPAPER.map((sp, i) => (
