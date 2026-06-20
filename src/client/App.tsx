@@ -77,8 +77,8 @@ export default function App() {
 
   // ── FPS walk + proximity ────────────────────────────────────────────────
   // Player position stored as scalars in refs — no per-frame object allocation.
-  const playerX = useRef(0);
-  const playerZ = useRef(2.5); // Start near the back of the workshop, facing the lathe
+  const playerX = useRef(2);
+  const playerZ = useRef(8); // Spawn at the hall entrance (front); walk back to the lathe at origin
 
   // Called every frame by FPSCamera with updated XZ position (scalars only).
   const handlePlayerMove = useCallback((x: number, z: number) => {

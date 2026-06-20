@@ -33,7 +33,10 @@ const EYE_HEIGHT = 1.6;  // metres
  * 0.062, 0.092) to stay outside the proximity-exit hysteresis distance.
  * At z = 1.8 the distance is ≈ √((0-0.062)² + (1.8-0.092)²) ≈ 1.71 m — safe.
  */
-const WALK_SPAWN = { x: 0, z: 1.8 } as const;
+// Spawn at the FRONT (entrance) of the hall and walk back to your lathe at origin.
+// Hall spans Z ∈ [-2.5, +9]; the player lathe is at Z=0 (back-left). Facing -Z by
+// default → you look across the row of lathes toward your station. Tunable.
+const WALK_SPAWN = { x: 2, z: 8 } as const;
 
 /**
  * Room AABB bounds — player position (XZ) is clamped inside these limits.
