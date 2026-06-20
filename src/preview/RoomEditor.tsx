@@ -305,6 +305,11 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
   const controlsRef = useRef<OrbitControlsRef | null>(null);
   const [mode, setMode] = useState<GizmoMode>('translate');
 
+  const undo = useRoomLayoutStore((s) => s.undo);
+  const redo = useRoomLayoutStore((s) => s.redo);
+  const canUndo = useRoomLayoutStore((s) => s.canUndo);
+  const canRedo = useRoomLayoutStore((s) => s.canRedo);
+
   const resetView = useCallback(() => {
     const controls = controlsRef.current;
     if (controls === null) return;
@@ -332,6 +337,32 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
       if (k === 'w') setMode('translate');
       else if (k === 'e') setMode('rotate');
       else if (k === 'r') setMode('scale');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); };
+  }, []);
+
+  // ── Ctrl/Cmd+Z undo · Ctrl/Cmd+Shift+Z + Ctrl+Y redo ──────────────────────
+  // Window-level. Skip when typing in a field so the browser's NATIVE field-undo
+  // works; otherwise preventDefault + run the room-layout undo/redo.
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent): void => {
+      const target = ev.target as HTMLElement | null;
+      if (target !== null) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      }
+      if (!ev.ctrlKey && !ev.metaKey) return;
+      const k = ev.key.toLowerCase();
+      if (k === 'z') {
+        ev.preventDefault();
+        if (ev.shiftKey) useRoomLayoutStore.getState().redo();
+        else useRoomLayoutStore.getState().undo();
+      } else if (k === 'y') {
+        // Windows redo. (Ctrl+Y; meta variant harmless.)
+        ev.preventDefault();
+        useRoomLayoutStore.getState().redo();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); };
@@ -384,6 +415,28 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
             {modeButton('translate', 'Move (W)')}
             {modeButton('rotate', 'Rotate (E)')}
             {modeButton('scale', 'Scale (R)')}
+          </div>
+          <div className="harness__history" role="group" aria-label="Undo / redo">
+            <button
+              type="button"
+              className="harness__btn"
+              data-testid="room-undo"
+              onClick={() => { undo(); }}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+            >
+              Undo
+            </button>
+            <button
+              type="button"
+              className="harness__btn"
+              data-testid="room-redo"
+              onClick={() => { redo(); }}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Shift+Z / Ctrl+Y)"
+            >
+              Redo
+            </button>
           </div>
           <button type="button" className="harness__btn" onClick={resetView}>
             Reset view

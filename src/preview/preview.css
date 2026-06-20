@@ -171,6 +171,20 @@ html, body, #root {
   gap: 4px;
 }
 
+/* ── Undo / redo group ─────────────────────────────────────────────────── */
+.harness__history {
+  pointer-events: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.harness__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.harness__btn:disabled:hover { border-color: var(--panel-border); }
+
 .harness__btn--active {
   background: var(--accent);
   border-color: var(--accent);
