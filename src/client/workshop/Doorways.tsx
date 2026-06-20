@@ -16,8 +16,8 @@
  *   +X end (HALL_X_MAX = +2)  = sign wall — sign-wall doorway faces -X.
  *
  * The HAMESTER HALL sign sits on the +X wall centred at Z ≈ +0.75, spanning
- * Z ∈ [-0.45, +1.95] (SIGN_Z ± SIGN_W/2). The +X doorway is pushed toward the
- * +Z half (Z ≈ +2.8) so it clears the sign and the TurnedDisplay (+Z wall).
+ * Z ∈ [-0.45, +1.95] (SIGN_Z ± SIGN_W/2). The +X doorway sits just LEFT of the
+ * sign on the -Z side (Z ≈ -1.3, spanning -2.1..-0.5) so it clears the banner.
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the no-misused-spread
@@ -65,7 +65,7 @@ const HALL_X_MAX = 2.0;
 const ENTRANCE_DOOR_X = HALL_X_MIN + 0.02; // just proud of the entrance wall
 const ENTRANCE_DOOR_Z = -0.6;              // clear of the grinder [-14.5,0,1.5]
 const SIGN_DOOR_X = HALL_X_MAX - 0.02;     // just proud of the sign wall
-const SIGN_DOOR_Z = 2.8;                   // +Z half, clear of the centred sign
+const SIGN_DOOR_Z = -1.3;                  // -Z side, just LEFT of the sign (door spans -2.1..-0.5)
 
 // ─── Module-scope materials ───────────────────────────────────────────────────
 
@@ -211,9 +211,8 @@ function Doorway() {
  *
  *   1. Entrance doorway — -X wall, faces +X into the hall (replaces the old
  *      entry door). Placed at Z ≈ -0.6, clear of the grinder station.
- *   2. Sign-wall doorway — +X wall, faces -X into the hall, pushed to the +Z
- *      half (Z ≈ +2.8) so it clears the centred HAMESTER HALL sign and the
- *      TurnedDisplay on the +Z wall.
+ *   2. Sign-wall doorway — +X wall, faces -X into the hall, on the -Z side just
+ *      LEFT of the centred HAMESTER HALL sign (Z ≈ -1.3, spanning -2.1..-0.5).
  */
 export function Doorways() {
   return (

@@ -45,7 +45,7 @@ import { PropLathe } from './PropLathe.js';
 // The demo station sits mid-hall in the +Z half of the aisle, facing the row.
 
 /** World position of the demo-station cluster centre (floor level). */
-export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 2.5];
+export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 4.5];
 
 /** Rotation (radians). Faces the lathe row (-Z direction, toward Z=0). */
 export const DEMO_BENCH_ROT: [number, number, number] = [0, Math.PI, 0];

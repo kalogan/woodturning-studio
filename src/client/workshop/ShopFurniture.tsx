@@ -33,7 +33,7 @@ import * as THREE from 'three';
 // Prop lathe footprint there: X [-5.725, -4.275], Z [-0.21, +0.21]. The cart at
 // Z = +0.9 sits clearly aisle-side of the lathe and clear of the shavings bin
 // at [-4.2, 0, -1.9]. Cart spans ~0.6 (X) × 0.4 (Z), well off the centre lane.
-const CART_POS: [number, number, number] = [-5.0, 0, 0.9];
+const CART_POS: [number, number, number] = [-5.0, 0, 2.9];
 const CART_ROT: [number, number, number] = [0, 0, 0];
 
 const CART_W   = 0.60;   // width  (X)
@@ -52,9 +52,9 @@ const HANDLE_H = 0.16;   // push-handle height above top shelf
 // centre lane and clear of the demo bench footprint (W 1.3 around X=-7).
 // [x, z, rotY] per stool — varied so they read as casually placed.
 const STOOLS: [number, number, number][] = [
-  [-8.5, 1.35, 0.5],
-  [-9.3, 1.5, -0.7],
-  [-10.1, 1.4, 0.2],
+  [-8.5, 3.35, 0.5],
+  [-9.3, 3.5, -0.7],
+  [-10.1, 3.4, 0.2],
 ];
 
 const SEAT_R    = 0.20;   // round seat radius (≈ 0.40 m dia)
