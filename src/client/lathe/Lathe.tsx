@@ -14,6 +14,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { makeBoardMaterial } from '../wood/woodMaterial.js';
 import spec from '../../../content/lathe/jet-jwl-1642.json';
 import { useLatheStore } from '../../workshop/index.js';
 import { visualSpinRevPerSec } from './spinRate.js';
@@ -34,6 +35,10 @@ import { Stand } from './Stand.js';
  * Set a flag to `false` to hide that part, e.g. for Lesson 0 "Set Up Your
  * Lathe" where the player mounts each accessory one by one.
  */
+// Board-grain material for the at-lathe square blank (pine sapwood tone).
+// Grain along X = spindle / blank length axis. Built once at module scope.
+const defaultBlankMat = makeBoardMaterial('#dfc890');
+
 export interface MountedProps {
   /** Drive center (spur drive) in the headstock spindle. Default: true. */
   spurDrive?: boolean;
@@ -250,11 +255,8 @@ export function Lathe({
             {/* Square prism: X = spindle axis (length), Y/Z = square cross-section */}
             <mesh>
               <boxGeometry args={[blankLength, BLANK_SIDE, BLANK_SIDE]} />
-              {/* Warm amber-tan: pine-like sapwood tone so the square stock
-                  visually reads as wood at AT_LATHE before turning begins.
-                  A full grain shader here would require onBeforeCompile on a
-                  one-off mesh; pine.json baseColor is the reference hue. */}
-              <meshStandardMaterial color="#dfc890" roughness={0.82} metalness={0.0} />
+              {/* Board-grain material: pine sapwood tone, grain along X (spindle axis). */}
+              <primitive object={defaultBlankMat} attach="material" />
             </mesh>
           </group>
         )}
