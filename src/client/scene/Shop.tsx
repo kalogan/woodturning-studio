@@ -20,7 +20,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, Doorways, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -48,8 +48,11 @@ export function Shop() {
       {/* Bench grinder station — pedestal grinder with two wheels, left wall */}
       <GrinderStation />
 
-      {/* Lived-in character clutter — clock, entry door, toolboxes, offcuts, bin */}
+      {/* Lived-in character clutter — clock, toolboxes, offcuts, bin */}
       <ShopClutter />
+
+      {/* Walk-through double-door openings at both ends of the hall */}
+      <Doorways />
 
       {/* Turned-work gallery shelf — finished bowls, vase, platter, spindles, eggs */}
       <TurnedDisplay />
