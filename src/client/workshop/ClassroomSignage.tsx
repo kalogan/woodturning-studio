@@ -37,7 +37,7 @@ import * as THREE from 'three';
 // the demo bench [-7.0, 0, 2.5] (footprint X∈[-7.65,-6.35], Z∈[2.14,2.86]).
 // Placed at X≈-5.4, pulled ~1 m into the room from the +Z wall, angled to face
 // back toward the lathes / aisle so the class can read the diagram.
-const BOARD_POS: [number, number, number] = [-5.4, 0, 3.05];
+const BOARD_POS: [number, number, number] = [-5.4, 0, 5.05];
 const BOARD_ROT: [number, number, number] = [0, -Math.PI * 0.78, 0];
 
 // Board panel geometry

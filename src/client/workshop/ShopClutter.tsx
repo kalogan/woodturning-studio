@@ -3,8 +3,10 @@
  *
  * Procedural clutter that makes the hall read like a real, used woodturning
  * classroom rather than an empty showroom:
- *   • Round analog wall clock (static, frozen at 10:10) high in the upper-left
- *     corner — on the -Z lathe wall near the +X/sign end, facing +Z into the room
+ *   • A boxy beige AC / air-handler unit mounted high near the -Z/+X corner
+ *     (by the relocated doorway)
+ *   • Round analog wall clock (static, frozen at 10:10) hanging BELOW the AC
+ *     unit on a standoff bracket (proud of the -Z wall), facing +Z into the room
  *   • Two toolboxes — a stacked red/black chest + a small portable hand box
  *   • Floor offcut blocks and low shaving mounds scattered near the lathe wall
  *   • A single gray rolling trash can in the back, full of shavings
@@ -29,9 +31,17 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// Wall clock — high up in the upper-LEFT corner: on the -Z lathe wall near the
-// +X/sign end (the player's back-left as they walk in). Faces +Z into the room.
-const CLOCK_POS: [number, number, number] = [1.0, 2.7, -2.45];
+// AC / air-handler unit — boxy beige metal unit mounted HIGH near the -Z/+X
+// corner (by the relocated doorway), just off the -Z wall near the ceiling.
+const AC_POS: [number, number, number] = [1.3, 3.05, -2.2];
+const AC_W = 0.9;   // width  (X)
+const AC_H = 0.5;   // height (Y)
+const AC_D = 0.6;   // depth  (Z)
+
+// Wall clock — hangs BELOW the AC unit near the -Z/+X corner, by the doorway.
+// It STANDS OFF the wall on a bracket (Z=-2.15, ~0.35 m proud of the -Z wall).
+// Face points +Z into the room. Frozen at 10:10.
+const CLOCK_POS: [number, number, number] = [1.3, 2.45, -2.15];
 const CLOCK_R   = 0.16;   // face radius (≈ 0.32 m diameter)
 const CLOCK_T   = 0.035;  // case depth
 
@@ -79,6 +89,10 @@ const CURL_SLIVERS: [number, number, number, number][] = [
 
 // ─── Module-scope materials ───────────────────────────────────────────────────
 
+const _acBodyMat    = new THREE.MeshStandardMaterial({ color: '#b8b0a0', roughness: 0.55, metalness: 0.35 }); // beige/tan metal air handler
+const _acLouverMat  = new THREE.MeshStandardMaterial({ color: '#9a9284', roughness: 0.60, metalness: 0.30 }); // recessed louver shadow line
+const _bracketMat   = new THREE.MeshStandardMaterial({ color: '#3a3a3e', roughness: 0.55, metalness: 0.45 }); // dark metal standoff / mount bracket
+
 const _clockCaseMat = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.55, metalness: 0.40 });
 const _clockFaceMat = new THREE.MeshStandardMaterial({ color: '#e8e6df', roughness: 0.65, metalness: 0.05 });
 const _clockHandMat = new THREE.MeshStandardMaterial({ color: '#1a1a1c', roughness: 0.55, metalness: 0.20 });
@@ -105,6 +119,36 @@ const _offcutMats = [
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /**
+ * Boxy beige AC / air-handler unit mounted high near the -Z/+X corner, just off
+ * the -Z lathe wall near the ceiling. A small bracket ties it back to the wall;
+ * a couple of recessed louver lines run across its room-facing (+Z) face.
+ */
+function AcUnit() {
+  const faceZ = AC_D / 2;
+  return (
+    <group name="ac-unit" position={AC_POS}>
+      {/* Main beige metal body */}
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[AC_W, AC_H, AC_D]} />
+        <primitive object={_acBodyMat} attach="material" />
+      </mesh>
+      {/* A couple of louver lines across the room-facing (+Z) face */}
+      {[0.08, -0.08].map((ly, i) => (
+        <mesh key={i} position={[0, ly, faceZ + 0.002]}>
+          <boxGeometry args={[AC_W * 0.82, 0.04, 0.01]} />
+          <primitive object={_acLouverMat} attach="material" />
+        </mesh>
+      ))}
+      {/* Small mount bracket tying the unit back to the -Z wall (toward -Z) */}
+      <mesh castShadow position={[0, -AC_H / 2 - 0.02, -AC_D / 2 - 0.075]}>
+        <boxGeometry args={[0.18, 0.06, 0.15]} />
+        <primitive object={_bracketMat} attach="material" />
+      </mesh>
+    </group>
+  );
+}
+
+/**
  * Round analog wall clock, frozen at 10:10. Mounted high on the -Z lathe wall
  * near the +X/sign end; the face points +Z into the room (rotation [0,0,0]).
  * The face + ticks + hands are built on local +Z so they show toward the room.
@@ -117,8 +161,25 @@ function WallClock() {
   const minAngle  = -(10 / 60) * Math.PI * 2;                                  // 10m
   const tickCount = 12;
 
+  // Standoff bracket: a short arm reaching from behind the clock back to the
+  // -Z wall, so the clock reads as mounted PROUD of the wall (not flush). The
+  // clock sits at Z=-2.15; the wall is at Z≈-2.5, so the arm spans ~0.35 in -Z.
+  const standoffLen = 0.30;          // arm length (Z), wall to clock back
+  const standoffZ   = -CLOCK_T / 2 - standoffLen / 2;
+
   return (
     <group name="wall-clock" position={CLOCK_POS} rotation={[0, 0, 0]}>
+      {/* Standoff bracket arm — connects the clock back to the -Z wall */}
+      <mesh castShadow position={[0, 0, standoffZ]}>
+        <boxGeometry args={[0.04, 0.04, standoffLen]} />
+        <primitive object={_bracketMat} attach="material" />
+      </mesh>
+      {/* Small wall mount plate at the bracket's wall end */}
+      <mesh position={[0, 0, -CLOCK_T / 2 - standoffLen]}>
+        <boxGeometry args={[0.08, 0.08, 0.02]} />
+        <primitive object={_bracketMat} attach="material" />
+      </mesh>
+
       {/* Case rim */}
       <mesh castShadow rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[CLOCK_R, CLOCK_R, CLOCK_T, 32]} />
@@ -350,6 +411,7 @@ function ShavingPiles() {
 export function ShopClutter() {
   return (
     <group name="shop-clutter">
+      <AcUnit />
       <WallClock />
       <ToolboxChest />
       <HandToolbox />
