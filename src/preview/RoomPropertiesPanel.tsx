@@ -53,14 +53,17 @@ export function RoomPropertiesPanel({ activeName }: Props): React.JSX.Element {
     (key: keyof RoomPlacement, axis: 0 | 1 | 2, value: number) => {
       const next: [number, number, number] = [...getPlacement(activeName)[key]];
       next[axis] = value;
-      setPlacement(activeName, { [key]: next });
+      // Pass a monotonic timestamp so rapid edits to the same prop (e.g. holding
+      // a number-input's spinner) coalesce into a single undo entry.
+      setPlacement(activeName, { [key]: next }, performance.now());
     },
     [activeName, getPlacement, setPlacement],
   );
 
   const setUniformScale = useCallback(
     (value: number) => {
-      setPlacement(activeName, { scale: [value, value, value] });
+      // Dragging the scale slider fires many commits — coalesce into one undo.
+      setPlacement(activeName, { scale: [value, value, value] }, performance.now());
     },
     [activeName, setPlacement],
   );

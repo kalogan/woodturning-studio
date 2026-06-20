@@ -117,41 +117,160 @@ function persistLayout(layout: RoomLayout): void {
   }
 }
 
+/** Max snapshots kept in each undo/redo stack (drop oldest beyond this). */
+const HISTORY_LIMIT = 100;
+
+/**
+ * Coalescing window (ms). Consecutive commits to the SAME prop within this window
+ * are folded into a single undo entry — so one slider/gizmo drag = one undo. See
+ * the coalescing comment on `setPlacement` below.
+ */
+const COALESCE_MS = 400;
+
 interface RoomLayoutState {
   /** All placements, keyed by prop name. Props with no entry are at identity. */
   layout: RoomLayout;
+  /** Undo stack — full-layout snapshots of PRIOR states (oldest first). In-memory only. */
+  past: RoomLayout[];
+  /** Redo stack — full-layout snapshots to re-apply (most-recently-undone last). */
+  future: RoomLayout[];
+  /** True when there is at least one snapshot to undo to. */
+  canUndo: boolean;
+  /** True when there is at least one snapshot to redo to. */
+  canRedo: boolean;
   /** Get the placement for a prop (FRESH identity if none — for mutation only). */
   getPlacement: (name: string) => RoomPlacement;
-  /** Patch a prop's placement; persists. */
-  setPlacement: (name: string, patch: Partial<RoomPlacement>) => void;
-  /** Reset one prop to identity (removes its entry); persists. */
+  /**
+   * Patch a prop's placement; persists. Records an undo snapshot of the PRIOR
+   * layout (coalescing rapid same-prop edits). `now` is an OPTIONAL monotonic
+   * timestamp passed in by the caller (e.g. performance.now()) so the store never
+   * reaches for a clock itself; when omitted, every commit gets its own entry.
+   */
+  setPlacement: (name: string, patch: Partial<RoomPlacement>, now?: number) => void;
+  /** Reset one prop to identity (removes its entry); persists. Always undoable. */
   reset: (name: string) => void;
+  /** Undo the last committed change (restore the prior layout). */
+  undo: () => void;
+  /** Re-apply the most-recently-undone change. */
+  redo: () => void;
   /** The non-identity subset, for export. */
   diff: () => RoomLayout;
 }
 
+/** Push onto a history stack, dropping the oldest entries past HISTORY_LIMIT. */
+function pushBounded(stack: RoomLayout[], snapshot: RoomLayout): RoomLayout[] {
+  const next = [...stack, snapshot];
+  return next.length > HISTORY_LIMIT ? next.slice(next.length - HISTORY_LIMIT) : next;
+}
+
+// ── Coalescing bookkeeping (module-scope, NOT persisted) ─────────────────────
+// Tracks the last-edited prop + timestamp so a continuous drag on ONE prop folds
+// into a single undo entry. Reset whenever a different prop is edited, undo/redo
+// runs, or no timestamp is supplied.
+let lastEditName: string | null = null;
+let lastEditTime = 0;
+
 export const useRoomLayoutStore = create<RoomLayoutState>((set, get) => ({
   layout: loadLayout(),
+  past: [],
+  future: [],
+  canUndo: false,
+  canRedo: false,
 
   getPlacement: (name) => get().layout[name] ?? identityPlacement(),
 
-  setPlacement: (name, patch) => {
+  setPlacement: (name, patch, now) => {
     set((state) => {
-      const current = state.layout[name] ?? identityPlacement();
+      const prior = state.layout;
+      const current = prior[name] ?? identityPlacement();
       const next: RoomPlacement = { ...current, ...patch };
-      const layout: RoomLayout = { ...state.layout, [name]: next };
+      const layout: RoomLayout = { ...prior, [name]: next };
       persistLayout(layout);
-      return { layout };
+
+      // Coalesce: only open a NEW undo entry when this edit targets a different
+      // prop than the last one, OR more than COALESCE_MS has elapsed, OR no
+      // timestamp was supplied (granular history). Otherwise fold into the last
+      // entry by mutating `layout` in place without growing `past`.
+      const coalesce =
+        now !== undefined &&
+        lastEditName === name &&
+        now - lastEditTime < COALESCE_MS;
+
+      lastEditName = name;
+      lastEditTime = now ?? 0;
+
+      if (coalesce) {
+        // Same drag: keep history as-is (the already-pushed snapshot still points
+        // at the layout from BEFORE the drag began).
+        return { layout };
+      }
+
+      return {
+        layout,
+        past: pushBounded(state.past, prior),
+        future: [],
+        canUndo: true,
+        canRedo: false,
+      };
     });
   },
 
   reset: (name) => {
     set((state) => {
       if (!(name in state.layout)) return state;
-      const { [name]: _removed, ...layout } = state.layout;
+      const prior = state.layout;
+      const { [name]: _removed, ...layout } = prior;
       void _removed;
       persistLayout(layout);
-      return { layout };
+      // A reset always opens its own undo entry (break any drag coalescing).
+      lastEditName = null;
+      lastEditTime = 0;
+      return {
+        layout,
+        past: pushBounded(state.past, prior),
+        future: [],
+        canUndo: true,
+        canRedo: false,
+      };
+    });
+  },
+
+  undo: () => {
+    set((state) => {
+      if (state.past.length === 0) return state;
+      const past = state.past.slice(0, -1);
+      const restored = state.past[state.past.length - 1] as RoomLayout;
+      const future = pushBounded(state.future, state.layout);
+      persistLayout(restored);
+      // Undo/redo break drag coalescing so the next edit opens a fresh entry.
+      lastEditName = null;
+      lastEditTime = 0;
+      return {
+        layout: restored,
+        past,
+        future,
+        canUndo: past.length > 0,
+        canRedo: true,
+      };
+    });
+  },
+
+  redo: () => {
+    set((state) => {
+      if (state.future.length === 0) return state;
+      const future = state.future.slice(0, -1);
+      const restored = state.future[state.future.length - 1] as RoomLayout;
+      const past = pushBounded(state.past, state.layout);
+      persistLayout(restored);
+      lastEditName = null;
+      lastEditTime = 0;
+      return {
+        layout: restored,
+        past,
+        future,
+        canUndo: true,
+        canRedo: future.length > 0,
+      };
     });
   },
 
