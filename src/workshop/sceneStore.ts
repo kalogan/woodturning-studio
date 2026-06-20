@@ -34,6 +34,12 @@ interface SceneStore {
   enterLathe: () => void;
   stepBack: () => void;
   /**
+   * Step away from the lathe back to walking the workshop.
+   * Guard: only TURNING or AT_LATHE → WORKSHOP_WALK.
+   * Does NOT reset woodState — blank progress is preserved in useTurningSession.
+   */
+  leaveLathe: () => void;
+  /**
    * Grab a specific tool from the rack.
    * Guard: only AT_LATHE → TURNING. Sets heldTool to the grabbed tool.
    */
@@ -77,6 +83,12 @@ export const useSceneStore = create<SceneStore>((set, get) => ({
   stepBack: () => {
     if (get().state !== 'AT_LATHE') return;
     set({ state: 'WORKSHOP_WALK' });
+  },
+
+  leaveLathe: () => {
+    const s = get().state;
+    if (s !== 'TURNING' && s !== 'AT_LATHE') return;
+    set({ state: 'WORKSHOP_WALK', heldTool: null, toolHint: null });
   },
 
   pickUpTool: (tool) => {

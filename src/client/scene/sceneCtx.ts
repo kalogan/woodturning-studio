@@ -28,6 +28,8 @@ export interface SceneCtx {
   pickUpTool: (tool: import('../../core/types.js').ToolKind) => void;
   finishCutscene: (completedIds: Set<string>) => void;
   returnToMenu: () => void;
+  /** Step away from the lathe back to WORKSHOP_WALK (from TURNING or AT_LATHE). */
+  leaveLathe: () => void;
 
   // ── Resolved curriculum entry ──────────────────────────────────────────────
   lesson: CurriculumLesson | null;

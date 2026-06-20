@@ -98,6 +98,21 @@ describe('legal transitions', () => {
     expect(s.activeLessonId).toBeNull();
   });
 
+  it('leaveLathe: TURNING → WORKSHOP_WALK, clears heldTool + toolHint', () => {
+    useSceneStore.setState({ state: 'TURNING', heldTool: 'roughing-gouge', toolHint: 'hint' });
+    useSceneStore.getState().leaveLathe();
+    const s = useSceneStore.getState();
+    expect(s.state).toBe('WORKSHOP_WALK');
+    expect(s.heldTool).toBeNull();
+    expect(s.toolHint).toBeNull();
+  });
+
+  it('leaveLathe: AT_LATHE → WORKSHOP_WALK', () => {
+    useSceneStore.setState({ state: 'AT_LATHE' });
+    useSceneStore.getState().leaveLathe();
+    expect(useSceneStore.getState().state).toBe('WORKSHOP_WALK');
+  });
+
   it('returnToMenu: works from any state', () => {
     for (const state of ['WORKSHOP_WALK', 'AT_LATHE', 'TURNING', 'LESSON_COMPLETE'] as const) {
       useSceneStore.setState({ state, activeLessonId: 'lesson-01', lastPassed: true });
@@ -129,6 +144,11 @@ describe('illegal transitions are no-ops', () => {
     const s = useSceneStore.getState();
     expect(s.state).toBe('WORKSHOP_WALK');
     expect(s.activeLessonId).toBe('lesson-01');
+  });
+
+  it('leaveLathe from MENU does nothing', () => {
+    useSceneStore.getState().leaveLathe();
+    expect(useSceneStore.getState().state).toBe('MENU');
   });
 
   it('completeLesson from MENU does nothing', () => {
