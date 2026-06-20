@@ -17,7 +17,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -32,6 +32,9 @@ export function Shop() {
       {/* Workshop furniture — cabinets, workbench, blank rack, safety gear,
           casework (built-in back-wall run), and demo monitor */}
       <Furniture />
+
+      {/* Prop lathes filling the hall + anti-fatigue mat at the player's lathe */}
+      <HallLathes />
     </group>
   );
 }
