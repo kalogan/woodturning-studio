@@ -49,10 +49,21 @@ const TOTAL_D = CUBBY_D + WALL_T * 2;
 const BLANK_D    = 0.38;  // depth into / out of cubby
 const BLANK_SIDE = 0.10;  // cross-section side length (square)
 
+// Maple butcher-block counter top cap (sits on the topmost shelf).
+const TOP_T  = 0.040;                 // counter top thickness
+const TOP_OH = 0.020;                 // overhang past the carcass each side
+const TOP_Y  = TOTAL_H + TOP_T / 2;   // counter top centre Y
+
+// Standing spindle blanks on top of the counter (tall square sticks).
+const SP_SIDE = 0.055;                // square cross-section side
+const SP_BASE_Y = TOTAL_H + TOP_T;    // top surface of the counter
+
 // ─── Module-scope materials ───────────────────────────────────────────────────
 
 const _frameMat = makeBoardMaterial('#8c6535', undefined, { grainAxis: 'x' }); // oak frame, grain horizontal
 const _backMat  = makeBoardMaterial('#7a5828', undefined, { grainAxis: 'x' }); // slightly darker back panel
+const _topMat   = makeBoardMaterial('#d8b878', undefined, { grainAxis: 'x' }); // maple butcher-block counter top
+const _spindleBlankMat = makeBoardMaterial('#d8c08a', undefined, { grainAxis: 'y' }); // light maple standing blanks
 
 // Varied stock blank colours (warm species palette)
 const _stockMats = [
@@ -121,8 +132,50 @@ function Frame() {
         <boxGeometry args={[TOTAL_W, BASE_H, TOTAL_D]} />
         <primitive object={_frameMat} attach="material" />
       </mesh>
+
+      {/* Maple butcher-block counter top cap (slight overhang all round) */}
+      <mesh castShadow receiveShadow position={[0, TOP_Y, 0]}>
+        <boxGeometry args={[TOTAL_W + TOP_OH * 2, TOP_T, TOTAL_D + TOP_OH * 2]} />
+        <primitive object={_topMat} attach="material" />
+      </mesh>
     </group>
   );
+}
+
+/** A row of tall square-section spindle blanks standing on the counter top. */
+function StandingBlanks() {
+  // Deterministic layout: x along the unit, varied heights + slight lean per
+  // index (no Math.random). Leave a gap so they cluster, not a perfect comb.
+  const blanks: ReadonlyArray<[number, number, number]> = [
+    // [xFrac (-1..1 across width), heightMetres, leanRad]
+    [-0.78, 0.62, 0.00],
+    [-0.60, 0.48, 0.05],
+    [-0.40, 0.70, -0.03],
+    [-0.22, 0.40, 0.07],
+    [ 0.18, 0.55, -0.04],
+    [ 0.36, 0.66, 0.02],
+    [ 0.54, 0.44, -0.06],
+    [ 0.74, 0.58, 0.03],
+  ];
+
+  const items: ReactNode[] = [];
+  const halfSpan = TOTAL_W / 2 - SP_SIDE; // keep blanks on the top, not over edge
+  // Sit blanks toward the back of the counter (against the wall, +Z local-back).
+  const z = -TOTAL_D * 0.18;
+
+  blanks.forEach(([xFrac, h, lean], i) => {
+    const x = xFrac * halfSpan;
+    items.push(
+      <mesh key={String(i)} castShadow receiveShadow
+            position={[x, SP_BASE_Y + h / 2, z]}
+            rotation={[0, 0, lean]}>
+        <boxGeometry args={[SP_SIDE, h, SP_SIDE]} />
+        <primitive object={_spindleBlankMat} attach="material" />
+      </mesh>
+    );
+  });
+
+  return <group name="standing-blanks">{items}</group>;
 }
 
 /** Stock blanks protruding from their cubbies. */
@@ -179,6 +232,7 @@ export function StockCubbies({
     <group name="stock-cubbies" position={position} rotation={rotation}>
       <Frame />
       <StockBlanks />
+      <StandingBlanks />
     </group>
   );
 }
