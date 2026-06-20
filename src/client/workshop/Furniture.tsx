@@ -14,17 +14,18 @@ import { DemoStation } from './DemoStation.js';
 import {
   paintedSteelCabinet,
   brushedSteelHandle,
-  workshopWood,
 } from '../lathe/materials.js';
+import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
 // Pre-allocated module-scope material props
 const cabinetBodyMat   = paintedSteelCabinet('#7a3030');   // Jet-red tool cabinet
 const cabinetTopMat    = paintedSteelCabinet('#5a2020');   // darker cap
 const cabinetDivMat    = paintedSteelCabinet('#501818');   // drawer lines
 const handleMat        = brushedSteelHandle();
-const benchTopMat      = workshopWood('#9b6b3f');          // warm butcher-block
-const benchLegMat      = workshopWood('#7a5030');          // slightly darker legs
-const rackWoodMat      = workshopWood('#8a7060');          // aged rack wood
+// Board-grain materials: grain along X (bench top + rack boards run left–right)
+const benchTopMat      = makeBoardMaterial('#9b6b3f');     // warm butcher-block
+const benchLegMat      = makeBoardMaterial('#7a5030', undefined, { grainAxis: 'y' }); // legs, grain up
+const rackWoodMat      = makeBoardMaterial('#8a7060');     // aged rack wood
 
 // ─── ToolCabinet ──────────────────────────────────────────────────────────────
 // Tall painted-steel cabinet ~0.9m × 0.5m × 1.8m with drawer lines.
@@ -84,20 +85,20 @@ export function Workbench() {
       {/* Top — butcher-block */}
       <mesh castShadow receiveShadow position={[0, LEG_H + TOP_T / 2, 0]}>
         <boxGeometry args={[1.6, TOP_T, 0.7]} />
-        <meshStandardMaterial {...benchTopMat} />
+        <primitive object={benchTopMat} attach="material" />
       </mesh>
 
       {/* Under-shelf */}
       <mesh receiveShadow position={[0, 0.3, 0]}>
         <boxGeometry args={[1.5, 0.03, 0.6]} />
-        <meshStandardMaterial {...benchLegMat} />
+        <primitive object={benchLegMat} attach="material" />
       </mesh>
 
       {/* Legs */}
       {legPositions.map(([x, z], i) => (
         <mesh key={i} castShadow position={[x, LEG_H / 2, z]}>
           <boxGeometry args={[LEG_W, LEG_H, LEG_W]} />
-          <meshStandardMaterial {...benchLegMat} />
+          <primitive object={benchLegMat} attach="material" />
         </mesh>
       ))}
     </group>
@@ -127,14 +128,14 @@ export function BlankRack() {
       {/* Back panel */}
       <mesh receiveShadow position={[0, 0.9, -0.18]}>
         <boxGeometry args={[0.8, 1.8, 0.03]} />
-        <meshStandardMaterial {...rackWoodMat} />
+        <primitive object={rackWoodMat} attach="material" />
       </mesh>
 
       {/* Side uprights */}
       {([-0.385, 0.385] as const).map((x, i) => (
         <mesh key={i} castShadow position={[x, 0.9, 0]}>
           <boxGeometry args={[0.03, 1.8, 0.38]} />
-          <meshStandardMaterial {...rackWoodMat} />
+          <primitive object={rackWoodMat} attach="material" />
         </mesh>
       ))}
 
@@ -142,11 +143,11 @@ export function BlankRack() {
       {([0.08, 0.52, 0.96, 1.4, 1.72] as const).map((y, i) => (
         <mesh key={i} receiveShadow position={[0, y, 0]}>
           <boxGeometry args={[0.74, 0.03, 0.38]} />
-          <meshStandardMaterial {...rackWoodMat} />
+          <primitive object={rackWoodMat} attach="material" />
         </mesh>
       ))}
 
-      {/* Wood blanks */}
+      {/* Wood blanks — per-blank grained material; grain along Y (box height = blank length) */}
       {BLANK_SPECS.map((spec, i) => (
         <mesh
           key={i}
@@ -156,7 +157,7 @@ export function BlankRack() {
         >
           {/* Square stock — not yet roughed round (that's the roughing-gouge lesson) */}
           <boxGeometry args={[spec.r * 2, spec.len, spec.r * 2]} />
-          <meshStandardMaterial color={spec.color} roughness={0.8} metalness={0.0} />
+          <primitive object={makeBoardMaterial(spec.color, undefined, { grainAxis: 'y' })} attach="material" />
         </mesh>
       ))}
     </group>

@@ -16,8 +16,8 @@ import {
   cabinetPaint,
   laminateCounter,
   brushedSteelHandle,
-  workshopWood,
 } from '../lathe/materials.js';
+import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const WALL_Z = -2.5;       // back wall centre Z
@@ -33,7 +33,7 @@ const cabMat      = cabinetPaint();                     // painted MDF white bod
 const cabShadowMat = cabinetPaint('#d0cdc6');           // slightly darker inset lines
 const handleMat   = brushedSteelHandle('#b0a888');      // warm brushed-steel pulls
 const counterMat  = laminateCounter();                  // grey laminate top
-const woodMat     = workshopWood();                     // open-shelving carcass
+const woodMat     = makeBoardMaterial('#9B6B3F');        // open-shelving carcass (grained)
 
 // Glass-front door: kept as literal since it has unique transparent props
 const GLASS_COL = '#7090a8';       // bluish-grey for glass-front doors
@@ -203,21 +203,21 @@ export function OpenShelving() {
       {([-unitW / 2, unitW / 2] as const).map((x, i) => (
         <mesh key={i} castShadow position={[x, unitH / 2, 0]}>
           <boxGeometry args={[0.025, unitH, unitD]} />
-          <meshStandardMaterial {...woodMat} />
+          <primitive object={woodMat} attach="material" />
         </mesh>
       ))}
 
       {/* Back panel */}
       <mesh receiveShadow position={[0, unitH / 2, -unitD / 2 + 0.015]}>
         <boxGeometry args={[unitW, unitH, 0.018]} />
-        <meshStandardMaterial {...woodMat} />
+        <primitive object={woodMat} attach="material" />
       </mesh>
 
       {/* Shelves */}
       {shelfYs.map((y, i) => (
         <mesh key={i} receiveShadow position={[0, y, 0]}>
           <boxGeometry args={[unitW - 0.05, 0.025, unitD]} />
-          <meshStandardMaterial {...woodMat} />
+          <primitive object={woodMat} attach="material" />
         </mesh>
       ))}
 
@@ -227,7 +227,7 @@ export function OpenShelving() {
         <meshStandardMaterial {...counterMat} />
       </mesh>
 
-      {/* Wood blanks */}
+      {/* Wood blanks — each gets a per-blank grained material (same colour, board grain) */}
       {SHELF_BLANKS.map((b, i) => (
         <mesh
           key={`blank-${String(i)}`}
@@ -236,8 +236,9 @@ export function OpenShelving() {
           rotation={b.rot}
         >
           {/* Square stock — not yet roughed round (that's the roughing-gouge lesson) */}
+          {/* Grain axis 'y': box height (b.len) is the long axis in local space */}
           <boxGeometry args={[b.r * 2, b.len, b.r * 2]} />
-          <meshStandardMaterial color={b.color} roughness={0.82} metalness={0.0} />
+          <primitive object={makeBoardMaterial(b.color, undefined, { grainAxis: 'y' })} attach="material" />
         </mesh>
       ))}
 

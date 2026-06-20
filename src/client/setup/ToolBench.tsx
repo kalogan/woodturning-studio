@@ -21,7 +21,8 @@
  *   6: drill-chuck
  */
 import { ACCESSORY_REGISTRY } from './AccessoryMesh.js';
-import { workshopWood, darkCastIron } from '../lathe/materials.js';
+import { darkCastIron } from '../lathe/materials.js';
+import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
 interface ToolBenchProps {
   position?: [number, number, number];
@@ -71,8 +72,9 @@ export const BENCH_ACCESSORY_IDS: string[] = [
   'drill-chuck',
 ];
 
-const slabMat  = workshopWood('#8B5E3C');
-const legMat   = workshopWood('#7a5230');
+// Board-grain materials: slab grain runs along X (bench length), legs along Y
+const slabMat  = makeBoardMaterial('#8B5E3C');
+const legMat   = makeBoardMaterial('#7a5230', undefined, { grainAxis: 'y' });
 const viseScrew = darkCastIron();
 
 // Leg X positions (two legs, symmetric)
@@ -90,37 +92,37 @@ export function ToolBench({
       {/* Top slab */}
       <mesh position={[0, SLAB_CENTRE_Y, 0]}>
         <boxGeometry args={[BENCH_LENGTH, BENCH_HEIGHT, BENCH_DEPTH]} />
-        <meshStandardMaterial {...slabMat} />
+        <primitive object={slabMat} attach="material" />
       </mesh>
 
       {/* Front-left leg */}
       <mesh position={[-LEG_X_OFFSET, LEG_Y_CENTRE, BENCH_DEPTH / 2 - LEG_DEPTH / 2]}>
         <boxGeometry args={[LEG_WIDTH, LEG_HEIGHT, LEG_DEPTH]} />
-        <meshStandardMaterial {...legMat} />
+        <primitive object={legMat} attach="material" />
       </mesh>
 
       {/* Front-right leg */}
       <mesh position={[LEG_X_OFFSET, LEG_Y_CENTRE, BENCH_DEPTH / 2 - LEG_DEPTH / 2]}>
         <boxGeometry args={[LEG_WIDTH, LEG_HEIGHT, LEG_DEPTH]} />
-        <meshStandardMaterial {...legMat} />
+        <primitive object={legMat} attach="material" />
       </mesh>
 
       {/* Back-left leg */}
       <mesh position={[-LEG_X_OFFSET, LEG_Y_CENTRE, -(BENCH_DEPTH / 2 - LEG_DEPTH / 2)]}>
         <boxGeometry args={[LEG_WIDTH, LEG_HEIGHT, LEG_DEPTH]} />
-        <meshStandardMaterial {...legMat} />
+        <primitive object={legMat} attach="material" />
       </mesh>
 
       {/* Back-right leg */}
       <mesh position={[LEG_X_OFFSET, LEG_Y_CENTRE, -(BENCH_DEPTH / 2 - LEG_DEPTH / 2)]}>
         <boxGeometry args={[LEG_WIDTH, LEG_HEIGHT, LEG_DEPTH]} />
-        <meshStandardMaterial {...legMat} />
+        <primitive object={legMat} attach="material" />
       </mesh>
 
       {/* Lower stretcher rail (front) for rigidity */}
       <mesh position={[0, LEG_HEIGHT * 0.3, BENCH_DEPTH / 2 - LEG_DEPTH / 2]}>
         <boxGeometry args={[BENCH_LENGTH - LEG_WIDTH, 0.04, LEG_DEPTH * 0.5]} />
-        <meshStandardMaterial {...legMat} />
+        <primitive object={legMat} attach="material" />
       </mesh>
 
       {/* Small vice screw knob on front-left face (decorative) */}
