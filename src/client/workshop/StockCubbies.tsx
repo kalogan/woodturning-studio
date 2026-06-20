@@ -26,7 +26,7 @@ import { makeBoardMaterial } from '../wood/woodMaterial.js';
 // facing into the hall (-Z direction, toward the lathe row).
 
 /** World position of the cubby unit (bottom-front-centre). */
-export const CUBBIES_POS: [number, number, number] = [-13.0, 0, 3.5];
+export const CUBBIES_POS: [number, number, number] = [-13.0, 0, 6.75];
 
 /** Rotation (radians). Faces into the hall toward the lathe row (-Z direction). */
 export const CUBBIES_ROT: [number, number, number] = [0, Math.PI, 0];

@@ -36,10 +36,10 @@ const CLOCK_R   = 0.16;   // face radius (≈ 0.32 m diameter)
 const CLOCK_T   = 0.035;  // case depth
 
 // Toolbox chest — against the +Z wall, clear of the centre aisle.
-const CHEST_POS: [number, number, number] = [-8.0, 0, 3.55];
+const CHEST_POS: [number, number, number] = [-8.0, 0, 6.80];
 
 // Portable hand toolbox — on the floor a little down-hall from the chest.
-const HANDBOX_POS: [number, number, number] = [-6.6, 0, 3.62];
+const HANDBOX_POS: [number, number, number] = [-6.6, 0, 6.87];
 
 // Single gray rolling trash can — back-centre of the room (lathe side), away
 // from the entrance. Plain gray, full of shavings (a real wood-shop bin).

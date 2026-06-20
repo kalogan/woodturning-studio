@@ -32,7 +32,7 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 /** World position of the display (front-bottom-centre of the shelving unit). */
-export const SPEAKER_DISPLAY_POS: [number, number, number] = [-2.5, 0, 3.8];
+export const SPEAKER_DISPLAY_POS: [number, number, number] = [-2.5, 0, 7.05];
 
 /** Rotation (radians). Faces into the hall toward the lathe row (-Z). */
 export const SPEAKER_DISPLAY_ROT: [number, number, number] = [0, Math.PI, 0];

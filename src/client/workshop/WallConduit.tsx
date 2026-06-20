@@ -50,7 +50,7 @@ const BOX_D = 0.05;
 
 // Wall Z faces (just proud of the brick).
 const Z_LATHE_WALL = -2.5 + STANDOFF;   // -Z wall, conduit faces +Z
-const Z_AISLE_WALL =  4.0 - STANDOFF;   // +Z wall, conduit faces -Z
+const Z_AISLE_WALL =  7.25 - STANDOFF;  // +Z wall, conduit faces -Z — widened +3.25 m
 
 // ─── Module-scope materials ───────────────────────────────────────────────────
 

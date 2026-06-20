@@ -51,7 +51,7 @@ const WALK_SPAWN_YAW = -Math.PI / 2;
 const ROOM_MIN_X = -15.7;
 const ROOM_MAX_X =   1.7;
 const ROOM_MIN_Z = -2.2;
-const ROOM_MAX_Z =  3.7;
+const ROOM_MAX_Z =  6.95;
 
 // ── Pre-allocated THREE scratch objects (module scope — never re-created) ──
 // These are mutated in place inside useFrame to satisfy constraint #3.
