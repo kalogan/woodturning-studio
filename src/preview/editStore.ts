@@ -39,6 +39,21 @@ export function identityEdit(): PropEdit {
   };
 }
 
+/**
+ * A STABLE, frozen identity edit — a single shared reference for READ-ONLY use
+ * as a selector fallback (e.g. `useEditStore(s => s.edits[name]) ?? IDENTITY_EDIT`).
+ * Returning a fresh object from a zustand/useSyncExternalStore selector each render
+ * triggers "getSnapshot should be cached" + an infinite render loop, so consumers
+ * MUST fall back to this constant rather than calling identityEdit() in a selector.
+ * Never mutate it (callers spread/copy before editing — see PropertiesPanel).
+ */
+export const IDENTITY_EDIT: PropEdit = Object.freeze({
+  scale: Object.freeze([1, 1, 1]),
+  position: Object.freeze([0, 0, 0]),
+  rotationDeg: Object.freeze([0, 0, 0]),
+  tint: null,
+}) as unknown as PropEdit;
+
 /** True when an edit equals identity (so it can be omitted from the export diff). */
 export function isIdentity(edit: PropEdit): boolean {
   return (

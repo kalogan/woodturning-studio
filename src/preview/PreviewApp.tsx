@@ -21,7 +21,7 @@ import { PROP_REGISTRY } from './propRegistry.js';
 import { PropErrorBoundary } from './PropErrorBoundary.js';
 import { PropertiesPanel } from './PropertiesPanel.js';
 import { EditedProp } from './EditedProp.js';
-import { useEditStore } from './editStore.js';
+import { useEditStore, IDENTITY_EDIT } from './editStore.js';
 import './preview.css';
 
 function InspectionLights() {
@@ -42,8 +42,11 @@ export function PreviewApp() {
   const active = PROP_REGISTRY.find((p) => p.name === activeName) ?? PROP_REGISTRY[0];
 
   // Subscribe to this prop's edit so the Canvas re-renders the transform/tint live.
-  const activeEdit = useEditStore((s) => s.getEdit(activeName));
-  useEditStore((s) => s.edits[activeName]); // re-render trigger on edit change
+  // Select the STABLE raw entry (may be undefined) and fall back to the frozen
+  // IDENTITY_EDIT constant — calling getEdit()/identityEdit() inside the selector
+  // returns a fresh object each render, which trips useSyncExternalStore's
+  // "getSnapshot should be cached" infinite-loop guard and blanks the harness.
+  const activeEdit = useEditStore((s) => s.edits[activeName]) ?? IDENTITY_EDIT;
 
   const select = useCallback((name: string) => {
     setError(null);
