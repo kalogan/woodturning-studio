@@ -14,3 +14,4 @@ export { TurnedDisplay, TURNED_DISPLAY_POS, TURNED_DISPLAY_ROT } from './TurnedD
 export { ToolWall } from './ToolWall.js';
 export { DustCollection } from './DustCollection.js';
 export { ClassroomSignage } from './ClassroomSignage.js';
+export { CeilingEquipment } from './CeilingEquipment.js';
