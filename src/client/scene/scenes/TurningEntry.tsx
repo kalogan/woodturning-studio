@@ -4,7 +4,9 @@
  * Scene3D: renders the full workshop in first-person (Lighting, Room, Furniture, Lathe),
  * a FIXED operator camera, and the turning rig (TurningScene) positioned on the spindle.
  *
- * Overlay: renders InputToggle and CoachingOverlay (unchanged from A-series).
+ * Overlay: two clean zones —
+ *   • Top-left info panel  — lesson title + coaching cue + tool-angle readout.
+ *   • Bottom-centre bar    — InputToggle (inline) | view hint | Step Away | Menu.
  *
  * Note: TurningScene is only rendered when adapter is ready and lesson is set,
  * matching the original guard in App.tsx.
@@ -19,6 +21,7 @@ import { Lathe } from '../../lathe/index.js';
 import { TurningScene } from '../../lesson/index.js';
 import { InputToggle, CoachingOverlay } from '../../ui/index.js';
 import { useSettingsStore } from '../../ui/settingsStore.js';
+import { escapeBtnStyle } from '../sharedStyles.js';
 import type { SceneCtx } from '../sceneCtx.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
@@ -163,8 +166,44 @@ export function TurningScene3D({ ctx }: Props) {
   );
 }
 
+// ── Bottom-bar shared style ────────────────────────────────────────────────────
+const bottomBarStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: 16,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  background: 'rgba(20,18,14,0.82)',
+  borderRadius: 10,
+  padding: '10px 18px',
+  zIndex: 100,
+  pointerEvents: 'none', // re-enabled per interactive child below
+  userSelect: 'none',
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: 13,
+  color: '#e8e2d0',
+  whiteSpace: 'nowrap',
+};
+
+// Thin vertical divider between bar sections
+const dividerStyle: React.CSSProperties = {
+  width: 1,
+  height: 22,
+  background: 'rgba(200,180,140,0.25)',
+  flexShrink: 0,
+};
+
+// Re-enable pointer events on interactive children inside the no-events bar
+const interactiveStyle: React.CSSProperties = { pointerEvents: 'auto' };
+
 export function TurningOverlay({ ctx }: Props) {
-  const { lesson, inputSource, setInputSource, cameraAvailable, lastResult, woodState, toolAngleDeg } = ctx;
+  const {
+    lesson, inputSource, setInputSource, cameraAvailable,
+    lastResult, woodState, toolAngleDeg,
+    returnToMenu, leaveLathe,
+  } = ctx;
 
   // Gate CoachingOverlay on the gameplay.coachingOverlay setting.
   const coachingOverlayEnabled = useSettingsStore((s) => s.gameplay.coachingOverlay);
@@ -173,35 +212,110 @@ export function TurningOverlay({ ctx }: Props) {
 
   return (
     <>
-      <InputToggle
-        source={inputSource}
-        onSwitch={setInputSource}
-        cameraAvailable={cameraAvailable}
-      />
-      {coachingOverlayEnabled && (
-        <CoachingOverlay
-          lesson={lesson}
-          lastResult={lastResult}
-          woodState={woodState.current}
-          toolAngleDeg={toolAngleDeg}
-        />
-      )}
-      {/* View-toggle hint — turners change sightline often (press V). */}
+      {/* ── TOP-LEFT: consolidated info panel ─────────────────────────────── */}
+      {/*
+       * Contains: lesson title + coaching cues + tool-angle readout.
+       * CoachingOverlay already renders the angle + cue pills at top-left;
+       * we wrap it with the lesson title to make a single coherent panel.
+       * pointerEvents: none — purely informational.
+       */}
       <div
         style={{
           position: 'absolute',
-          left: 12,
-          bottom: 12,
-          padding: '4px 10px',
-          borderRadius: 6,
-          background: 'rgba(0,0,0,0.45)',
-          color: '#e8e2d0',
-          font: '12px system-ui, sans-serif',
+          top: 16,
+          left: 16,
           pointerEvents: 'none',
-          userSelect: 'none',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
-        Press <b>V</b> to change view (operator / overhead)
+        {/* Lesson title pill */}
+        <div
+          style={{
+            background: 'rgba(20,18,14,0.75)',
+            borderRadius: 6,
+            padding: '5px 10px',
+            fontSize: 12,
+            color: '#c8a46a',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {lesson.title}
+        </div>
+
+        {/* Coaching overlay: angle readout + cue pills */}
+        {coachingOverlayEnabled && (
+          <CoachingOverlay
+            lesson={lesson}
+            lastResult={lastResult}
+            woodState={woodState.current}
+            toolAngleDeg={toolAngleDeg}
+          />
+        )}
+      </div>
+
+      {/* ── BOTTOM-CENTRE: unified control bar ───────────────────────────────
+       *
+       *  [ 🖱 Mouse  ⇄ Camera ] | [ V — Operator / Overhead ] | [ ⟵ Step away ] [ Menu ]
+       *
+       *  The bar itself has pointerEvents: none so the 3D scene underneath
+       *  receives mouse events everywhere except the interactive controls,
+       *  which each restore pointerEvents: auto.
+       */}
+      <div style={bottomBarStyle}>
+
+        {/* Input toggle — inline mode, no fixed positioning */}
+        <div style={interactiveStyle}>
+          <InputToggle
+            source={inputSource}
+            onSwitch={setInputSource}
+            cameraAvailable={cameraAvailable}
+            inline
+          />
+        </div>
+
+        <div style={dividerStyle} />
+
+        {/* View hint — non-interactive label */}
+        <span style={{ color: '#b0a898', fontSize: 12 }}>
+          <kbd
+            style={{
+              background: '#3a3530',
+              color: '#e8e2d0',
+              borderRadius: 3,
+              padding: '1px 5px',
+              fontFamily: 'monospace',
+              fontSize: 12,
+              border: '1px solid #5a5048',
+            }}
+          >
+            V
+          </kbd>
+          {' '}Operator / Overhead
+        </span>
+
+        <div style={dividerStyle} />
+
+        {/* Step away — returns to WORKSHOP_WALK without losing blank progress */}
+        <button
+          style={{ ...escapeBtnStyle, ...interactiveStyle, color: '#e8e2d0', borderColor: '#5a5048' }}
+          onClick={leaveLathe}
+        >
+          ⟵ Step away
+        </button>
+
+        {/* Menu — hard exit, resets everything */}
+        <button
+          style={{ ...escapeBtnStyle, ...interactiveStyle }}
+          onClick={returnToMenu}
+        >
+          Menu
+        </button>
       </div>
     </>
   );
