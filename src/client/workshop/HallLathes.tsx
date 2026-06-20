@@ -4,18 +4,18 @@
  *
  * Layout overview (all positions are WORLD coordinates, Y=0 = floor):
  *
- *   Hall X: [-3, +12]  Z: [-2.5, +9]
- *   Player lathe is at origin [0,0,0] — back-left region.
- *   Prop lathes are arranged in a single row along X ≥ 2.0 m, all
- *   oriented like the player's lathe (bed along X, operator side facing +Z).
+ *   Hall X: [-2, +16]  Z: [-2.5, +4]  — LONG along X
+ *   Player lathe is at origin [0,0,0] — FAR/left (-X) end of the lathe row.
+ *   Prop lathes extend DOWN THE HALL in +X direction along the BACK (-Z) wall,
+ *   all oriented like the player's lathe (bed along X, operator side facing +Z).
  *
- *   Row: 6 lathes spaced 1.9 m apart starting at X = 2.2.
- *   That brings the right-most lathe to ≈ 2.2 + 5×1.9 = 11.7, just inside HALL_X_MAX=12.
+ *   Row: 5 lathes spaced 2.5 m apart starting at X = 2.5.
+ *   Positions: X = 2.5, 5.0, 7.5, 10.0, 12.5  (all at Z ≈ 0, against -Z wall).
  *
  * Colour mix (real turning-class shops):
- *   Lathes 0,1,3,4 → Jet white/cream  (#e8e6dc)
- *   Lathe  2       → Powermatic yellow (#c9a227)
- *   Lathe  5       → Vintage grey      (#b8bcb8)
+ *   Lathes 0,1,3 → Jet white/cream   (#e8e6dc)
+ *   Lathe  2     → Powermatic yellow  (#c9a227)
+ *   Lathe  4     → Vintage grey       (#b8bcb8)
  *
  * All positions/colours are named constants so the director can tune without
  * reading geometry logic.
@@ -29,30 +29,29 @@ import { PropLathe } from './PropLathe.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-/** Z position of all prop lathes (same depth as player lathe = 0) */
+/** Z position of all prop lathes — against the -Z back wall, same as player lathe */
 const ROW_Z = 0.0;
 
-/** X of the first prop lathe in the row */
-const ROW_START_X = 2.2;
+/** X of the first prop lathe in the row (2.5 m along the hall from the player lathe) */
+const ROW_START_X = 2.5;
 
 /** Spacing between adjacent prop lathes along X */
-const ROW_SPACING_X = 1.9;
+const ROW_SPACING_X = 2.5;
 
 /** Shared Y (floor level — PropLathe positions its own stand) */
 const ROW_Y = 0.0;
 
-/** Colour for each prop lathe in the row (index 0…5) */
+/** Colour for each prop lathe in the row (index 0…4) */
 const ROW_COLORS: string[] = [
   '#e8e6dc',  // 0 — Jet cream
   '#e8e6dc',  // 1 — Jet cream
   '#c9a227',  // 2 — Powermatic yellow
   '#e8e6dc',  // 3 — Jet cream
-  '#e8e6dc',  // 4 — Jet cream
-  '#b8bcb8',  // 5 — vintage grey
+  '#b8bcb8',  // 4 — vintage grey
 ];
 
 /** Number of prop lathes */
-const ROW_COUNT = ROW_COLORS.length;   // 6
+const ROW_COUNT = ROW_COLORS.length;   // 5
 
 // ─── Anti-fatigue mat constants ───────────────────────────────────────────────
 

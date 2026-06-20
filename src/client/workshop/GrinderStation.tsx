@@ -8,7 +8,7 @@
  * Default placement: along the left (-X) wall, near the player lathe.
  *
  * COORDINATE CONVENTION: same as Hall.tsx — origin at player lathe.
- *   Hall extends X ∈ [-3, +12], Z ∈ [-2.5, +9].
+ *   Hall extends X ∈ [-2, +16], Z ∈ [-2.5, +4].
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the
@@ -20,11 +20,15 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-/** World position of the grinder station (base centre). */
-export const GRINDER_POS: [number, number, number] = [-2.2, 0, 1.5];
+// Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
+// Grinder station is placed near the +X entrance end, in the middle of the aisle,
+// facing down the hall toward the player's lathe (-X direction).
 
-/** Rotation (radians). Default faces into the room (+X direction). */
-export const GRINDER_ROT: [number, number, number] = [0, Math.PI / 2, 0];
+/** World position of the grinder station (base centre). */
+export const GRINDER_POS: [number, number, number] = [14.5, 0, 1.5];
+
+/** Rotation (radians). Faces down the hall toward player lathe (-X direction). */
+export const GRINDER_ROT: [number, number, number] = [0, -Math.PI / 2, 0];
 
 // Pedestal stand
 const STAND_W  = 0.28;  // stand width

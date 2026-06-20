@@ -9,7 +9,7 @@
  *   • Two turned demo bowls and a small spindle on a lower shelf
  *
  * COORDINATE CONVENTION: same as Hall.tsx — origin at player lathe.
- *   Hall extends X ∈ [-3, +12], Z ∈ [-2.5, +9].
+ *   Hall extends X ∈ [-2, +16], Z ∈ [-2.5, +4].
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the
@@ -22,10 +22,14 @@ import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-/** World position of the demo bench group centre. */
-export const DEMO_BENCH_POS: [number, number, number] = [5.5, 0, 4.5];
+// Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
+// Lathe row is at Z ≈ 0 (against -Z wall). Aisle runs from Z ≈ 0.5 to Z ≈ 4.
+// Demo bench sits in the mid-aisle, mid-hall, facing the lathe row (-Z direction).
 
-/** Rotation (radians). Default faces the class toward -Z (students at high-Z end). */
+/** World position of the demo bench group centre. */
+export const DEMO_BENCH_POS: [number, number, number] = [7.0, 0, 2.5];
+
+/** Rotation (radians). Faces the lathe row (-Z direction, toward Z=0). */
 export const DEMO_BENCH_ROT: [number, number, number] = [0, Math.PI, 0];
 
 // ─── Bench body dimensions ────────────────────────────────────────────────────

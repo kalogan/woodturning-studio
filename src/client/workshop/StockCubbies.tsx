@@ -8,7 +8,7 @@
  * Default placement: against the right (+X) wall, centred on Z.
  *
  * COORDINATE CONVENTION: same as Hall.tsx — origin at player lathe.
- *   Hall extends X ∈ [-3, +12], Z ∈ [-2.5, +9].
+ *   Hall extends X ∈ [-2, +16], Z ∈ [-2.5, +4].
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the
@@ -21,11 +21,15 @@ import { makeBoardMaterial } from '../wood/woodMaterial.js';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-/** World position of the cubby unit (bottom-front-centre). */
-export const CUBBIES_POS: [number, number, number] = [11.3, 0, 3.5];
+// Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
+// Stock cubbies are placed near the +X entrance end, against the +Z aisle wall,
+// facing into the hall (-Z direction, toward the lathe row).
 
-/** Rotation (radians). Faces inward (-X), away from the right wall. */
-export const CUBBIES_ROT: [number, number, number] = [0, -Math.PI / 2, 0];
+/** World position of the cubby unit (bottom-front-centre). */
+export const CUBBIES_POS: [number, number, number] = [13.0, 0, 3.5];
+
+/** Rotation (radians). Faces into the hall toward the lathe row (-Z direction). */
+export const CUBBIES_ROT: [number, number, number] = [0, Math.PI, 0];
 
 // Cubby unit overall dimensions
 const UNIT_COLS = 4;     // number of cubby columns

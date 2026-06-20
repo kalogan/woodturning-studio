@@ -31,27 +31,27 @@ const EYE_HEIGHT = 1.6;  // metres
  *
  * CONSTRAINT: this position MUST sit > 1.2 m from the tool rest (world XZ ≈
  * 0.062, 0.092) to stay outside the proximity-exit hysteresis distance.
- * At z = 1.8 the distance is ≈ √((0-0.062)² + (1.8-0.092)²) ≈ 1.71 m — safe.
+ * At x = 14, z = 1.5 the distance is ≈ √((14-0.062)² + (1.5-0.092)²) ≈ 14 m — safe.
+ *
+ * Long-hallway layout: hall X ∈ [-2, +16]. Entrance end is at +X; player lathe
+ * is at origin (the -X end of the row). Spawn at +X entrance, facing -X (down the
+ * hall toward the sign + player lathe). WALK_SPAWN_YAW = +π/2 rotates the
+ * FPSController yaw so the camera looks in the -X world direction on first frame.
  */
-// Spawn at the FRONT (entrance) of the hall and walk back to your lathe at origin.
-// Hall spans Z ∈ [-2.5, +9]; the player lathe is at Z=0 (back-left). Facing -Z by
-// default → you look across the row of lathes toward your station. Tunable.
-const WALK_SPAWN = { x: 2, z: 8 } as const;
+const WALK_SPAWN     = { x: 14, z: 1.5 } as const;
+// Yaw offset to face -X on spawn: in the 'YXZ' Euler convention used by FPSCamera,
+// yaw = 0 → looking -Z; yaw = +π/2 → looking -X (player faces down the hall).
+const WALK_SPAWN_YAW = Math.PI / 2;
 
 /**
- * Room AABB bounds — player position (XZ) is clamped inside these limits.
- * Values derived from Room.tsx conventions (warm-workshop room 8 × 6 m).
- * Kept as named constants with a comment — Room.tsx is NOT edited.
- *
- * Room is centred at the origin.  Half-extents:
- *   X: ±4.0 m  (8 m wide)
- *   Z: ±3.0 m  (6 m deep)
+ * Hall AABB bounds — player position (XZ) is clamped inside these limits.
+ * Hall: X ∈ [-2, +16], Z ∈ [-2.5, +4].
  * A 0.3 m wall-buffer keeps the camera from clipping the walls.
  */
-const ROOM_MIN_X = -3.7;
-const ROOM_MAX_X =  3.7;
-const ROOM_MIN_Z = -2.7;
-const ROOM_MAX_Z =  2.7;
+const ROOM_MIN_X = -1.7;
+const ROOM_MAX_X = 15.7;
+const ROOM_MIN_Z = -2.2;
+const ROOM_MAX_Z =  3.7;
 
 // ── Pre-allocated THREE scratch objects (module scope — never re-created) ──
 // These are mutated in place inside useFrame to satisfy constraint #3.
@@ -123,10 +123,14 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
     ctrl.start();
     controllerRef.current = ctrl;
 
-    // Reset to the walk spawn position.
+    // Reset to the walk spawn position and orientation.
     // WALK_SPAWN is > 1.2 m from the tool rest, so the proximity check on the
     // first frame after mount will NOT immediately re-enter AT_LATHE.
     camera.position.set(WALK_SPAWN.x, EYE_HEIGHT, WALK_SPAWN.z);
+    // Set initial yaw so the player faces -X (down the hall toward the sign).
+    // The FPSController accumulates yaw from mouse delta; setting it here
+    // makes the first frame show the correct orientation without any mouse input.
+    ctrl.setYaw(WALK_SPAWN_YAW);
 
     // Request pointer lock on canvas click
     const canvas = gl.domElement;
