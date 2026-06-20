@@ -36,6 +36,10 @@ import {
   ShopMachines,
   WallConduit,
   SpeakerDisplay,
+  WireRack,
+  FlatFileCabinets,
+  ShopVac,
+  LeaningLumber,
 } from '../client/workshop/index.js';
 import { Hall } from '../client/workshop/Hall.js';
 import { Lathe } from '../client/lathe/index.js';
@@ -78,6 +82,10 @@ const ROOM_MANIFEST: readonly ManifestEntry[] = [
   { name: 'ShopMachines', Component: ShopMachines },
   { name: 'WallConduit', Component: WallConduit },
   { name: 'SpeakerDisplay', Component: SpeakerDisplay },
+  { name: 'WireRack', Component: WireRack },
+  { name: 'FlatFileCabinets', Component: FlatFileCabinets },
+  { name: 'ShopVac', Component: ShopVac },
+  { name: 'LeaningLumber', Component: LeaningLumber },
   { name: 'Lathe', Component: Lathe },
 ];
 
