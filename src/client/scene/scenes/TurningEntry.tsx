@@ -16,7 +16,7 @@ import { useRef, useEffect, useState } from 'react';
 import { PerspectiveCamera } from '@react-three/drei';
 import { useScrollZoom } from '../useScrollZoom.js';
 import * as THREE from 'three';
-import { Lighting, Room, Furniture } from '../../workshop/index.js';
+import { Shop } from '../Shop.js';
 import { Lathe } from '../../lathe/index.js';
 import { TurningScene } from '../../lesson/index.js';
 import { InputToggle, CoachingOverlay } from '../../ui/index.js';
@@ -136,10 +136,8 @@ export function TurningScene3D({ ctx }: Props) {
         fov={OPERATOR_CAM_FOV}
       />
 
-      {/* ── Workshop geometry ── mirrors WalkScene composition exactly ──────── */}
-      <Lighting />
-      <Room />
-      <Furniture />
+      {/* ── Shared workshop environment (Hamester Hall) ───────────────────── */}
+      <Shop />
       {/*
        * Lathe at world origin, stand included.
        * NO defaultBlankVisible — the physics TurningScene blank is the blank now.

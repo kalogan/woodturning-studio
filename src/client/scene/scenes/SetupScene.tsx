@@ -30,7 +30,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Lighting, Room, Furniture } from '../../workshop/index.js';
+import { Shop } from '../Shop.js';
 import { Lathe } from '../../lathe/index.js';
 import {
   ToolBench,
@@ -251,9 +251,7 @@ export function SetupScene3D(_props: Props) {
 
   return (
     <>
-      <Lighting />
-      <Room />
-      <Furniture />
+      <Shop />
 
       {/* ── Bare lathe: mountable parts appear only when seated ─────────────── */}
       <Lathe
