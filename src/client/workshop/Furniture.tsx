@@ -39,9 +39,10 @@ export function ToolCabinet() {
         <meshStandardMaterial {...cabinetBodyMat} />
       </mesh>
 
-      {/* Drawer lines — three inset strips */}
+      {/* Drawer lines — three inset strips.
+          Cabinet front face is at local Z = 0.25; offset +0.004 to clear z-fighting. */}
       {([0.3, 0.55, 0.8] as const).map((y, i) => (
-        <mesh key={i} position={[0, y, 0.251]}>
+        <mesh key={i} position={[0, y, 0.254]}>
           <boxGeometry args={[0.84, 0.02, 0.005]} />
           <meshStandardMaterial {...cabinetDivMat} />
         </mesh>
