@@ -65,36 +65,41 @@ float g_noise3(vec3 p) {
 // Model-space Y (vLocalY) is the lathe rotation axis.
 
 vec3 computeWoodColor(vec3 localPos) {
-  // ── Annual rings ──────────────────────────────────────────────────────────
-  // Use distance from the lathe axis (X-Z plane) to form radial rings.
-  float dist = length(localPos.xz);
+  // ── Annual rings — visible on the TURNED CURVED SURFACE ────────────────────
+  // CRITICAL: growth rings are concentric around the PITH. If we measured distance
+  // from the TURNING AXIS, that distance is CONSTANT on the cylinder's surface
+  // (= the radius) → the ring function returns the same value everywhere → the
+  // blank looks flat/white. Real blanks are NOT cut dead-centre of the log, so the
+  // pith sits OFF the turning axis: distance-to-pith then varies around the
+  // circumference + along the length, so rings surface as cathedral grain.
+  const vec2  PITH_OFFSET = vec2(0.042, 0.022); // m — pith off the turning axis (tunable)
+  const float RING_SCALE  = 22.0;               // bring the ~0.05 m radius into a multi-ring range
 
-  // Turbulence: two octaves for more organic, non-concentric rings.
-  float turb  = g_noise2(vec2(localPos.y * 6.0,  dist * 3.0))  * 0.12;
-  turb       += g_noise2(vec2(localPos.y * 18.0, dist * 9.0))  * 0.04;
+  // Gentle drift of the ring centre along the length → cathedral arches, not straight bands.
+  float lengthWarp = (g_noise2(vec2(localPos.y * 1.5, 7.3)) - 0.5) * 0.020;
+  float dist = (length(localPos.xz - PITH_OFFSET) + lengthWarp) * RING_SCALE;
+
+  // Small turbulence so the rings aren't mechanically perfect.
+  float turb = g_noise2(vec2(localPos.y * 4.0, dist * 1.5)) * 0.30;
 
   // Raw ring phase mapped to 0..1 via sine.
   float rawRing = sin((dist + turb) * u_ringFrequency * 6.2832) * 0.5 + 0.5;
 
-  // Sharpen rings: push the mid-grey sine toward distinct dark/light bands.
-  // smoothstep with a tight band around 0.5 produces a crisp early/latewood contrast.
-  float ringSharp = smoothstep(0.35, 0.65, rawRing);
-
-  // Blend sharpened and smooth ring — controlled by contrast.
-  // At ringContrast=0 → no effect; at 1.0 → full sharpened mix.
+  // Sharpen rings into distinct early/latewood bands.
+  float ringSharp = smoothstep(0.30, 0.70, rawRing);
   float ringMix = mix(rawRing, ringSharp, clamp(u_ringContrast * 1.5, 0.0, 1.0));
 
-  // Mix base ↔ grain color.  Drive the blend with contrast so low values still
-  // produce some visible ring banding.
-  float blendT = ringMix * clamp(u_ringContrast + 0.25, 0.0, 1.0);
+  // Mix base ↔ grain color.  Floor keeps some banding even for low-contrast species.
+  float blendT = ringMix * clamp(u_ringContrast + 0.20, 0.0, 1.0);
   vec3 woodCol = mix(u_baseColor, u_grainColor, blendT);
 
-  // ── Fine longitudinal grain lines ─────────────────────────────────────────
-  // Two-octave noise for visible medullary-ray style grain texture.
-  float grainNoise  = g_noise2(vec2(localPos.y * 40.0,  dist * 20.0)) * 0.10;
-  grainNoise       += g_noise2(vec2(localPos.y * 120.0, dist * 60.0)) * 0.04;
-  // Mix toward grain color rather than plain darkening — warmer result.
-  woodCol = mix(woodCol, u_grainColor, grainNoise);
+  // ── Longitudinal fibre lines ──────────────────────────────────────────────
+  // Run along the length (Y) around the circumference (angle) — the streaky look
+  // of wood fibres on a turned surface. Uses the angle so it varies across the surface.
+  float ang   = atan(localPos.z, localPos.x);
+  float fibre = g_noise2(vec2(ang * 5.0,  localPos.y * 28.0)) * 0.10;
+  fibre      += g_noise2(vec2(ang * 13.0, localPos.y * 80.0)) * 0.04;
+  woodCol = mix(woodCol, u_grainColor, fibre);
 
   // ── Figure (fleck or streak) ───────────────────────────────────────────────
   if (u_figureType == 1) {
