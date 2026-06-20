@@ -19,3 +19,4 @@ export { CeilingEquipment } from './CeilingEquipment.js';
 export { ShopFurniture } from './ShopFurniture.js';
 export { ShopMachines } from './ShopMachines.js';
 export { WallConduit } from './WallConduit.js';
+export { SpeakerDisplay } from './SpeakerDisplay.js';
