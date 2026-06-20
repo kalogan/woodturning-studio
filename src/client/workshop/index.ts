@@ -10,3 +10,4 @@ export { DemoBench, DEMO_BENCH_POS, DEMO_BENCH_ROT } from './DemoBench.js';
 export { StockCubbies, CUBBIES_POS, CUBBIES_ROT } from './StockCubbies.js';
 export { GrinderStation, GRINDER_POS, GRINDER_ROT } from './GrinderStation.js';
 export { ShopClutter } from './ShopClutter.js';
+export { TurnedDisplay, TURNED_DISPLAY_POS, TURNED_DISPLAY_ROT } from './TurnedDisplay.js';
