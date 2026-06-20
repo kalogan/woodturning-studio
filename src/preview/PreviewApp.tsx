@@ -272,6 +272,11 @@ export function PreviewApp(): React.JSX.Element {
   const [tab, setTab] = useState<HarnessTab>(loadTab);
   const [roomActive, setRoomActive] = useState<string>(ROOM_DEFAULT);
 
+  // Room selection: viewport empty-click deselects (null) → no active prop ('').
+  const selectRoom = useCallback((name: string | null) => {
+    setRoomActive(name ?? '');
+  }, []);
+
   const selectTab = useCallback((next: HarnessTab) => {
     setTab(next);
     persistTab(next);
@@ -303,7 +308,7 @@ export function PreviewApp(): React.JSX.Element {
       {tab === 'props' ? (
         <PropsGallery />
       ) : (
-        <RoomEditor activeName={roomActive} onSelect={setRoomActive} />
+        <RoomEditor activeName={roomActive} onSelect={selectRoom} />
       )}
     </>
   );
