@@ -21,7 +21,7 @@ import { useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { useScrollZoom } from '../useScrollZoom.js';
 import * as THREE from 'three';
-import { Lighting, Room, Furniture } from '../../workshop/index.js';
+import { Shop } from '../Shop.js';
 import { Lathe } from '../../lathe/index.js';
 import { ToolRack } from '../../lathe/ToolRack.js';
 import { useLatheStore } from '../../../workshop/index.js';
@@ -136,10 +136,8 @@ export function AtLatheScene({ ctx }: Props) {
         fov={ATLATHE_CAM_FOV}
       />
 
-      {/* ── Workshop geometry — mirrors WalkScene composition ─────────────── */}
-      <Lighting />
-      <Room />
-      <Furniture />
+      {/* ── Shared workshop environment (Hamester Hall) ───────────────────── */}
+      <Shop />
 
       {/*
        * Lathe at world origin.

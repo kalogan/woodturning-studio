@@ -9,7 +9,7 @@
  * FPSCamera walk controller. OrbitControls are NOT used here.
  */
 
-import { Lighting, Room, Furniture } from '../../workshop/index.js';
+import { Shop } from '../Shop.js';
 import { Lathe } from '../../lathe/index.js';
 import { FPSCamera } from '../FPSCamera.js';
 import type { SceneCtx } from '../sceneCtx.js';
@@ -19,9 +19,7 @@ interface Props { ctx: SceneCtx }
 export function WalkScene({ ctx }: Props) {
   return (
     <>
-      <Lighting />
-      <Room />
-      <Furniture />
+      <Shop />
       {/* Lathe is floor-standing; its own stand provides working height */}
       <Lathe position={[0, 0, 0]} defaultBlankVisible />
       {/* FPS walk controller — replaces OrbitControls in walk/lathe states */}

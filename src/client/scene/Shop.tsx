@@ -1,0 +1,37 @@
+/**
+ * Shop.tsx — Shared static environment for all workshop scenes.
+ *
+ * Renders the complete Hamester Hall environment that every scene shares:
+ *   • Lighting rig (task spot + fluorescents + ambient)
+ *   • Hall shell (brick walls, concrete floor, black ducted ceiling, sign)
+ *   • Back-wall Casework (cabinets, shelving, blanks)
+ *   • Furniture (tool cabinet, workbench, blank rack, safety gear)
+ *   • DemoStation (monitor on right wall)
+ *
+ * What is NOT included here:
+ *   • The player's interactive <Lathe> — each scene adds its own.
+ *   • FPSCamera / PerspectiveCamera — each scene owns its camera.
+ *   • ToolRack, ToolBench, TurningScene — scene-specific interactives.
+ *
+ * All geometry is static and has zero per-frame allocations.
+ * Materials live at module scope in their respective component files.
+ */
+
+import { Lighting, Furniture } from '../workshop/index.js';
+import { Hall } from '../workshop/Hall.js';
+
+export function Shop() {
+  return (
+    <group name="shop">
+      {/* Lighting rig — task spot + fluorescents */}
+      <Lighting />
+
+      {/* Hall shell — floor, brick walls, ceiling, ducts, sign */}
+      <Hall />
+
+      {/* Workshop furniture — cabinets, workbench, blank rack, safety gear,
+          casework (built-in back-wall run), and demo monitor */}
+      <Furniture />
+    </group>
+  );
+}
