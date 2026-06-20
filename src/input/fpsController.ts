@@ -190,6 +190,16 @@ export class FPSController {
     window.removeEventListener('mousemove', this.onMouseMove);
   }
 
+  /**
+   * Set the yaw (horizontal look angle, radians) directly.
+   * Called once on mount by FPSCamera to orient the player toward a target
+   * direction without requiring mouse movement.
+   * Back-compatible: existing callers that never call setYaw() see yaw = 0.
+   */
+  setYaw(yaw: number): void {
+    this.state.yaw = yaw;
+  }
+
   /** Request pointer lock on the given element (guards for API existence). */
   requestPointerLock(element: HTMLElement): void {
     if (typeof element.requestPointerLock === 'function') {
