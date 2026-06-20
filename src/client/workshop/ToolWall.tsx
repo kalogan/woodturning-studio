@@ -38,7 +38,7 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 /** World position of the pegboard group (wall-plane centre of the panel). */
-export const TOOL_WALL_POS: [number, number, number] = [-7.0, 1.975, 3.96];
+export const TOOL_WALL_POS: [number, number, number] = [-7.0, 1.975, 7.21];
 
 /** Rotation (radians). Faces -Z into the hall (local +Z → world -Z). */
 export const TOOL_WALL_ROT: [number, number, number] = [0, Math.PI, 0];

@@ -30,7 +30,7 @@ const HALL_X_MIN = -16.0;
 const HALL_X_MAX =   2.0;
 const HALL_H     =  3.6;   // ceiling height
 const HALL_Z_MIN = -2.5;   // back wall (lathe row)
-const HALL_Z_MAX =  4.0;   // front wall (aisle/windows)
+const HALL_Z_MAX =  7.25;  // front wall (aisle/windows) — widened +3.25 m
 
 // ─── Fixture layout ─────────────────────────────────────────────────────────
 // FIXTURE_COUNT: number of fixtures per row down the long X axis.

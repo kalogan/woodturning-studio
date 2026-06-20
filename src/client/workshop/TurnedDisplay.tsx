@@ -37,7 +37,7 @@ import * as THREE from 'three';
  * Sits atop the StockCubbies unit: same X (−13) + Z wall, base Y at cubby top.
  * Cubby TOTAL_H ≈ 1.068 — we seat the cabinets a hair below to read as built-in.
  */
-export const TURNED_DISPLAY_POS: [number, number, number] = [-13.0, 1.05, 3.9];
+export const TURNED_DISPLAY_POS: [number, number, number] = [-13.0, 1.05, 7.15];
 
 /** Rotation (radians). Faces -Z into the hall (local +Z → world -Z). */
 export const TURNED_DISPLAY_ROT: [number, number, number] = [0, Math.PI, 0];

@@ -38,7 +38,7 @@ import * as THREE from 'three';
 export const HALL_X_MIN = -16.0;  // entrance end (short wall, open or future door)
 export const HALL_X_MAX =   2.0;  // short end wall (sign wall, no lathes)
 export const HALL_Z_MIN = -2.5;   // back long wall (lathe row)
-export const HALL_Z_MAX =  4.0;   // front long wall (aisle side, windows)
+export const HALL_Z_MAX =  7.25;  // front long wall (aisle side, windows) — widened +3.25 m
 export const HALL_H     =  3.6;   // ceiling height
 
 // Derived dimensions (read-only — do not edit directly)
@@ -86,7 +86,7 @@ const WIN_POSITIONS_X: number[] = [-2.0, -5.5, -9.0, -12.5];
 const SIGN_W   = 2.4;    // sign panel width
 const SIGN_H   = 0.45;   // sign panel height
 const SIGN_Y   = HALL_H - 0.55;   // near top of the end wall
-const SIGN_Z   = HALL_CZ;         // centred on the short wall depth
+const SIGN_Z   = 0.75;            // pinned literal (former HALL_CZ value) so widening doesn't drift the sign
 const SIGN_X   = HALL_X_MAX - 0.025;  // just proud of the +X end wall
 
 // ─────────────────────────────────────────────────────────────────────────────
