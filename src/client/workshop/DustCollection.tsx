@@ -1,11 +1,17 @@
 /**
  * DustCollection.tsx — Shop dust collection system.
  *
- * The defining infrastructure of a real woodturning shop:
- *   • A floor-standing dust collector (blower housing + tall fabric bag +
- *     intake elbow) tucked into the entrance / lathe-wall corner.
- *   • A horizontal galvanized round duct TRUNK running the length of the
- *     lathe wall, just below the overhead light fixtures.
+ * Photo-matched to a real WHITE CYCLONE collector (Oneida / Grizzly style):
+ *   • A floor-standing CYCLONE unit tucked into the entrance / lathe-wall
+ *     corner: a GRAY motor + blower scroll housing on top, a WHITE cylindrical
+ *     upper body, tapering into a WHITE CONICAL cyclone cone, ending over a
+ *     tan/kraft fiber collection DRUM with a black bag-clamp ring. A small
+ *     cyclone inlet stub and a slim vertical filter/exhaust stack read the
+ *     classic Oneida silhouette.
+ *   • A horizontal SHINY galvanized SPIRAL duct TRUNK running the length of
+ *     the lathe wall, just below the overhead light fixtures, with a smooth
+ *     curved quarter-torus ELBOW where the trunk meets the cyclone and turns
+ *     up toward the wall — like the big curved silver pipe in the photo.
  *   • Vertical DROP branches descending over individual lathe stations,
  *     each ending in a blast gate, a corrugated flex hose, and a flared
  *     pickup hood.
@@ -34,31 +40,54 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// ── Collector unit (floor-standing, -X/-Z corner) ───────────────────────────
+// ── Cyclone collector unit (floor-standing, -X/-Z corner) ────────────────────
 /** World position of the collector base centre (corner; grinder is at +Z side). */
 const COLLECTOR_POS: [number, number, number] = [-15.0, 0, -1.7];
 
-const BASE_W = 0.62;   // blower / motor housing (square-ish steel base)
-const BASE_H = 0.60;
-const BASE_D = 0.62;
+// Fiber collection drum at the floor (tan kraft cardboard).
+const DRUM_R = 0.30;   // drum radius
+const DRUM_H = 0.55;   // drum height
 
-const BLOWER_R = 0.20;  // blower scroll housing on top of the base
-const BLOWER_T = 0.26;  // axial thickness of the scroll
+// Black bag-clamp ring sealing the cone to the drum.
+const CLAMP_R = 0.32;
+const CLAMP_H = 0.05;
 
-const BAG_R   = 0.225;  // fabric collection bag radius
-const BAG_H   = 1.40;   // bag height
-const RING_R  = 0.235;  // metal support ring radii at bag top/bottom
-const RING_T  = 0.02;
+// White conical cyclone cone (wide at top, narrow into the drum).
+const CONE_TOP_R = 0.31;   // matches body radius
+const CONE_BOT_R = 0.13;   // narrow throat above the drum
+const CONE_H     = 0.62;
 
-const INTAKE_R   = 0.10;  // intake elbow pipe radius
-const INTAKE_LEN = 0.35;  // horizontal intake stub length
+// White cylindrical upper body (the main cyclone barrel).
+const BODY_R = 0.31;
+const BODY_H = 0.46;
+
+// Gray motor / blower scroll housing on top.
+const SCROLL_R = 0.235;  // blower scroll radius
+const SCROLL_T = 0.27;   // axial thickness of the scroll
+const MOTOR_R  = 0.13;   // motor can radius (sits atop the scroll)
+const MOTOR_H  = 0.20;   // motor can height
+
+// Slim vertical filter / exhaust stack rising off the scroll exhaust.
+const STACK_R = 0.075;
+const STACK_H = 0.42;
+
+// Cyclone tangential inlet stub (where the trunk elbow connects).
+const INLET_R   = 0.105;
+const INLET_LEN = 0.30;
 
 // ── Main duct trunk (horizontal, along X, near the lathe wall) ───────────────
 const TRUNK_Y = 2.95;    // BELOW light fixtures (Y≈3.5) and ceiling ducts (Y≥3.4)
 const TRUNK_Z = -2.15;   // between -Z wall (-2.5) and lathes (0); clear of lights
 const TRUNK_R = 0.10;    // round duct radius (~0.20 m dia)
 const TRUNK_X_HI = -1.4;     // +X end of the trunk (near player lathe)
-const TRUNK_X_LO = COLLECTOR_POS[0]; // -X end, over the collector
+
+// Curved elbow joining the trunk to the cyclone inlet (quarter-torus).
+const ELBOW_R = 0.22;    // bend radius of the elbow centreline
+/** X where the elbow's vertical leg sits (just +X of the cyclone). */
+const ELBOW_X = COLLECTOR_POS[0] + 0.55;
+
+// Trunk now runs from the elbow's top to the +X end.
+const TRUNK_X_LO = ELBOW_X;
 
 // ── Drop branches (vertical, descending to lathe stations) ───────────────────
 /** X positions of the drops (above selected lathe stations). */
@@ -80,19 +109,25 @@ const STRAP_XS: readonly number[] = [-13.5, -9.0, -4.5];
 // ─── Module-scope materials ───────────────────────────────────────────────────
 
 const _ductMat = new THREE.MeshStandardMaterial({
-  color: '#b4b8bc', roughness: 0.45, metalness: 0.60,   // galvanized steel
+  color: '#c4c8cc', roughness: 0.25, metalness: 0.85,    // shiny galvanized steel
+});
+const _seamMat = new THREE.MeshStandardMaterial({
+  color: '#aeb2b6', roughness: 0.30, metalness: 0.85,    // spiral-seam ring hint
 });
 const _flexMat = new THREE.MeshStandardMaterial({
-  color: '#8a8c90', roughness: 0.70, metalness: 0.35,   // darker flex hose
+  color: '#8a8c90', roughness: 0.70, metalness: 0.35,    // darker flex hose
 });
-const _housingMat = new THREE.MeshStandardMaterial({
-  color: '#4a5258', roughness: 0.55, metalness: 0.50,   // shop steel housing
+const _scrollMat = new THREE.MeshStandardMaterial({
+  color: '#5a5d63', roughness: 0.55, metalness: 0.50,    // gray blower scroll
 });
-const _bagMat = new THREE.MeshStandardMaterial({
-  color: '#e8e6dc', roughness: 0.90, metalness: 0.0,     // off-white fabric bag
+const _whiteMat = new THREE.MeshStandardMaterial({
+  color: '#e8e8e2', roughness: 0.55, metalness: 0.10,    // white cyclone body/cone
 });
-const _ringMat = new THREE.MeshStandardMaterial({
-  color: '#9a9ea2', roughness: 0.40, metalness: 0.65,    // bag support ring
+const _drumMat = new THREE.MeshStandardMaterial({
+  color: '#b89a6a', roughness: 0.85, metalness: 0.0,     // tan kraft fiber drum
+});
+const _clampMat = new THREE.MeshStandardMaterial({
+  color: '#1c1c1e', roughness: 0.55, metalness: 0.25,    // black bag-clamp ring
 });
 const _gateMat = new THREE.MeshStandardMaterial({
   color: '#6a6a70', roughness: 0.45, metalness: 0.55,    // blast gate body
@@ -104,52 +139,89 @@ const _strapMat = new THREE.MeshStandardMaterial({
   color: '#5a5e62', roughness: 0.50, metalness: 0.60,    // steel band
 });
 
+// ─── Module-scope geometry (built once) ───────────────────────────────────────
+
+// Quarter-torus elbow: a 90° arc of pipe. Built in the XY plane (tube around
+// the +Z axis), then oriented in the component so it sweeps from horizontal
+// (trunk) to vertical (down to the cyclone inlet).
+const _elbowGeo = new THREE.TorusGeometry(ELBOW_R, TRUNK_R, 16, 24, Math.PI / 2);
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Floor-standing collector: steel base, blower scroll, fabric bag, intake. */
+/** Floor-standing WHITE CYCLONE: gray scroll, white body + cone, fiber drum. */
 function Collector() {
-  const bagBottomY = BASE_H + BLOWER_T / 2;  // bag rises off the blower top
+  const drumTopY  = DRUM_H;
+  const clampY    = drumTopY + CLAMP_H / 2;
+  const coneBotY  = drumTopY + CLAMP_H;            // cone narrow end meets clamp
+  const coneTopY  = coneBotY + CONE_H;
+  const bodyBotY  = coneTopY;
+  const bodyTopY  = bodyBotY + BODY_H;
+  const scrollY   = bodyTopY + SCROLL_T / 2;       // scroll centreline
+  const motorY    = bodyTopY + SCROLL_T + MOTOR_H / 2;
+  const stackBotY = bodyTopY + SCROLL_T;
+  const inletY    = bodyTopY - 0.06;               // inlet near top of the body
+
   return (
     <group name="dust-collector" position={COLLECTOR_POS}>
-      {/* Steel base / motor housing */}
-      <mesh castShadow receiveShadow position={[0, BASE_H / 2, 0]}>
-        <boxGeometry args={[BASE_W, BASE_H, BASE_D]} />
-        <primitive object={_housingMat} attach="material" />
+      {/* Fiber collection drum (tan kraft cardboard) at the floor */}
+      <mesh castShadow receiveShadow position={[0, DRUM_H / 2, 0]}>
+        <cylinderGeometry args={[DRUM_R, DRUM_R, DRUM_H, 24]} />
+        <primitive object={_drumMat} attach="material" />
+      </mesh>
+      {/* Drum rim band (top hoop) */}
+      <mesh position={[0, drumTopY - 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[DRUM_R + 0.005, 0.012, 8, 24]} />
+        <primitive object={_drumMat} attach="material" />
       </mesh>
 
-      {/* Blower scroll housing (cylinder on its side) atop the base */}
-      <mesh castShadow position={[0, BASE_H + BLOWER_T / 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[BLOWER_R, BLOWER_R, BLOWER_T, 20]} />
-        <primitive object={_housingMat} attach="material" />
+      {/* Black bag-clamp ring sealing cone to drum */}
+      <mesh castShadow position={[0, clampY, 0]}>
+        <cylinderGeometry args={[CLAMP_R, CLAMP_R, CLAMP_H, 24]} />
+        <primitive object={_clampMat} attach="material" />
       </mesh>
 
-      {/* Intake elbow — horizontal stub off the +X face of the blower */}
+      {/* White conical cyclone cone (wide top → narrow throat into drum) */}
+      <mesh castShadow position={[0, coneBotY + CONE_H / 2, 0]}>
+        <cylinderGeometry args={[CONE_TOP_R, CONE_BOT_R, CONE_H, 28]} />
+        <primitive object={_whiteMat} attach="material" />
+      </mesh>
+
+      {/* White cylindrical upper body (cyclone barrel) */}
+      <mesh castShadow position={[0, bodyBotY + BODY_H / 2, 0]}>
+        <cylinderGeometry args={[BODY_R, BODY_R, BODY_H, 28]} />
+        <primitive object={_whiteMat} attach="material" />
+      </mesh>
+
+      {/* Cyclone tangential INLET stub off the +X side, near body top */}
       <mesh castShadow
-            position={[BLOWER_R + INTAKE_LEN / 2, BASE_H + BLOWER_T / 2, 0]}
+            position={[BODY_R + INLET_LEN / 2 - 0.04, inletY, 0]}
             rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[INTAKE_R, INTAKE_R, INTAKE_LEN, 16]} />
-        <primitive object={_ductMat} attach="material" />
-      </mesh>
-      {/* Intake elbow — vertical riser turning up toward the trunk */}
-      <mesh castShadow
-            position={[BLOWER_R + INTAKE_LEN, BASE_H + BLOWER_T / 2 + INTAKE_LEN / 2, 0]}>
-        <cylinderGeometry args={[INTAKE_R, INTAKE_R, INTAKE_LEN, 16]} />
+        <cylinderGeometry args={[INLET_R, INLET_R, INLET_LEN, 16]} />
         <primitive object={_ductMat} attach="material" />
       </mesh>
 
-      {/* Fabric collection bag */}
-      <mesh castShadow position={[0, bagBottomY + BAG_H / 2, 0]}>
-        <cylinderGeometry args={[BAG_R, BAG_R, BAG_H, 20]} />
-        <primitive object={_bagMat} attach="material" />
+      {/* Gray blower SCROLL housing (cylinder on its side) atop the body */}
+      <mesh castShadow position={[0, scrollY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[SCROLL_R, SCROLL_R, SCROLL_T, 24]} />
+        <primitive object={_scrollMat} attach="material" />
       </mesh>
-      {/* Support rings at bag bottom and top */}
-      <mesh position={[0, bagBottomY + RING_T / 2, 0]}>
-        <cylinderGeometry args={[RING_R, RING_R, RING_T, 20, 1, true]} />
-        <primitive object={_ringMat} attach="material" />
+      {/* Gray motor can on top of the scroll */}
+      <mesh castShadow position={[0, motorY, 0]}>
+        <cylinderGeometry args={[MOTOR_R, MOTOR_R, MOTOR_H, 20]} />
+        <primitive object={_scrollMat} attach="material" />
       </mesh>
-      <mesh position={[0, bagBottomY + BAG_H - RING_T / 2, 0]}>
-        <cylinderGeometry args={[RING_R, RING_R, RING_T, 20, 1, true]} />
-        <primitive object={_ringMat} attach="material" />
+
+      {/* Slim vertical filter / exhaust stack rising off the scroll (-X side) */}
+      <mesh castShadow position={[-BODY_R - STACK_R - 0.02, stackBotY + STACK_H / 2 - SCROLL_T, 0]}>
+        <cylinderGeometry args={[STACK_R, STACK_R, STACK_H, 18]} />
+        <primitive object={_ductMat} attach="material" />
+      </mesh>
+      {/* Short cross-over duct from the scroll exhaust to the stack top */}
+      <mesh castShadow
+            position={[-BODY_R / 2 - STACK_R, stackBotY + STACK_H / 2 - SCROLL_T + STACK_H / 2 - 0.04, 0]}
+            rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[STACK_R * 0.8, STACK_R * 0.8, BODY_R, 14]} />
+        <primitive object={_ductMat} attach="material" />
       </mesh>
     </group>
   );
@@ -160,21 +232,62 @@ function Collector() {
 const HALL_TRUNK_TOP = 3.30;                  // top of the strap (below lights)
 const STRAP_LEN = HALL_TRUNK_TOP - TRUNK_Y;   // band length
 
-/** The horizontal galvanized round duct trunk running along X near the wall. */
+/** The horizontal SHINY spiral duct trunk + curved elbow down to the cyclone. */
 function Trunk() {
   const len = TRUNK_X_HI - TRUNK_X_LO;
   const cx  = (TRUNK_X_HI + TRUNK_X_LO) / 2;
+
+  // Spiral-seam ring hints spaced along the trunk.
+  const seamXs = [-3.0, -5.5, -8.0, -10.5, -13.0];
+
+  // Elbow geometry sweeps a 90° arc. We place its centre so one tangent is
+  // horizontal at TRUNK_Y (continuing the trunk) and the other is vertical,
+  // dropping down toward the cyclone inlet at ELBOW_X.
+  // Torus arc spans angle 0→π/2 in its local XY plane; centre at elbow corner.
+  const elbowCx = ELBOW_X;
+  const elbowCy = TRUNK_Y - ELBOW_R;   // arc centre below the trunk line
+
   return (
     <group name="dust-trunk">
-      {/* Long round duct lying along X */}
+      {/* Long round shiny duct lying along X */}
       <mesh castShadow position={[cx, TRUNK_Y, TRUNK_Z]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[TRUNK_R, TRUNK_R, len, 20]} />
+        <cylinderGeometry args={[TRUNK_R, TRUNK_R, len, 24]} />
         <primitive object={_ductMat} attach="material" />
       </mesh>
 
+      {/* Spiral-seam ring bands (thin hoops) */}
+      {seamXs.map((x, i) => (
+        <mesh key={i} position={[x, TRUNK_Y, TRUNK_Z]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[TRUNK_R + 0.004, TRUNK_R + 0.004, 0.02, 24]} />
+          <primitive object={_seamMat} attach="material" />
+        </mesh>
+      ))}
+
       {/* End cap at the +X end (capped run) */}
       <mesh position={[TRUNK_X_HI, TRUNK_Y, TRUNK_Z]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[TRUNK_R * 1.05, TRUNK_R * 1.05, 0.03, 20]} />
+        <cylinderGeometry args={[TRUNK_R * 1.05, TRUNK_R * 1.05, 0.03, 24]} />
+        <primitive object={_ductMat} attach="material" />
+      </mesh>
+
+      {/* Smooth curved ELBOW: trunk → turns down toward the cyclone.
+          Torus arc (0→π/2) in its local XY plane; rotate about Y so the bend
+          lies in the X/Y plane at Z=TRUNK_Z, sweeping from the +X horizontal
+          tangent down to the vertical drop. */}
+      <mesh castShadow
+            position={[elbowCx, elbowCy, TRUNK_Z]}
+            rotation={[0, Math.PI, 0]}>
+        <primitive object={_elbowGeo} attach="geometry" />
+        <primitive object={_ductMat} attach="material" />
+      </mesh>
+
+      {/* Vertical leg of the elbow dropping toward the cyclone inlet */}
+      <mesh castShadow
+            position={[
+              elbowCx - ELBOW_R,
+              (elbowCy + (COLLECTOR_POS[1] + 1.9)) / 2,
+              TRUNK_Z,
+            ]}>
+        <cylinderGeometry args={[TRUNK_R, TRUNK_R, Math.max(0.05, elbowCy - 1.9), 24]} />
         <primitive object={_ductMat} attach="material" />
       </mesh>
 
@@ -250,8 +363,9 @@ function Drop({ x }: { x: number }) {
 // ─── Public export ────────────────────────────────────────────────────────────
 
 /**
- * DustCollection — collector unit + overhead duct trunk + drop branches with
- * blast gates and flex-hose pickup hoods over the lathe stations.
+ * DustCollection — white cyclone collector unit + shiny overhead duct trunk
+ * with a curved elbow + drop branches with blast gates and flex-hose pickup
+ * hoods over the lathe stations.
  */
 export function DustCollection() {
   return (
