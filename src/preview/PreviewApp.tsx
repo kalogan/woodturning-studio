@@ -30,7 +30,30 @@ import { PropErrorBoundary } from './PropErrorBoundary.js';
 import { PropertiesPanel } from './PropertiesPanel.js';
 import { EditedProp } from './EditedProp.js';
 import { useEditStore, IDENTITY_EDIT } from './editStore.js';
+import { RoomEditor } from './RoomEditor.js';
 import './preview.css';
+
+/** Which top-level harness view is active. Persisted in localStorage. */
+type HarnessTab = 'props' | 'room';
+
+const TAB_STORAGE_KEY = 'wts-preview-tab';
+
+/** First room manifest entry name — the Room tab's default selection. */
+const ROOM_DEFAULT = 'Lighting';
+
+function loadTab(): HarnessTab {
+  if (typeof localStorage === 'undefined') return 'props';
+  return localStorage.getItem(TAB_STORAGE_KEY) === 'room' ? 'room' : 'props';
+}
+
+function persistTab(tab: HarnessTab): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(TAB_STORAGE_KEY, tab);
+  } catch {
+    /* quota / private mode — ignore */
+  }
+}
 
 type OrbitControlsRef = ComponentRef<typeof OrbitControls>;
 
@@ -107,7 +130,12 @@ function CameraFramer({
   return null;
 }
 
-export function PreviewApp() {
+/**
+ * PropsGallery — the original single-prop inspection view (UNCHANGED behaviour).
+ * Lives under the "Props" tab. All centring, editing, framing, and JSON export
+ * are exactly as before — only the function name changed (was PreviewApp).
+ */
+function PropsGallery() {
   const [activeName, setActiveName] = useState<string>(PROP_REGISTRY[0]?.name ?? '');
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<OrbitControlsRef | null>(null);
@@ -231,5 +259,52 @@ export function PreviewApp() {
         {activeName !== '' && <PropertiesPanel activeName={activeName} />}
       </main>
     </div>
+  );
+}
+
+/**
+ * PreviewApp — the harness shell. Hosts a top-left tab switcher that selects
+ * between the existing Props gallery (default) and the new Room Editor, under the
+ * SAME preview page. The active tab is persisted to localStorage. Each tab keeps
+ * its OWN store (editStore vs roomLayoutStore) and its own selected-prop state.
+ */
+export function PreviewApp(): React.JSX.Element {
+  const [tab, setTab] = useState<HarnessTab>(loadTab);
+  const [roomActive, setRoomActive] = useState<string>(ROOM_DEFAULT);
+
+  const selectTab = useCallback((next: HarnessTab) => {
+    setTab(next);
+    persistTab(next);
+  }, []);
+
+  return (
+    <>
+      <div className="harness__tabs" data-testid="harness-tabs" data-active-tab={tab}>
+        <button
+          type="button"
+          className={'harness__tab' + (tab === 'props' ? ' harness__tab--active' : '')}
+          data-testid="tab-props"
+          aria-selected={tab === 'props'}
+          onClick={() => { selectTab('props'); }}
+        >
+          Props
+        </button>
+        <button
+          type="button"
+          className={'harness__tab' + (tab === 'room' ? ' harness__tab--active' : '')}
+          data-testid="tab-room"
+          aria-selected={tab === 'room'}
+          onClick={() => { selectTab('room'); }}
+        >
+          Room
+        </button>
+      </div>
+
+      {tab === 'props' ? (
+        <PropsGallery />
+      ) : (
+        <RoomEditor activeName={roomActive} onSelect={setRoomActive} />
+      )}
+    </>
   );
 }

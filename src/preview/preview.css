@@ -34,6 +34,47 @@ html, body, #root {
   height: 100vh;
 }
 
+/* ── Top-level tab switcher (Props | Room) ─────────────────────────────── */
+
+.harness__tabs {
+  position: fixed;
+  top: 10px;
+  left: 12px;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.harness__tab {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.harness__tab:hover { color: var(--text); }
+
+.harness__tab--active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Push the sidebar's first heading below the floating tab bar so they don't overlap. */
+.harness__sidebar .harness__title {
+  padding-top: 46px;
+}
+
 .harness__sidebar {
   background: var(--panel);
   border-right: 1px solid var(--panel-border);
