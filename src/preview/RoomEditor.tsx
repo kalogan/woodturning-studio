@@ -301,9 +301,37 @@ interface Props {
   readonly onSelect: (name: string | null) => void;
 }
 
+/** How many manifest props to mount per animation frame during the ramp. */
+const PROPS_PER_FRAME = 2;
+
 export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
   const controlsRef = useRef<OrbitControlsRef | null>(null);
   const [mode, setMode] = useState<GizmoMode>('translate');
+
+  // ── Progressive mount + real progress ──────────────────────────────────────
+  // Mounting all ~23 manifest props in one pass freezes the main thread for ~3 s.
+  // Instead we ramp `loadedCount` up a few props per frame so the thread breathes
+  // and the progress bar reflects reality. The effect starts on mount and cancels
+  // on unmount; because PreviewApp UNMOUNTS RoomEditor when switching to the Props
+  // tab, this effect re-runs (and the loader re-shows) on every Room-tab entry.
+  const total = ROOM_MANIFEST.length;
+  const [loadedCount, setLoadedCount] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    let count = 0;
+    const step = (): void => {
+      count = Math.min(count + PROPS_PER_FRAME, total);
+      setLoadedCount(count);
+      if (count < total) {
+        raf = requestAnimationFrame(step);
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => { cancelAnimationFrame(raf); };
+  }, [total]);
+
+  const loading = loadedCount < total;
 
   const undo = useRoomLayoutStore((s) => s.undo);
   const redo = useRoomLayoutStore((s) => s.redo);
@@ -450,7 +478,7 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
         >
           <color attach="background" args={['#1a1a1a']} />
 
-          {ROOM_MANIFEST.map((p) => (
+          {ROOM_MANIFEST.slice(0, loadedCount).map((p) => (
             <PlacedProp
               key={p.name}
               name={p.name}
@@ -469,6 +497,28 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
             target={INITIAL_TARGET}
           />
         </Canvas>
+
+        {loading && (
+          <div
+            className="harness__loading"
+            data-testid="room-loading"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="harness__loading-box">
+              <div className="harness__spinner" aria-hidden="true" />
+              <div className="harness__loading-text">
+                Building room… {loadedCount}/{total}
+              </div>
+              <div className="harness__progress" aria-hidden="true">
+                <div
+                  className="harness__progress-bar"
+                  style={{ width: `${((loadedCount / total) * 100).toFixed(1)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeName !== '' && <RoomPropertiesPanel activeName={activeName} />}
       </main>
