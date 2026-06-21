@@ -20,7 +20,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, Doorways, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture, ShopMachines, WallConduit, SpeakerDisplay, WireRack, FlatFileCabinets, ShopVac, LeaningLumber, SupportColumn, TaskLamps } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, Doorways, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture, ShopMachines, WallConduit, SpeakerDisplay, WireRack, FlatFileCabinets, ShopVac, LeaningLumber, SupportColumn, TaskLamps, CeilingFan, LogPallets, Buckets, OfficeChairs } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -98,6 +98,18 @@ export function Shop() {
 
       {/* Gooseneck clamp-on task lamps at lathe stations + demo bench */}
       <TaskLamps />
+
+      {/* Static industrial ceiling fan over the centre aisle */}
+      <CeilingFan />
+
+      {/* Wheeled plywood pallets with bark-on log rounds, +Z near wire rack */}
+      <LogPallets />
+
+      {/* Scattered 5-gallon shop buckets near the machines */}
+      <Buckets />
+
+      {/* Rolling task chairs at lathe stations + demo bench */}
+      <OfficeChairs />
     </group>
   );
 }
