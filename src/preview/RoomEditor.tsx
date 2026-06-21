@@ -77,6 +77,7 @@ import {
   LogPallets,
   Buckets,
   OfficeChairs,
+  CeilingPipes,
 } from '../client/workshop/index.js';
 import { Hall } from '../client/workshop/Hall.js';
 import { Lathe } from '../client/lathe/index.js';
@@ -132,6 +133,7 @@ const ROOM_MANIFEST: readonly ManifestEntry[] = [
   { name: 'LogPallets', Component: LogPallets },
   { name: 'Buckets', Component: Buckets },
   { name: 'OfficeChairs', Component: OfficeChairs },
+  { name: 'CeilingPipes', Component: CeilingPipes },
   { name: 'Lathe', Component: Lathe },
 ];
 
