@@ -30,3 +30,4 @@ export { CeilingFan } from './CeilingFan.js';
 export { LogPallets } from './LogPallets.js';
 export { Buckets } from './Buckets.js';
 export { OfficeChairs } from './OfficeChairs.js';
+export { CeilingPipes } from './CeilingPipes.js';
