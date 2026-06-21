@@ -71,6 +71,8 @@ import {
   FlatFileCabinets,
   ShopVac,
   LeaningLumber,
+  SupportColumn,
+  TaskLamps,
 } from '../client/workshop/index.js';
 import { Hall } from '../client/workshop/Hall.js';
 import { Lathe } from '../client/lathe/index.js';
@@ -120,6 +122,8 @@ const ROOM_MANIFEST: readonly ManifestEntry[] = [
   { name: 'FlatFileCabinets', Component: FlatFileCabinets },
   { name: 'ShopVac', Component: ShopVac },
   { name: 'LeaningLumber', Component: LeaningLumber },
+  { name: 'SupportColumn', Component: SupportColumn },
+  { name: 'TaskLamps', Component: TaskLamps },
   { name: 'Lathe', Component: Lathe },
 ];
 
