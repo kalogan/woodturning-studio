@@ -115,8 +115,8 @@ const hwSpokeMat = new THREE.MeshStandardMaterial({
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 /** Two cast-iron legs that form the stand. */
-function PropStand({ color }: { color: string }) {
-  const mat = bodyMat(color);
+function PropStand({ standColor }: { standColor: string }) {
+  const mat = bodyMat(standColor);
 
   // Accent stripe (red) — same height band as the real Jet stand
   const stripeY = 0.12 + 0.018 / 2;
@@ -267,18 +267,23 @@ function PropTailstock({ color }: { color: string }) {
 interface PropLatheProps {
   position?: [number, number, number];
   rotation?: [number, number, number];
-  /** Machine body colour — headstock, tailstock, stand */
+  /** Machine body colour — headstock, tailstock, bed/banjo */
   color?: string;
+  /** Stand/legs colour — defaults to `color` for backward compatibility */
+  standColor?: string;
 }
 
 export function PropLathe({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   color = '#e8e6dc',
+  standColor,
 }: PropLatheProps) {
+  // Default the stand colour to the body colour so existing callers are unchanged.
+  const resolvedStandColor = standColor ?? color;
   return (
     <group name="prop-lathe" position={position} rotation={rotation}>
-      <PropStand color={color} />
+      <PropStand standColor={resolvedStandColor} />
       <PropBed />
       <PropHeadstock color={color} />
       <PropTailstock color={color} />

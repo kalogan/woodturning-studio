@@ -64,6 +64,20 @@ const ROW_COLORS: string[] = [
   '#b8bcb8',  // 4 — vintage grey
 ];
 
+/**
+ * Stand/leg colour for each prop lathe (index 0…4).
+ * In the director's photos the cream Jet heads sit on muted industrial GREEN
+ * steel stands; the Powermatic keeps its yellow stand and the grey one stays grey.
+ */
+const GREEN_STAND = '#3f6b46';   // muted industrial green steel
+const ROW_STAND_COLORS: string[] = [
+  GREEN_STAND,  // 0 — Jet cream head, green stand
+  GREEN_STAND,  // 1 — Jet cream head, green stand
+  '#c9a227',    // 2 — Powermatic yellow stand (matches body)
+  GREEN_STAND,  // 3 — Jet cream head, green stand
+  '#b8bcb8',    // 4 — vintage grey stand (matches body)
+];
+
 /** Number of prop lathes */
 const ROW_COUNT = ROW_COLORS.length;   // 5
 
@@ -124,6 +138,7 @@ export function HallLathes() {
           position={[ROW_START_X + i * ROW_SPACING_X, ROW_Y, ROW_Z]}
           rotation={[0, LATHE_YAW, 0]}
           color={ROW_COLORS[i] ?? '#e8e6dc'}
+          standColor={ROW_STAND_COLORS[i] ?? ROW_COLORS[i] ?? '#e8e6dc'}
         />
       ))}
     </group>
