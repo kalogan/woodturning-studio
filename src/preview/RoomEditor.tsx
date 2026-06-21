@@ -73,6 +73,10 @@ import {
   LeaningLumber,
   SupportColumn,
   TaskLamps,
+  CeilingFan,
+  LogPallets,
+  Buckets,
+  OfficeChairs,
 } from '../client/workshop/index.js';
 import { Hall } from '../client/workshop/Hall.js';
 import { Lathe } from '../client/lathe/index.js';
@@ -124,6 +128,10 @@ const ROOM_MANIFEST: readonly ManifestEntry[] = [
   { name: 'LeaningLumber', Component: LeaningLumber },
   { name: 'SupportColumn', Component: SupportColumn },
   { name: 'TaskLamps', Component: TaskLamps },
+  { name: 'CeilingFan', Component: CeilingFan },
+  { name: 'LogPallets', Component: LogPallets },
+  { name: 'Buckets', Component: Buckets },
+  { name: 'OfficeChairs', Component: OfficeChairs },
   { name: 'Lathe', Component: Lathe },
 ];
 
