@@ -1,37 +1,44 @@
 /**
  * DemoBench.tsx — Instructor demo STATION, centre-aisle teaching cluster.
  *
- * Reworked to match the director's real photos. It is THREE distinct things
- * clustered together (not one combined stand):
+ * Reworked to match the director's real photos. The demo area is a CLUSTER of
+ * five distinct pieces (not one combined stand), arranged like the photos:
  *
- *   1. A full-size demo LATHE — a weathered mustard-YELLOW Powermatic. Reuses
- *      <PropLathe color="#c9a227" …> (same silhouette as the prop-lathe row).
- *      This is the lathe the class gathers around.
+ *   1. Yellow Powermatic DEMO LATHE (front, operator side) — reuses
+ *      <PropLathe color="#c9a227" …>. A small steel faceplate/chuck on the
+ *      spindle nose holds a pale turned workpiece. The class gathers around this.
  *
- *   2. A roughly-built wooden A-FRAME TV STAND beside/behind the demo lathe:
- *      plywood/2x4 construction (warm lumber tone), an open shelf holding small
- *      turned demo pieces (cylinders, finials, a small bowl), a maple work
- *      surface with a couple of turning tools lying on it, and a black flat-
- *      screen TV/monitor sitting on TOP, angled slightly toward the class. A
- *      couple of tiny finials + a small framed photo sit beside the TV base.
+ *   2. Wheeled CAMERA TRIPOD (the signature piece) — three splayed light-wood
+ *      legs meeting at an apex ~1.9 m up, each foot on a dark CASTER wheel. A
+ *      gray two-stage telescoping metal BOOM reaches UP and OVER the lathe bed;
+ *      a dark camera HEAD + down-pointing lens hangs above the work, with a
+ *      coiled cable suggested by small torus rings threaded along the boom.
  *
- *   3. An overhead CAMERA on a tall WOODEN TRIPOD — surveyor-style: three
- *      splayed wooden legs meeting at a head ~1.9 m up, with a dark camera body
- *      and an arm/boom reaching OUT over the demo lathe bed, camera pointing
- *      DOWN at the work (this feeds the TV).
+ *   3. Wooden A-FRAME TV STAND (behind the lathe) — roughly-built 2x4 / plywood
+ *      construction with a black flat-screen TV tilted back on top, a small
+ *      "Class in session" sign on the upright, finials + a framed photo by the
+ *      TV base, and two open shelves of varied turned demo pieces (cylinders,
+ *      lidded boxes, finials, a vase, eggs).
+ *
+ *   4. Front maple WORKBENCH (between operator and stand) — a butcher-block
+ *      bench with a black toolbox, a white spray bottle, a few cans/cups, and
+ *      scattered turned handles + offcut blocks on top.
+ *
+ *   5. Coiled EXTENSION CORDS on the floor near the stand base — flat ring loops
+ *      in red / orange / green.
  *
  * COORDINATE CONVENTION: same as Hall.tsx — origin at player lathe.
  *   Hall extends X ∈ [-2, +16], Z ∈ [-2.5, +4].
  *
  * Group local space (before the group's π Y-rotation):
- *   +X = along the demo-lathe bed.  Local -Z is pushed toward the aisle side.
- *   The TV stand sits at local +Z (behind the lathe, away from the lathe row);
- *   the tripod stands at local -X / -Z and booms over the bed.
+ *   +X = along the demo-lathe bed.  The TV stand sits at local +Z (behind the
+ *   lathe), the maple bench between lathe and stand, and the tripod stands at
+ *   local -X and booms over the bed toward -Z.
  *
- * Materials are pre-allocated at module scope and attached via
- * <primitive object={mat} attach="material" /> to avoid the
- * no-misused-spread lint rule on class instances.
- * No browser APIs, no animation, no Math.random — Three.js only.
+ * Materials, lathe-geometries and torus rings are pre-allocated ONCE at module
+ * scope and attached via <primitive object={mat} attach="material" /> (avoids the
+ * no-misused-spread lint rule on class instances).
+ * No browser APIs, no animation, no Math.random, no Date.now — Three.js only.
  */
 
 import * as THREE from 'three';
@@ -41,8 +48,8 @@ import { PropLathe } from './PropLathe.js';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 // Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
-// Lathe row is at Z ≈ 0 (against -Z wall). Aisle runs from Z ≈ 0.5 to Z ≈ 4.
-// The demo station sits mid-hall in the +Z half of the aisle, facing the row.
+// The demo station sits mid-hall; the director repositions the whole cluster via
+// the Room Editor, so everything is laid out relative to the group origin.
 
 /** World position of the demo-station cluster centre (floor level). */
 export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 4.5];
@@ -51,78 +58,124 @@ export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 4.5];
 export const DEMO_BENCH_ROT: [number, number, number] = [0, Math.PI, 0];
 
 // ── Demo lathe (yellow Powermatic) ───────────────────────────────────────────
-const LATHE_COLOR = '#c9a227';                 // muddy weathered mustard yellow
+const LATHE_COLOR = '#c9a227';                  // muddy weathered mustard yellow
 const LATHE_POS: [number, number, number] = [0, 0, 0];
-const LATHE_YAW = 0.10;                          // slight angle off-square
+const LATHE_YAW = 0.08;                          // slight angle off-square
+// Spindle nose is at the headstock (-X) end of the bed, ~0.895 m up.
+const SPINDLE_X = -0.62;     // approx headstock spindle X (PropLathe HS_LEFT_X area)
+const SPINDLE_Y = 0.99;      // bed-top + a bit (spindle centre-line)
 
-// ── TV stand (A-frame plywood) — sits behind the lathe at local +Z ───────────
-const TVS_X      = 0.55;    // shifted toward +X (right of lathe headstock area)
-const TVS_Z      = 0.70;    // behind the lathe bed (local +Z)
-const TVS_W      = 0.90;    // overall width (X)
-const TVS_D      = 0.52;    // overall depth (Z)
-const TVS_TOP_Y  = 0.94;    // work-surface height
-const TVS_TOP_T  = 0.05;    // top slab thickness
-const TVS_LEG_T  = 0.07;    // leg / 2x4 thickness
-const TVS_SHELF_Y = 0.42;   // open shelf height
-const TVS_SHELF_T = 0.04;
+// ── Maple workbench (front, operator side: local -Z, between lathe & stand) ──
+const WB_X      = 0.20;
+const WB_Z      = 0.95;     // in front of the A-frame stand
+const WB_W      = 1.30;     // butcher-block top width (X)
+const WB_D      = 0.56;     // depth (Z)
+const WB_TOP_Y  = 0.90;     // bench-top height
+const WB_TOP_T  = 0.06;     // butcher-block slab thickness
+const WB_LEG_T  = 0.07;     // 4x4 leg thickness
+
+// ── A-frame TV stand — behind the lathe at local +Z ──────────────────────────
+const TVS_X      = 0.30;     // shifted toward +X
+const TVS_Z      = 1.75;     // well behind the lathe bed
+const TVS_W      = 1.00;     // overall width (X)
+const TVS_D      = 0.50;     // overall depth (Z)
+const TVS_TOP_Y  = 1.46;     // top platform height (~1.5 m tall A-frame)
+const TVS_TOP_T  = 0.04;
+const TVS_LEG_T  = 0.06;     // 2x4 thickness
+const TVS_SPLAY  = 0.10;     // A-frame: feet splay this much wider than the top
+const TVS_SHELF1_Y = 0.55;   // lower open shelf
+const TVS_SHELF2_Y = 0.98;   // upper open shelf
+const TVS_SHELF_T  = 0.035;
 
 // Flat-screen TV on top of the stand
-const TV_W      = 0.92;     // ~0.9 m wide
-const TV_H      = 0.54;
+const TV_W      = 0.94;
+const TV_H      = 0.56;
 const TV_D      = 0.045;
-const TV_TILT   = -0.22;    // tilt back slightly so the class sees the screen
-const TV_STAND_FOOT_Y = TVS_TOP_Y + TVS_TOP_T / 2;
+const TV_TILT   = -0.20;     // tilt back ~0.2 rad so the class sees the screen
+const TV_FOOT_Y = TVS_TOP_Y + TVS_TOP_T / 2;
 
-// ── Wooden tripod (overhead camera, booms over the lathe) ────────────────────
-const TRI_X      = -0.55;   // beside the headstock end (local -X)
-const TRI_Z      = 0.30;    // slightly toward +Z
-const TRI_HEAD_Y = 1.92;    // tripod head height
-const TRI_LEG_R  = 0.022;   // wooden leg radius
-const TRI_SPLAY  = 0.55;    // horizontal foot spread radius
-const TRI_BOOM_L = 0.95;    // boom reaching out over the bed (toward -Z lane / over bed)
+// ── Wheeled camera tripod (booms over the lathe) ─────────────────────────────
+const TRI_X      = -0.78;    // beside the headstock end (local -X)
+const TRI_Z      = 0.55;     // slightly toward +Z
+const TRI_HEAD_Y = 1.90;     // apex height
+const TRI_LEG_R  = 0.026;    // wooden leg radius
+const TRI_SPLAY  = 0.62;     // horizontal foot spread radius
+const TRI_CASTER_R = 0.045;  // caster wheel radius
+// Boom reaches UP and OVER toward the lathe bed (local +X-ish and -Z), ending
+// above the spindle work. Two telescoping box stages.
+const TRI_BOOM_REACH = 1.15;     // total horizontal reach
+const TRI_BOOM_RISE  = 0.18;     // boom end rises this much above the apex
 
-// Demo turned pieces on the shelf
-const PC_BOWL_R   = 0.07;
-const PC_CYL_H    = 0.18;
+// Demo turned pieces
+const PC_BOWL_R   = 0.075;
 
 // ─── Module-scope materials (never re-allocated per render) ───────────────────
 
-// Construction lumber / plywood — warm tone, grain along length.
-const _lumberMat  = makeBoardMaterial('#c7a878');
+// Construction lumber / plywood — warm tone.
+const _lumberMat    = makeBoardMaterial('#c7a878');
 const _lumberLegMat = makeBoardMaterial('#bda06f', undefined, { grainAxis: 'y' });
-const _mapleTopMat = makeBoardMaterial('#d8b87a');          // maple work surface
-const _plyBackMat  = makeBoardMaterial('#b89866');          // ply back panel
+const _plyBackMat   = makeBoardMaterial('#b89866');
 
-// TV — dark glossy box + screen face.
+// Maple workbench butcher-block.
+const _mapleTopMat  = makeBoardMaterial('#d8b878');
+const _mapleLegMat  = makeBoardMaterial('#c8a868', undefined, { grainAxis: 'y' });
+
+// TV — dark glossy box + screen face + neck.
 const _tvBodyMat   = new THREE.MeshStandardMaterial({ color: '#141418', roughness: 0.45, metalness: 0.30 });
 const _tvScreenMat = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.06, metalness: 0.10 });
 const _tvStandMat  = new THREE.MeshStandardMaterial({ color: '#202024', roughness: 0.55, metalness: 0.40 });
 
-// Tripod — wooden legs + dark camera body.
+// Tripod — wooden legs, dark casters, gray aluminium boom, dark camera head.
 const _triLegMat   = makeBoardMaterial('#c2a070', undefined, { grainAxis: 'y' });
-const _triHeadMat  = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.55, metalness: 0.35 });
-const _camBodyMat  = new THREE.MeshStandardMaterial({ color: '#161618', roughness: 0.50, metalness: 0.30 });
+const _apexMat     = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.55, metalness: 0.35 });
+const _casterMat   = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.45, metalness: 0.30 });
+const _boomMat     = new THREE.MeshStandardMaterial({ color: '#9a9da2', roughness: 0.35, metalness: 0.75 });
+const _boomThinMat = new THREE.MeshStandardMaterial({ color: '#aaadb2', roughness: 0.32, metalness: 0.78 });
+const _camBodyMat  = new THREE.MeshStandardMaterial({ color: '#1a1a1e', roughness: 0.50, metalness: 0.30 });
 const _camLensMat  = new THREE.MeshStandardMaterial({
   color: '#222230', roughness: 0.08, metalness: 0.10,
   emissive: new THREE.Color('#102030'), emissiveIntensity: 0.20,
 });
-const _casterMat   = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.55, metalness: 0.35 });
+const _cableMat    = new THREE.MeshStandardMaterial({ color: '#1c1c20', roughness: 0.70, metalness: 0.10 });
 
-// Turning tools on the work surface.
-const _toolSteelMat  = new THREE.MeshStandardMaterial({ color: '#8a8a90', roughness: 0.30, metalness: 0.85 });
-const _toolHandleMat = makeBoardMaterial('#7a4a22', undefined, { grainAxis: 'y' });
+// Lathe faceplate/chuck + mounted workpiece.
+const _chuckMat    = new THREE.MeshStandardMaterial({ color: '#8a8d92', roughness: 0.35, metalness: 0.80 });
+const _blankMat    = makeBoardMaterial('#d8c79a');     // pale wood bowl-blank
 
-// Demo turned pieces.
+// Demo turned pieces (warm wood tones).
 const _pieceCherryMat = makeBoardMaterial('#7a3820', undefined, { grainAxis: 'y' });
 const _pieceMapleMat  = makeBoardMaterial('#c8a05a', undefined, { grainAxis: 'y' });
 const _pieceWalnutMat = makeBoardMaterial('#4a3018', undefined, { grainAxis: 'y' });
+const _pieceOakMat    = makeBoardMaterial('#b08a4a', undefined, { grainAxis: 'y' });
 
-// Small framed photo by the TV base.
+// Small framed photo by the TV base + "Class in session" sign.
 const _frameMat = makeBoardMaterial('#5a3a1c', undefined, { grainAxis: 'y' });
 const _photoMat = new THREE.MeshStandardMaterial({ color: '#cdcfc8', roughness: 0.6, metalness: 0.0 });
+const _signMat  = new THREE.MeshStandardMaterial({ color: '#f2f2ee', roughness: 0.7, metalness: 0.0 });
+const _signTextMat = new THREE.MeshStandardMaterial({ color: '#888a86', roughness: 0.7, metalness: 0.0 });
 
-// ── Turned-piece profile (built once at module scope) ────────────────────────
-// A simple finial silhouette: bead / cove / taper revolved around Y.
+// Toolbox + spray bottle + cans on the workbench.
+const _toolboxMat   = new THREE.MeshStandardMaterial({ color: '#1a1a1e', roughness: 0.55, metalness: 0.30 });
+const _latchMat     = new THREE.MeshStandardMaterial({ color: '#d4b020', roughness: 0.45, metalness: 0.45 });
+const _sprayMat     = new THREE.MeshStandardMaterial({ color: '#e8e8e8', roughness: 0.40, metalness: 0.05 });
+const _sprayNeckMat = new THREE.MeshStandardMaterial({ color: '#c8c8cc', roughness: 0.35, metalness: 0.20 });
+const _canBlueMat   = new THREE.MeshStandardMaterial({ color: '#46647a', roughness: 0.50, metalness: 0.25 });
+const _canRedMat    = new THREE.MeshStandardMaterial({ color: '#9a4438', roughness: 0.55, metalness: 0.15 });
+const _canTanMat    = new THREE.MeshStandardMaterial({ color: '#b8a878', roughness: 0.60, metalness: 0.10 });
+
+// Turning-tool handles + offcut blocks on the workbench.
+const _toolSteelMat  = new THREE.MeshStandardMaterial({ color: '#8a8a90', roughness: 0.30, metalness: 0.85 });
+const _toolHandleMat = makeBoardMaterial('#7a4a22', undefined, { grainAxis: 'y' });
+const _offcutMat     = makeBoardMaterial('#a9854c');
+
+// Coiled extension cords on the floor.
+const _cordRedMat    = new THREE.MeshStandardMaterial({ color: '#c0392b', roughness: 0.65, metalness: 0.05 });
+const _cordOrangeMat = new THREE.MeshStandardMaterial({ color: '#d2691e', roughness: 0.65, metalness: 0.05 });
+const _cordGreenMat  = new THREE.MeshStandardMaterial({ color: '#3a7a3a', roughness: 0.65, metalness: 0.05 });
+
+// ── Turned-piece geometries (built ONCE at module scope) ─────────────────────
+
+/** A finial silhouette: bead / cove / taper revolved around Y. */
 const _finialPts: THREE.Vector2[] = [
   new THREE.Vector2(0.000, 0.000),
   new THREE.Vector2(0.024, 0.005),
@@ -136,162 +189,354 @@ const _finialPts: THREE.Vector2[] = [
 ];
 const _finialGeo = new THREE.LatheGeometry(_finialPts, 18);
 
+/** A small lidded-box silhouette: squat body with a stepped lid + knob. */
+const _boxPts: THREE.Vector2[] = [
+  new THREE.Vector2(0.000, 0.000),
+  new THREE.Vector2(0.050, 0.000),
+  new THREE.Vector2(0.052, 0.030),
+  new THREE.Vector2(0.050, 0.062),
+  new THREE.Vector2(0.044, 0.066),   // lid step in
+  new THREE.Vector2(0.045, 0.092),
+  new THREE.Vector2(0.030, 0.100),   // shoulder
+  new THREE.Vector2(0.012, 0.110),
+  new THREE.Vector2(0.012, 0.124),   // knob stem
+  new THREE.Vector2(0.020, 0.134),
+  new THREE.Vector2(0.000, 0.140),
+];
+const _boxGeo = new THREE.LatheGeometry(_boxPts, 20);
+
+/** A slender vase silhouette: narrow foot, bulged belly, flared neck. */
+const _vasePts: THREE.Vector2[] = [
+  new THREE.Vector2(0.000, 0.000),
+  new THREE.Vector2(0.030, 0.000),
+  new THREE.Vector2(0.026, 0.020),
+  new THREE.Vector2(0.048, 0.075),   // belly
+  new THREE.Vector2(0.040, 0.130),
+  new THREE.Vector2(0.022, 0.175),   // neck
+  new THREE.Vector2(0.028, 0.205),   // flared rim
+  new THREE.Vector2(0.024, 0.210),
+  new THREE.Vector2(0.000, 0.210),
+];
+const _vaseGeo = new THREE.LatheGeometry(_vasePts, 22);
+
+/** A turned egg silhouette (asymmetric ovoid). */
+const _eggPts: THREE.Vector2[] = [
+  new THREE.Vector2(0.000, 0.000),
+  new THREE.Vector2(0.018, 0.012),
+  new THREE.Vector2(0.030, 0.040),
+  new THREE.Vector2(0.032, 0.066),
+  new THREE.Vector2(0.026, 0.092),
+  new THREE.Vector2(0.014, 0.110),
+  new THREE.Vector2(0.000, 0.118),
+];
+const _eggGeo = new THREE.LatheGeometry(_eggPts, 16);
+
+/** Small dark torus ring — reused for the coiled cable AND the floor cords. */
+const _ringGeo = new THREE.TorusGeometry(0.10, 0.014, 8, 20);
+/** Tiny torus ring threaded along the camera boom (coiled cable). */
+const _cableRingGeo = new THREE.TorusGeometry(0.022, 0.006, 6, 12);
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Yellow Powermatic demo lathe — the class gathers around this. */
-function DemoLathe() {
+/** A simple turned demo piece (geometry chosen by caller) sitting on a surface. */
+function TurnedPiece({
+  geo, pos, scale = 1, rotY = 0, mat,
+}: {
+  geo: THREE.BufferGeometry;
+  pos: [number, number, number];
+  scale?: number;
+  rotY?: number;
+  mat: THREE.Material;
+}) {
   return (
-    <group name="demo-lathe" position={LATHE_POS} rotation={[0, LATHE_YAW, 0]}>
-      <PropLathe color={LATHE_COLOR} />
-    </group>
-  );
-}
-
-/** A simple turned demo piece sitting upright on a surface. */
-function FinialPiece({
-  pos, scale = 1, mat,
-}: { pos: [number, number, number]; scale?: number; mat: THREE.Material }) {
-  return (
-    <mesh castShadow position={pos} scale={[scale, scale, scale]}>
-      <primitive object={_finialGeo} attach="geometry" />
+    <mesh castShadow position={pos} rotation={[0, rotY, 0]} scale={[scale, scale, scale]}>
+      <primitive object={geo} attach="geometry" />
       <primitive object={mat} attach="material" />
     </mesh>
   );
 }
 
-/** Roughly-built A-frame plywood / 2x4 TV stand with shelf + demo pieces. */
-function TVStand() {
-  const halfW = TVS_W / 2;
-  const halfD = TVS_D / 2;
-  const legH = TVS_TOP_Y - TVS_TOP_T;
-  const legX = halfW - TVS_LEG_T / 2;
-  const legZ = halfD - TVS_LEG_T / 2;
+/** Yellow Powermatic demo lathe + a faceplate/chuck holding a pale workpiece. */
+function DemoLathe() {
+  return (
+    <group name="demo-lathe" position={LATHE_POS} rotation={[0, LATHE_YAW, 0]}>
+      <PropLathe color={LATHE_COLOR} />
+
+      {/* Faceplate / chuck on the spindle nose (short steel disc) */}
+      <mesh castShadow position={[SPINDLE_X, SPINDLE_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.055, 0.055, 0.045, 18]} />
+        <primitive object={_chuckMat} attach="material" />
+      </mesh>
+      {/* Chuck jaws hub */}
+      <mesh castShadow position={[SPINDLE_X - 0.025, SPINDLE_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.038, 0.040, 0.03, 14]} />
+        <primitive object={_chuckMat} attach="material" />
+      </mesh>
+      {/* Pale wood workpiece mounted in the chuck (small bowl-blank cylinder) */}
+      <mesh castShadow position={[SPINDLE_X + 0.075, SPINDLE_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.085, 0.072, 0.12, 20]} />
+        <primitive object={_blankMat} attach="material" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Front maple butcher-block workbench with toolbox, spray bottle, cans, tools. */
+function MapleWorkbench() {
+  const halfW = WB_W / 2;
+  const halfD = WB_D / 2;
+  const legH = WB_TOP_Y - WB_TOP_T;
+  const legX = halfW - WB_LEG_T / 2 - 0.02;
+  const legZ = halfD - WB_LEG_T / 2 - 0.02;
+  const topSurfaceY = WB_TOP_Y;
 
   const legXZ: [number, number][] = [
-    [-legX,  legZ],
-    [ legX,  legZ],
-    [-legX, -legZ],
-    [ legX, -legZ],
+    [-legX,  legZ], [ legX,  legZ], [-legX, -legZ], [ legX, -legZ],
   ];
 
-  const shelfSurfaceY = TVS_SHELF_Y + TVS_SHELF_T;
-
   return (
-    <group name="tv-stand" position={[TVS_X, 0, TVS_Z]}>
-      {/* Four 2x4 legs */}
+    <group name="maple-workbench" position={[WB_X, 0, WB_Z]}>
+      {/* Four maple legs */}
       {legXZ.map(([lx, lz], i) => (
         <mesh key={i} castShadow position={[lx, legH / 2, lz]}>
-          <boxGeometry args={[TVS_LEG_T, legH, TVS_LEG_T]} />
-          <primitive object={_lumberLegMat} attach="material" />
+          <boxGeometry args={[WB_LEG_T, legH, WB_LEG_T]} />
+          <primitive object={_mapleLegMat} attach="material" />
         </mesh>
       ))}
 
-      {/* Maple-ish work surface (top slab) */}
-      <mesh castShadow receiveShadow position={[0, TVS_TOP_Y - TVS_TOP_T / 2, 0]}>
-        <boxGeometry args={[TVS_W, TVS_TOP_T, TVS_D]} />
+      {/* Lower stretcher rails (front + back) */}
+      {[halfD - 0.06, -halfD + 0.06].map((rz, i) => (
+        <mesh key={i} castShadow position={[0, 0.20, rz]}>
+          <boxGeometry args={[WB_W - WB_LEG_T * 2, 0.05, 0.04]} />
+          <primitive object={_mapleLegMat} attach="material" />
+        </mesh>
+      ))}
+
+      {/* Butcher-block top */}
+      <mesh castShadow receiveShadow position={[0, WB_TOP_Y - WB_TOP_T / 2, 0]}>
+        <boxGeometry args={[WB_W, WB_TOP_T, WB_D]} />
         <primitive object={_mapleTopMat} attach="material" />
       </mesh>
 
-      {/* Open lower shelf */}
-      <mesh castShadow receiveShadow position={[0, TVS_SHELF_Y + TVS_SHELF_T / 2, 0]}>
-        <boxGeometry args={[TVS_W - 0.06, TVS_SHELF_T, TVS_D - 0.06]} />
-        <primitive object={_lumberMat} attach="material" />
-      </mesh>
-
-      {/* Ply back panel (the "A-frame" gives it rigidity) */}
-      <mesh castShadow receiveShadow position={[0, legH * 0.55, -halfD + 0.012]}>
-        <boxGeometry args={[TVS_W - 0.04, legH * 0.9, 0.018]} />
-        <primitive object={_plyBackMat} attach="material" />
-      </mesh>
-
-      {/* Side cross-braces (2x4 stretchers, front + back low rail) */}
-      {[halfD - 0.05, -halfD + 0.05].map((rz, i) => (
-        <mesh key={i} castShadow position={[0, 0.14, rz]}>
-          <boxGeometry args={[TVS_W - TVS_LEG_T * 2, 0.05, 0.04]} />
-          <primitive object={_lumberLegMat} attach="material" />
+      {/* ── Black toolbox with a yellow latch ── */}
+      <group position={[-0.42, topSurfaceY, -0.02]} rotation={[0, 0.12, 0]}>
+        <mesh castShadow position={[0, 0.085, 0]}>
+          <boxGeometry args={[0.34, 0.17, 0.20]} />
+          <primitive object={_toolboxMat} attach="material" />
         </mesh>
-      ))}
-
-      {/* ── Demo pieces on the open shelf ── */}
-      {/* Small turned bowl (cherry) */}
-      <mesh castShadow position={[-0.30, shelfSurfaceY + PC_BOWL_R * 0.45, 0.05]}
-            rotation={[0, 0.3, 0]}>
-        <sphereGeometry args={[PC_BOWL_R, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6]} />
-        <primitive object={_pieceCherryMat} attach="material" />
-      </mesh>
-
-      {/* Upright cylinder blank (maple) */}
-      <mesh castShadow position={[-0.05, shelfSurfaceY + PC_CYL_H / 2, -0.02]}>
-        <cylinderGeometry args={[0.035, 0.038, PC_CYL_H, 14]} />
-        <primitive object={_pieceMapleMat} attach="material" />
-      </mesh>
-
-      {/* A turned finial standing on the shelf (walnut) */}
-      <FinialPiece pos={[0.22, shelfSurfaceY, 0.06]} scale={0.9} mat={_pieceWalnutMat} />
-
-      {/* A cove cylinder lying on its side (cherry) */}
-      <mesh castShadow position={[0.32, shelfSurfaceY + 0.03, -0.10]}
-            rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.030, 0.040, 0.20, 12]} />
-        <primitive object={_pieceCherryMat} attach="material" />
-      </mesh>
-
-      {/* ── Turning tools lying on the maple work surface ── */}
-      {/* Gouge — steel shaft + wooden handle, lying flat */}
-      <group position={[0.12, TVS_TOP_Y + 0.012, 0.16]} rotation={[0, 0.18, 0]}>
-        <mesh castShadow position={[0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.010, 0.010, 0.26, 10]} />
-          <primitive object={_toolSteelMat} attach="material" />
+        {/* Lid lip */}
+        <mesh castShadow position={[0, 0.175, 0]}>
+          <boxGeometry args={[0.35, 0.02, 0.21]} />
+          <primitive object={_toolboxMat} attach="material" />
         </mesh>
-        <mesh castShadow position={[-0.10, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.022, 0.016, 0.18, 12]} />
-          <primitive object={_toolHandleMat} attach="material" />
+        {/* Yellow latch accent on the front face */}
+        <mesh position={[0, 0.10, 0.105]}>
+          <boxGeometry args={[0.05, 0.035, 0.012]} />
+          <primitive object={_latchMat} attach="material" />
+        </mesh>
+        {/* Carry handle */}
+        <mesh castShadow position={[0, 0.20, 0]}>
+          <boxGeometry args={[0.14, 0.018, 0.02]} />
+          <primitive object={_toolboxMat} attach="material" />
         </mesh>
       </group>
 
-      {/* Skew chisel — flat steel + handle */}
-      <group position={[-0.18, TVS_TOP_Y + 0.010, -0.14]} rotation={[0, -0.30, 0]}>
-        <mesh castShadow position={[0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[0.006, 0.24, 0.022]} />
+      {/* ── White spray bottle ── */}
+      <group position={[0.10, topSurfaceY, 0.14]}>
+        <mesh castShadow position={[0, 0.10, 0]}>
+          <cylinderGeometry args={[0.035, 0.040, 0.20, 14]} />
+          <primitive object={_sprayMat} attach="material" />
+        </mesh>
+        {/* Neck */}
+        <mesh castShadow position={[0, 0.215, 0]}>
+          <cylinderGeometry args={[0.016, 0.020, 0.04, 10]} />
+          <primitive object={_sprayNeckMat} attach="material" />
+        </mesh>
+        {/* Trigger head */}
+        <mesh castShadow position={[0.02, 0.245, 0]} rotation={[0, 0, -0.5]}>
+          <boxGeometry args={[0.06, 0.04, 0.03]} />
+          <primitive object={_sprayNeckMat} attach="material" />
+        </mesh>
+      </group>
+
+      {/* ── 2–3 small cans / cups (varied muted colours) ── */}
+      <mesh castShadow position={[0.32, topSurfaceY + 0.05, 0.10]}>
+        <cylinderGeometry args={[0.045, 0.045, 0.10, 14]} />
+        <primitive object={_canBlueMat} attach="material" />
+      </mesh>
+      <mesh castShadow position={[0.44, topSurfaceY + 0.04, -0.02]}>
+        <cylinderGeometry args={[0.038, 0.040, 0.08, 14]} />
+        <primitive object={_canRedMat} attach="material" />
+      </mesh>
+      <mesh castShadow position={[0.30, topSurfaceY + 0.035, -0.16]}>
+        <cylinderGeometry args={[0.034, 0.034, 0.07, 12]} />
+        <primitive object={_canTanMat} attach="material" />
+      </mesh>
+
+      {/* ── A few turned tool handles lying on the top ── */}
+      <group position={[-0.05, topSurfaceY + 0.014, -0.18]} rotation={[0, 0.22, 0]}>
+        <mesh castShadow position={[0.13, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.010, 0.010, 0.24, 10]} />
           <primitive object={_toolSteelMat} attach="material" />
         </mesh>
         <mesh castShadow position={[-0.10, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.022, 0.015, 0.18, 12]} />
+          <primitive object={_toolHandleMat} attach="material" />
+        </mesh>
+      </group>
+      <group position={[-0.16, topSurfaceY + 0.012, 0.04]} rotation={[0, -0.35, 0]}>
+        <mesh castShadow position={[0.11, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[0.006, 0.22, 0.020]} />
+          <primitive object={_toolSteelMat} attach="material" />
+        </mesh>
+        <mesh castShadow position={[-0.09, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.020, 0.014, 0.16, 12]} />
           <primitive object={_toolHandleMat} attach="material" />
         </mesh>
       </group>
 
-      {/* ── Flat-screen TV on top, angled toward the class ── */}
+      {/* ── Small offcut blocks ── */}
+      <mesh castShadow position={[0.50, topSurfaceY + 0.03, 0.18]} rotation={[0, 0.4, 0]}>
+        <boxGeometry args={[0.08, 0.06, 0.08]} />
+        <primitive object={_offcutMat} attach="material" />
+      </mesh>
+      <mesh castShadow position={[0.18, topSurfaceY + 0.025, -0.04]} rotation={[0, -0.2, 0]}>
+        <boxGeometry args={[0.07, 0.05, 0.10]} />
+        <primitive object={_offcutMat} attach="material" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Roughly-built A-frame plywood / 2x4 TV stand with two shelves + a TV on top. */
+function TVStand() {
+  const halfW = TVS_W / 2;
+  const halfD = TVS_D / 2;
+  const legH = TVS_TOP_Y - TVS_TOP_T;
+  const topX = halfW - TVS_LEG_T / 2;
+  const legZ = halfD - TVS_LEG_T / 2;
+  const legTilt = Math.atan2(TVS_SPLAY, legH);     // A-frame outward lean
+  const legLen = Math.hypot(legH, TVS_SPLAY);
+
+  // Four splayed A-frame legs (lean outward along X).
+  const legs: { sx: number; lz: number }[] = [
+    { sx: -1, lz:  legZ },
+    { sx:  1, lz:  legZ },
+    { sx: -1, lz: -legZ },
+    { sx:  1, lz: -legZ },
+  ];
+
+  return (
+    <group name="tv-stand" position={[TVS_X, 0, TVS_Z]}>
+      {/* Four splayed 2x4 legs (A-frame) */}
+      {legs.map(({ sx, lz }, i) => (
+        <mesh key={i} castShadow
+              position={[sx * (topX + TVS_SPLAY / 2), legH / 2, lz]}
+              rotation={[0, 0, sx * legTilt]}>
+          <boxGeometry args={[TVS_LEG_T, legLen, TVS_LEG_T]} />
+          <primitive object={_lumberLegMat} attach="material" />
+        </mesh>
+      ))}
+
+      {/* Top platform (TV sits here) */}
+      <mesh castShadow receiveShadow position={[0, TVS_TOP_Y - TVS_TOP_T / 2, 0]}>
+        <boxGeometry args={[TVS_W, TVS_TOP_T, TVS_D]} />
+        <primitive object={_lumberMat} attach="material" />
+      </mesh>
+
+      {/* Upper open shelf (demo pieces) */}
+      <mesh castShadow receiveShadow position={[0, TVS_SHELF2_Y + TVS_SHELF_T / 2, 0.01]}>
+        <boxGeometry args={[TVS_W - 0.04, TVS_SHELF_T, TVS_D - 0.05]} />
+        <primitive object={_lumberMat} attach="material" />
+      </mesh>
+
+      {/* Lower open shelf (more demo pieces) */}
+      <mesh castShadow receiveShadow position={[0, TVS_SHELF1_Y + TVS_SHELF_T / 2, 0.04]}>
+        <boxGeometry args={[TVS_W + 0.04, TVS_SHELF_T, TVS_D]} />
+        <primitive object={_lumberMat} attach="material" />
+      </mesh>
+
+      {/* Ply back panel (gives the A-frame rigidity) */}
+      <mesh castShadow receiveShadow position={[0, legH * 0.55, -halfD + 0.012]}>
+        <boxGeometry args={[TVS_W + TVS_SPLAY, legH * 0.92, 0.016]} />
+        <primitive object={_plyBackMat} attach="material" />
+      </mesh>
+
+      {/* Low front rail */}
+      <mesh castShadow position={[0, 0.16, halfD - 0.05]}>
+        <boxGeometry args={[TVS_W, 0.05, 0.04]} />
+        <primitive object={_lumberLegMat} attach="material" />
+      </mesh>
+
+      {/* "Class in session" sign taped to the front-left upright */}
+      <group position={[-topX - 0.02, legH * 0.62, halfD - 0.005]} rotation={[0, 0, 0.04]}>
+        <mesh>
+          <boxGeometry args={[0.22, 0.15, 0.006]} />
+          <primitive object={_signMat} attach="material" />
+        </mesh>
+        {[0.035, 0.0, -0.035].map((ty, i) => (
+          <mesh key={i} position={[0, ty, 0.004]}>
+            <boxGeometry args={[0.16, 0.012, 0.003]} />
+            <primitive object={_signTextMat} attach="material" />
+          </mesh>
+        ))}
+      </group>
+
+      {/* ── Upper shelf: varied turned pieces ── */}
+      <TurnedPiece geo={_vaseGeo}   pos={[-0.34, TVS_SHELF2_Y + TVS_SHELF_T, 0.02]} scale={0.9}  mat={_pieceWalnutMat} />
+      <TurnedPiece geo={_boxGeo}    pos={[-0.12, TVS_SHELF2_Y + TVS_SHELF_T, -0.04]} scale={1.0} rotY={0.4} mat={_pieceCherryMat} />
+      <TurnedPiece geo={_finialGeo} pos={[ 0.08, TVS_SHELF2_Y + TVS_SHELF_T, 0.05]} scale={0.95} mat={_pieceOakMat} />
+      {/* A small bowl (sphere cap) */}
+      <mesh castShadow position={[0.30, TVS_SHELF2_Y + TVS_SHELF_T + PC_BOWL_R * 0.4, -0.02]}
+            rotation={[0, 0.3, 0]}>
+        <sphereGeometry args={[PC_BOWL_R, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        <primitive object={_pieceMapleMat} attach="material" />
+      </mesh>
+
+      {/* ── Lower shelf: cylinders, eggs, a lidded box ── */}
+      <mesh castShadow position={[-0.36, TVS_SHELF1_Y + TVS_SHELF_T + 0.09, 0.02]}>
+        <cylinderGeometry args={[0.038, 0.042, 0.18, 14]} />
+        <primitive object={_pieceMapleMat} attach="material" />
+      </mesh>
+      <TurnedPiece geo={_eggGeo} pos={[-0.14, TVS_SHELF1_Y + TVS_SHELF_T, 0.06]} scale={1.0} mat={_pieceCherryMat} />
+      <TurnedPiece geo={_eggGeo} pos={[-0.02, TVS_SHELF1_Y + TVS_SHELF_T, -0.04]} scale={0.85} rotY={0.8} mat={_pieceWalnutMat} />
+      <TurnedPiece geo={_boxGeo} pos={[0.16, TVS_SHELF1_Y + TVS_SHELF_T, 0.05]} scale={1.1} rotY={-0.3} mat={_pieceOakMat} />
+      {/* A cove cylinder lying on its side */}
+      <mesh castShadow position={[0.36, TVS_SHELF1_Y + TVS_SHELF_T + 0.035, -0.06]}
+            rotation={[Math.PI / 2, 0, 0.15]}>
+        <cylinderGeometry args={[0.032, 0.042, 0.20, 12]} />
+        <primitive object={_pieceCherryMat} attach="material" />
+      </mesh>
+
+      {/* ── Flat-screen TV on top, tilted back toward the class ── */}
       <group name="demo-tv"
-             position={[0.0, TV_STAND_FOOT_Y + 0.04 + TV_H / 2, 0.02]}
+             position={[0.0, TV_FOOT_Y + 0.04 + TV_H / 2, 0.0]}
              rotation={[TV_TILT, 0, 0]}>
         {/* Body */}
         <mesh castShadow>
           <boxGeometry args={[TV_W, TV_H, TV_D]} />
           <primitive object={_tvBodyMat} attach="material" />
         </mesh>
-        {/* Screen face (toward -Z local = toward the class once group is rotated) */}
+        {/* Glossy screen face (toward +Z local → toward the class once group rotated) */}
         <mesh position={[0, 0, TV_D / 2 + 0.001]}>
-          <boxGeometry args={[TV_W - 0.04, TV_H - 0.04, 0.004]} />
+          <boxGeometry args={[TV_W - 0.05, TV_H - 0.05, 0.004]} />
           <primitive object={_tvScreenMat} attach="material" />
         </mesh>
-        {/* Little stand neck + foot */}
+        {/* Stand neck + foot */}
         <mesh castShadow position={[0, -TV_H / 2 - 0.03, 0]}>
-          <boxGeometry args={[0.05, 0.06, 0.04]} />
+          <boxGeometry args={[0.06, 0.06, 0.04]} />
           <primitive object={_tvStandMat} attach="material" />
         </mesh>
-        <mesh castShadow position={[0, -TV_H / 2 - 0.06, 0.03]}>
-          <boxGeometry args={[0.20, 0.02, 0.14]} />
+        <mesh castShadow position={[0, -TV_H / 2 - 0.065, 0.0]}>
+          <boxGeometry args={[0.24, 0.02, 0.16]} />
           <primitive object={_tvStandMat} attach="material" />
         </mesh>
       </group>
 
-      {/* ── A couple of tiny finials + a small framed photo by the TV base ── */}
-      <FinialPiece pos={[-0.34, TV_STAND_FOOT_Y, 0.10]} scale={0.55} mat={_pieceMapleMat} />
-      <FinialPiece pos={[-0.40, TV_STAND_FOOT_Y, 0.16]} scale={0.42} mat={_pieceWalnutMat} />
-
-      {/* Small framed photo, leaning slightly */}
-      <group position={[0.36, TV_STAND_FOOT_Y + 0.07, 0.12]} rotation={[-0.12, -0.4, 0]}>
+      {/* ── Tiny finials + a small framed photo beside the TV base ── */}
+      <TurnedPiece geo={_finialGeo} pos={[-0.36, TV_FOOT_Y, 0.10]} scale={0.50} mat={_pieceMapleMat} />
+      <TurnedPiece geo={_finialGeo} pos={[-0.42, TV_FOOT_Y, 0.16]} scale={0.40} mat={_pieceWalnutMat} />
+      <group position={[0.38, TV_FOOT_Y + 0.07, 0.10]} rotation={[-0.12, -0.4, 0]}>
         <mesh castShadow>
           <boxGeometry args={[0.13, 0.16, 0.012]} />
           <primitive object={_frameMat} attach="material" />
@@ -305,22 +550,55 @@ function TVStand() {
   );
 }
 
-/** Tall wooden surveyor-style tripod with overhead camera booming over the bed. */
+/** Tall wheeled tripod with a telescoping boom + overhead camera over the bed. */
 function CameraTripod() {
-  // Three splayed legs, 120° apart, feet on the floor, tops meeting at the head.
+  // Three splayed wooden legs, 120° apart, feet on casters, tops at the apex.
   const legAngles = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3] as const;
-  const legLen = Math.hypot(TRI_HEAD_Y, TRI_SPLAY);          // splayed leg length
-  const legTilt = Math.atan2(TRI_SPLAY, TRI_HEAD_Y);          // tilt off vertical
+  const legLen = Math.hypot(TRI_HEAD_Y, TRI_SPLAY);
+  const legTilt = Math.atan2(TRI_SPLAY, TRI_HEAD_Y);
 
-  // Boom reaches out over the lathe bed: from head toward the lathe (local -Z,
-  // toward the row) and slightly down so the camera hangs over the work.
-  const boomMidZ = TRI_Z - TRI_BOOM_L / 2;
-  const boomEndZ = TRI_Z - TRI_BOOM_L;
-  const camY = TRI_HEAD_Y - 0.10;
+  // Boom direction in local XZ: from the apex toward the lathe bed.
+  // The lathe spindle (relative to the tripod local origin) is at roughly
+  // (SPINDLE_X - TRI_X, -, -TRI_Z). Reach UP and OVER toward it.
+  const dirX = SPINDLE_X - TRI_X;       // toward the bed in X
+  const dirZ = -TRI_Z;                  // toward the bed in Z
+  const dirLen = Math.hypot(dirX, dirZ) || 1;
+  const ux = dirX / dirLen;
+  const uz = dirZ / dirLen;
+
+  // Two telescoping stages: thicker stage from apex, thinner sliding out.
+  const stage1Reach = TRI_BOOM_REACH * 0.55;
+  const stage2Reach = TRI_BOOM_REACH * 0.55;   // overlaps the first slightly
+  const apexY = TRI_HEAD_Y;
+
+  // Stage 1 midpoint (rises gently as it goes out).
+  const s1mx = ux * stage1Reach * 0.5;
+  const s1mz = uz * stage1Reach * 0.5;
+  const s1my = apexY + TRI_BOOM_RISE * 0.3;
+  const s1yaw = Math.atan2(ux, uz);            // rotate boom box to face the bed
+  const s1pitch = Math.atan2(TRI_BOOM_RISE * 0.6, stage1Reach);
+
+  // End of stage 1 (start of stage 2).
+  const s1ex = ux * stage1Reach;
+  const s1ez = uz * stage1Reach;
+  const s1ey = apexY + TRI_BOOM_RISE * 0.6;
+
+  // Stage 2 midpoint.
+  const s2mx = s1ex + ux * stage2Reach * 0.5 * 0.78;
+  const s2mz = s1ez + uz * stage2Reach * 0.5 * 0.78;
+  const s2my = s1ey + TRI_BOOM_RISE * 0.2;
+
+  // Boom end (camera hangs here, above the work).
+  const endX = s1ex + ux * stage2Reach * 0.78;
+  const endZ = s1ez + uz * stage2Reach * 0.78;
+  const endY = apexY + TRI_BOOM_RISE * 0.5;
+
+  // Cable ring positions along the boom (a handful, varying by index).
+  const cableRings = [0.22, 0.36, 0.50, 0.64, 0.78];
 
   return (
     <group name="camera-tripod" position={[TRI_X, 0, TRI_Z]}>
-      {/* Three wooden legs */}
+      {/* Three wooden legs, each on a caster wheel */}
       {legAngles.map((ang, i) => {
         const dx = Math.cos(ang);
         const dz = Math.sin(ang);
@@ -328,45 +606,79 @@ function CameraTripod() {
         const footZ = dz * TRI_SPLAY;
         return (
           <group key={i}>
-            {/* Leg: from head (0, TRI_HEAD_Y, 0) down-out to foot. Place at midpoint. */}
+            {/* Leg from apex down-out to the caster */}
             <mesh castShadow
-                  position={[footX / 2, TRI_HEAD_Y / 2, footZ / 2]}
+                  position={[footX / 2, TRI_HEAD_Y / 2 + TRI_CASTER_R / 2, footZ / 2]}
                   rotation={[legTilt * dz, 0, -legTilt * dx]}>
-              <cylinderGeometry args={[TRI_LEG_R, TRI_LEG_R * 0.85, legLen, 8]} />
+              <cylinderGeometry args={[TRI_LEG_R, TRI_LEG_R * 0.82, legLen, 8]} />
               <primitive object={_triLegMat} attach="material" />
             </mesh>
-            {/* Caster foot (it rolls) */}
-            <mesh castShadow position={[footX, 0.03, footZ]}>
-              <sphereGeometry args={[0.035, 10, 8]} />
+            {/* Caster yoke */}
+            <mesh castShadow position={[footX, TRI_CASTER_R + 0.02, footZ]}>
+              <boxGeometry args={[0.04, 0.04, 0.05]} />
+              <primitive object={_casterMat} attach="material" />
+            </mesh>
+            {/* Caster wheel (it rolls) */}
+            <mesh castShadow position={[footX, TRI_CASTER_R, footZ]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[TRI_CASTER_R, TRI_CASTER_R, 0.028, 14]} />
               <primitive object={_casterMat} attach="material" />
             </mesh>
           </group>
         );
       })}
 
-      {/* Tripod head block */}
-      <mesh castShadow position={[0, TRI_HEAD_Y, 0]}>
-        <boxGeometry args={[0.10, 0.08, 0.10]} />
-        <primitive object={_triHeadMat} attach="material" />
+      {/* Apex head block */}
+      <mesh castShadow position={[0, apexY, 0]}>
+        <boxGeometry args={[0.11, 0.10, 0.11]} />
+        <primitive object={_apexMat} attach="material" />
       </mesh>
 
-      {/* Boom arm reaching out over the lathe bed (along -Z) */}
-      <mesh castShadow position={[0, TRI_HEAD_Y - 0.02, boomMidZ]}>
-        <boxGeometry args={[0.04, 0.04, TRI_BOOM_L]} />
-        <primitive object={_triHeadMat} attach="material" />
+      {/* Telescoping boom — stage 1 (thicker box-section, from the apex) */}
+      <mesh castShadow position={[s1mx, s1my, s1mz]} rotation={[s1pitch, s1yaw, 0]}>
+        <boxGeometry args={[0.05, 0.05, stage1Reach + 0.04]} />
+        <primitive object={_boomMat} attach="material" />
       </mesh>
 
-      {/* Camera body hanging at the boom end, pointing DOWN at the work */}
-      <mesh castShadow position={[0, camY, boomEndZ]}>
-        <boxGeometry args={[0.10, 0.07, 0.13]} />
+      {/* Telescoping boom — stage 2 (thinner box, sliding out of stage 1) */}
+      <mesh castShadow position={[s2mx, s2my, s2mz]} rotation={[s1pitch * 0.6, s1yaw, 0]}>
+        <boxGeometry args={[0.034, 0.034, stage2Reach * 0.78 + 0.04]} />
+        <primitive object={_boomThinMat} attach="material" />
+      </mesh>
+
+      {/* Coiled cable suggested by small dark rings threaded along the boom */}
+      {cableRings.map((t, i) => (
+        <mesh key={i}
+              position={[ux * TRI_BOOM_REACH * t,
+                         apexY + TRI_BOOM_RISE * (0.3 + t * 0.25) - 0.03,
+                         uz * TRI_BOOM_REACH * t]}
+              rotation={[Math.PI / 2 - s1pitch, s1yaw, 0]}>
+          <primitive object={_cableRingGeo} attach="geometry" />
+          <primitive object={_cableMat} attach="material" />
+        </mesh>
+      ))}
+
+      {/* Camera head box at the boom end, lens pointing DOWN at the work */}
+      <mesh castShadow position={[endX, endY, endZ]}>
+        <boxGeometry args={[0.12, 0.08, 0.14]} />
         <primitive object={_camBodyMat} attach="material" />
       </mesh>
-      {/* Lens looking straight down */}
-      <mesh castShadow position={[0, camY - 0.05, boomEndZ]} rotation={[0, 0, 0]}>
-        <cylinderGeometry args={[0.028, 0.028, 0.04, 14]} />
+      <mesh castShadow position={[endX, endY - 0.06, endZ]}>
+        <cylinderGeometry args={[0.03, 0.03, 0.05, 14]} />
         <primitive object={_camLensMat} attach="material" />
       </mesh>
     </group>
+  );
+}
+
+/** A flattened coiled extension-cord loop lying on the floor. */
+function CordLoop({
+  pos, rotY, mat,
+}: { pos: [number, number, number]; rotY: number; mat: THREE.Material }) {
+  return (
+    <mesh castShadow position={pos} rotation={[Math.PI / 2, 0, rotY]} scale={[1, 1, 0.35]}>
+      <primitive object={_ringGeo} attach="geometry" />
+      <primitive object={mat} attach="material" />
+    </mesh>
   );
 }
 
@@ -380,13 +692,15 @@ interface DemoBenchProps {
 /**
  * DemoBench — instructor demo STATION cluster, centre-aisle.
  *
- * Three things clustered around DEMO_BENCH_POS:
- *   • DemoLathe   — yellow Powermatic, the lathe the class gathers around
- *   • TVStand     — A-frame plywood stand with demo pieces, tools, + TV on top
- *   • CameraTripod— wooden tripod with an overhead camera booming over the bed
+ * Five things clustered around DEMO_BENCH_POS:
+ *   • DemoLathe      — yellow Powermatic + chuck/faceplate holding a workpiece
+ *   • MapleWorkbench — butcher-block bench w/ toolbox, spray bottle, cans, tools
+ *   • TVStand        — A-frame stand w/ two shelves of demo pieces + TV on top
+ *   • CameraTripod   — wheeled tripod, telescoping boom + overhead camera
+ *   • CordLoop ×3    — coiled extension cords on the floor by the stand base
  *
- * Default position: DEMO_BENCH_POS = [-7, 0, 2.5]
- * Default rotation: DEMO_BENCH_ROT = [0, π, 0]  (faces class toward -Z)
+ * Default position: DEMO_BENCH_POS = [-7, 0, 4.5]
+ * Default rotation: DEMO_BENCH_ROT = [0, π, 0]  (faces the class toward -Z)
  * Both constants are exported for easy director tuning.
  */
 export function DemoBench({
@@ -396,8 +710,14 @@ export function DemoBench({
   return (
     <group name="demo-bench" position={position} rotation={rotation}>
       <DemoLathe />
+      <MapleWorkbench />
       <TVStand />
       <CameraTripod />
+
+      {/* Coiled extension cords on the floor near the stand base */}
+      <CordLoop pos={[-0.55, 0.014, 1.30]} rotY={0.3}  mat={_cordRedMat} />
+      <CordLoop pos={[-0.30, 0.014, 1.55]} rotY={-0.6} mat={_cordOrangeMat} />
+      <CordLoop pos={[-0.05, 0.014, 1.42]} rotY={1.1}  mat={_cordGreenMat} />
     </group>
   );
 }
