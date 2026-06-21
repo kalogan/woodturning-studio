@@ -89,6 +89,19 @@ const AMBIENT_COLOR     = '#fff5e8';  // very slightly warm white
 // as a visually distinct warm pool even in the brighter room.
 const TASK_LAMP_POS: [number, number, number] = [0, HALL_H - 0.15, 0.3];
 
+// ─── Entry vestibule corridor ──────────────────────────────────────────────
+// A short entry corridor off the -X end of the main hall:
+//   X ∈ [-19.5, -16], Z ∈ [0.0, 2.5], ceiling ≈ 3.6.
+// It used to borrow the main hall's lights and read DIM, so it gets its own
+// dedicated fluorescent fixture + a single modest cool-white pointLight.
+const VEST_PANEL_POS: [number, number, number] = [-17.7, 3.54, 1.25];
+const VEST_LIGHT_Y = 3.45;             // point light just below the panel
+// Brighter emissive panel so the corridor reads lit even with a modest light.
+const VEST_EMISSIVE_INTENSITY = 2.6;
+const VEST_LIGHT_INTENSITY = 12;       // cool white, modest — keeps within budget
+const VEST_LIGHT_DISTANCE  = 9;        // covers the short corridor
+const VEST_LIGHT_DECAY     = 2;
+
 export function Lighting() {
   return (
     <group name="lighting">
@@ -215,6 +228,34 @@ export function Lighting() {
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-bias={-0.001}
+        />
+      </group>
+
+      {/* ── Entry vestibule corridor fixture ── */}
+      {/*
+       * One dedicated fluorescent over the entry corridor off the -X end of the
+       * hall. Brighter emissive panel + a single modest cool-white pointLight so
+       * the hallway no longer reads dim while staying within the light budget.
+       */}
+      <group name="fluoro-vestibule" position={VEST_PANEL_POS}>
+        {/* Visible fluorescent tube housing — reuses the hall fixture style */}
+        <mesh>
+          <boxGeometry args={[TUBE_W, TUBE_H, TUBE_D]} />
+          <meshStandardMaterial
+            color={TUBE_COLOR}
+            emissive={TUBE_EMISSIVE}
+            emissiveIntensity={VEST_EMISSIVE_INTENSITY}
+            roughness={0.25}
+            metalness={0.05}
+          />
+        </mesh>
+        {/* Light source — single modest cool-white point light */}
+        <pointLight
+          position={[0, VEST_LIGHT_Y - VEST_PANEL_POS[1], 0]}
+          color={FLUORO_COLOR}
+          intensity={VEST_LIGHT_INTENSITY}
+          distance={VEST_LIGHT_DISTANCE}
+          decay={VEST_LIGHT_DECAY}
         />
       </group>
 
