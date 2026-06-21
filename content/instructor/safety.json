@@ -1,0 +1,58 @@
+[
+  {
+    "id": "safety-face-shield",
+    "topic": "safety",
+    "question": "What eye protection do I need at the lathe?",
+    "keywords": ["face shield", "eye protection", "safety glasses", "ppe eyes", "visor", "protect face", "what to wear face"],
+    "answer": "Always wear a full face shield at the lathe, not just safety glasses — turning can throw chips, bark, or even a whole piece toward your face. A face shield protects the whole face from impact, which glasses alone do not. Wear safety glasses underneath as a backup for fine dust. Eyes and face are non-negotiable; put the shield down before you turn the lathe on."
+  },
+  {
+    "id": "safety-no-gloves-loose-clothing",
+    "topic": "safety",
+    "question": "Can I wear gloves or loose clothing while turning?",
+    "keywords": ["gloves", "loose clothing", "long sleeves", "jewellery", "long hair", "tie back hair", "no gloves lathe", "what not to wear"],
+    "answer": "Never wear gloves at the lathe and avoid loose clothing, dangling jewellery, long untied hair, or anything that can be caught by the spinning work or drive. A glove or sleeve that gets grabbed will pull your hand straight into the work before you can react — this is one of the most serious lathe dangers. Roll up sleeves, remove rings and bracelets, and tie back long hair. Keep everything close to your body and clear of the rotating parts."
+  },
+  {
+    "id": "safety-inspect-blanks",
+    "topic": "safety",
+    "question": "Why inspect a blank before turning?",
+    "keywords": ["inspect blank", "check for cracks", "blank safety", "loose bark", "before mounting", "examine wood", "cracked blank danger"],
+    "answer": "Before mounting and again before powering up, inspect every blank for cracks, splits, loose knots, bark inclusions, and voids, because a flaw can let a chunk fly off at speed. Reject or repair anything questionable rather than risk it. Make sure the blank is mounted securely and that nothing is loose. A few seconds of inspection prevents the worst lathe accidents."
+  },
+  {
+    "id": "safety-tool-rest-gap",
+    "topic": "safety",
+    "question": "How close should the tool rest be to the work?",
+    "keywords": ["tool rest gap", "tool rest distance", "close to work", "tool rest clearance", "rest gap", "how close tool rest", "set tool rest"],
+    "answer": "Keep the tool rest as close to the work as practical — usually a small gap of around a quarter inch (a few millimetres) — and rotate the blank by hand before switching on to confirm it clears the rest all the way around. A close rest gives the tool maximum support and leverage, while a big gap lets the tool tip down into the work and catch. As the diameter shrinks, stop the lathe and move the rest back in. Never adjust the rest while the lathe is running."
+  },
+  {
+    "id": "safety-firing-line",
+    "topic": "safety",
+    "question": "Where should I stand at the lathe?",
+    "keywords": ["where to stand", "firing line", "line of fire", "stand to the side", "out of the way", "safe position lathe", "stand clear startup"],
+    "answer": "Stand out of the 'firing line' — the path a piece would take if it came off the lathe — especially when first switching on. For a blank spinning toward you, that danger zone is roughly in line with the rotation, so position yourself to the side as you start up. Once the piece is running true you can move into your working stance. Make a habit of standing clear and turning the speed up gradually whenever you power on."
+  },
+  {
+    "id": "safety-speed-is-safety",
+    "topic": "safety",
+    "question": "How does speed relate to safety?",
+    "keywords": ["speed safety", "too fast dangerous", "safe speed", "rpm safety", "slow is safe", "speed and danger", "overspeed"],
+    "answer": "Excess speed is one of the biggest hidden dangers in turning: too fast for the diameter and balance and the forces grow dramatically, throwing pieces and shaking the lathe. The safe habit is to start slow, especially with rough or large blanks, and only raise the speed once the piece runs round, balanced, and quiet. If anything vibrates or feels wrong, slow down first and ask questions later. When in doubt, slower is always safer."
+  },
+  {
+    "id": "safety-lathe-startup-check",
+    "topic": "safety",
+    "question": "What should I check before switching the lathe on?",
+    "keywords": ["before starting lathe", "startup checklist", "power on checklist", "pre-start checks", "rotate by hand", "switch on safely", "lathe checklist"],
+    "answer": "Before powering on, run through a quick checklist: blank mounted securely, tailstock and banjo locked, tool rest set close and locked, speed set low, and the blank spun by hand to confirm it clears the rest. Make sure your face shield is down, sleeves and hair are clear, and you are standing out of the firing line. Then bring the lathe up to speed gradually. This thirty-second routine prevents most accidents."
+  },
+  {
+    "id": "safety-dust",
+    "topic": "safety",
+    "question": "Do I need to worry about wood dust?",
+    "keywords": ["wood dust", "dust mask", "respirator", "dust collection", "fine dust", "lung protection", "sanding dust", "powered respirator"],
+    "answer": "Yes — fine wood dust, especially from sanding, is a real long-term health hazard and some species are also allergenic or toxic. Wear at least a good dust mask or, better, a powered air respirator when sanding, and use dust collection at the source where you can. Ventilate the shop and avoid breathing the cloud that sanding throws up. Protecting your lungs matters just as much as protecting your eyes, even though the danger is slower to show."
+  }
+]

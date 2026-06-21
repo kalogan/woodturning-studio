@@ -1,0 +1,51 @@
+[
+  {
+    "id": "wood-green-vs-dry",
+    "topic": "wood",
+    "question": "What is the difference between green and dry wood for turning?",
+    "keywords": ["green wood", "dry wood", "wet wood", "green vs dry", "seasoned wood", "moisture content", "turning green wood"],
+    "answer": "Green (freshly cut, wet) wood cuts beautifully — it is soft, slices easily, and throws long ribbons of shaving — but it moves and can crack as it dries. Dry (seasoned) wood is stable and holds its shape but is harder to cut and tougher on edges. Many bowl turners deliberately rough-turn green, let the blank dry, then finish-turn it once stable. For spindle work and beginners, well-seasoned dry wood is the most predictable to learn on."
+  },
+  {
+    "id": "wood-grain-direction",
+    "topic": "wood",
+    "question": "Why does grain direction matter when turning?",
+    "keywords": ["grain direction", "grain", "long grain", "end grain", "reading the grain", "why grain matters", "fibre direction"],
+    "answer": "Grain direction decides which way you must cut to get a clean surface and avoid tearout — you always want to cut 'downhill', from supported fibres toward unsupported ones. End grain (the ends of the fibres) behaves very differently from long grain: it is harder, can tear more easily, and needs sharper tools and lighter cuts. Reading the grain before you cut, and changing your cutting direction to follow it, is one of the core skills of turning. The same shape may need opposite cutting directions on its two sides."
+  },
+  {
+    "id": "wood-sealing-endgrain",
+    "topic": "wood",
+    "question": "How do I stop blanks from cracking?",
+    "keywords": ["sealing endgrain", "prevent cracking", "anchorseal", "wax ends", "stop checking", "blank cracking", "seal end grain", "drying cracks"],
+    "answer": "Wood loses moisture fastest through the end grain, and uneven drying is what causes checks and cracks, so seal the end-grain faces of fresh blanks with a wax emulsion sealer (such as Anchorseal), melted wax, or even old paint. Store blanks somewhere cool and out of direct sun or wind so they dry slowly and evenly. For bowls, rough-turning to roughly even wall thickness then sealing and drying greatly reduces cracking. Patience in drying saves heartbreak later."
+  },
+  {
+    "id": "wood-rough-turn-bowls",
+    "topic": "wood",
+    "question": "Why rough-turn a bowl and let it dry?",
+    "keywords": ["rough turn bowl", "twice turned bowl", "rough then dry", "warping bowl", "drying bowl blank", "two stage bowl turning", "wall thickness drying"],
+    "answer": "A green bowl will warp and may crack as it dries, so many turners rough-turn it oversize to a roughly even wall thickness (a common rule of thumb is about one inch of wall for every ten inches of diameter), then set it aside to dry for weeks or months. Even wall thickness lets the bowl move uniformly instead of tearing itself apart. Once dry and stable, you remount it and finish-turn it to final shape and thickness. The result is a stable bowl that will not keep moving on you."
+  },
+  {
+    "id": "wood-beginner-species",
+    "topic": "wood",
+    "question": "What wood should a beginner start with?",
+    "keywords": ["beginner wood", "best wood for beginners", "easy wood to turn", "what species to start", "learning wood", "soft wood turning", "practice wood"],
+    "answer": "Start with a clean, straight-grained, kiln-dry softwood or mild hardwood — poplar, soft maple, birch, cherry, and pine are all forgiving and inexpensive to practice on. Avoid highly figured, knotty, or very hard exotic woods at first, as they are harder to cut cleanly and less forgiving of technique mistakes. Cheap, defect-free wood lets you make plenty of mistakes without worrying about wasting expensive stock. Once your tool control is solid, branch out into harder and more figured species."
+  },
+  {
+    "id": "wood-knots-defects",
+    "topic": "wood",
+    "question": "Can I turn wood with knots or cracks?",
+    "keywords": ["knots", "cracks in blank", "defects", "bark inclusion", "turning knots", "safe to turn cracked wood", "voids", "inspect blank"],
+    "answer": "Inspect every blank before mounting it: small sound knots can usually be turned, but cracks, splits, loose bark inclusions, and large voids are a real safety risk because pieces can fly off at speed. If a blank has a crack, either cut it away, stabilise it (for example with thin CA glue), or reject the blank. Turn questionable blanks at a lower speed and keep out of the line of fire. When in doubt, choose a sound blank — no project is worth an injury."
+  },
+  {
+    "id": "wood-spalted-figured",
+    "topic": "wood",
+    "question": "How do I turn spalted or figured wood?",
+    "keywords": ["spalted wood", "figured wood", "punky wood", "burl", "soft spots", "spalting", "tearout figured wood", "stabilise spalted"],
+    "answer": "Spalted and figured woods are stunning but tricky: spalting can leave soft, punky areas that tear instead of cutting cleanly. The keys are a very sharp tool, light shear cuts, and sometimes a negative-rake scraper for the final passes. Soft areas can be firmed up with thin CA glue or a sanding sealer before the finishing cut. Take your time, keep the edge keen, and accept that figured wood demands more finesse than plain stock."
+  }
+]

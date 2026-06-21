@@ -1,0 +1,30 @@
+[
+  {
+    "id": "speed-rule-of-thumb",
+    "topic": "speed",
+    "question": "What speed (RPM) should I turn at?",
+    "keywords": ["what rpm", "lathe speed", "turning speed", "how fast", "rpm rule of thumb", "what speed to turn", "rotation speed"],
+    "answer": "The basic rule is that smaller diameters can run faster and larger diameters must run slower, because it is the rim speed (surface feet per minute), not the rpm, that matters. A common guideline is to multiply the diameter in inches by the rpm and keep that product in roughly the 6,000 to 9,000 range — so a 3-inch spindle might run around 2,000 rpm while a 12-inch bowl runs nearer 600 to 800. When unsure, start slower than you think you need and bring the speed up only once everything runs smoothly. There is no prize for spinning fast."
+  },
+  {
+    "id": "speed-start-slow",
+    "topic": "speed",
+    "question": "Why should I start at a low speed?",
+    "keywords": ["start slow", "low speed first", "unbalanced blank", "rough blank speed", "start at low rpm", "why start slow", "speed up gradually"],
+    "answer": "A fresh, rough, or out-of-round blank is unbalanced, and an unbalanced piece at high speed shakes the whole lathe and can throw wood or even tip the machine. So you always start slow, get the blank roughed into balance, and only then bring the speed up for finer work and sanding. If the lathe starts to vibrate or 'walk', slow down immediately. Speed is something you earn as the piece gets rounder and lighter."
+  },
+  {
+    "id": "speed-large-unbalanced",
+    "topic": "speed",
+    "question": "How fast for a large or unbalanced bowl blank?",
+    "keywords": ["large bowl speed", "unbalanced blank rpm", "big blank slow", "heavy blank speed", "out of round speed", "vibration speed bowl"],
+    "answer": "Large and unbalanced blanks must be turned slowly — often just a few hundred rpm until they are round and balanced. The danger with big, off-centre wood is the enormous force it generates at speed, which can throw the piece or shake the lathe loose. Stand out of the firing line, keep the speed down, and rough it into balance before increasing rpm. Once it runs true and quiet, you can cautiously raise the speed for finishing."
+  },
+  {
+    "id": "speed-vibration-meaning",
+    "topic": "speed",
+    "question": "The lathe is vibrating — what does that mean?",
+    "keywords": ["vibration", "lathe shaking", "lathe vibrating", "too fast", "shaking lathe", "walking lathe", "vibration meaning speed"],
+    "answer": "Vibration usually means the piece is out of balance, the speed is too high for the current diameter and balance, or something (tailstock, banjo, blank mounting) is not locked down. The first response is always to slow the lathe down. Then check that the blank is securely mounted and that all the lathe's clamps are tight. As the blank gets rounder and more balanced the vibration will fade and you can raise the speed again."
+  }
+]

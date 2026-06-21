@@ -1,0 +1,65 @@
+[
+  {
+    "id": "sharpening-why-sharp",
+    "topic": "sharpening",
+    "question": "Why does a sharp tool matter so much?",
+    "keywords": ["why sharp", "sharp tool", "dull tool", "importance of sharp", "sharpening matters", "blunt tool tearout"],
+    "answer": "A sharp tool slices the wood fibres cleanly, giving a better surface, less tearout, less effort, and far more control. A dull tool tears and crushes fibres instead of cutting them, which forces you to push harder — and pushing harder is exactly what causes catches. Most beginner frustration traces back to a dull edge, not bad technique. Learn to sharpen early and sharpen often; a turning tool gets touched up many times in a single session."
+  },
+  {
+    "id": "sharpening-spindle-gouge-angle",
+    "topic": "sharpening",
+    "question": "What bevel angle for a spindle gouge?",
+    "keywords": ["spindle gouge angle", "spindle gouge bevel", "sharpen spindle gouge", "30 degrees", "detail gouge angle", "grind angle spindle gouge"],
+    "answer": "A spindle gouge is typically ground at roughly 30 to 35 degrees, which suits the shallow, controlled cuts of beads and coves on spindle work. A lower angle gives a keener slicing edge but a more fragile tip, so 30 to 35 is a good all-round compromise. Many turners add a swept-back fingernail profile so the wings can reach into curves. Keep the angle consistent every time you grind so the bevel stays a single flat reference you can ride."
+  },
+  {
+    "id": "sharpening-bowl-gouge-angle",
+    "topic": "sharpening",
+    "question": "What bevel angle for a bowl gouge?",
+    "keywords": ["bowl gouge angle", "bowl gouge bevel", "sharpen bowl gouge", "40 degrees", "55 degrees", "bowl gouge grind angle"],
+    "answer": "Bowl gouges are usually ground somewhere between about 40 and 55 degrees. A lower angle around 40 cuts cleanly on the outside and across the rim, while a steeper angle around 55 to 60 lets the bevel follow the curve deep into the bottom of a bowl without the heel rubbing. Many turners keep two bowl gouges at different angles for these two jobs. A swept-back grind on a bowl gouge adds long cutting wings for shear cuts."
+  },
+  {
+    "id": "sharpening-roughing-gouge-angle",
+    "topic": "sharpening",
+    "question": "What angle for a spindle roughing gouge?",
+    "keywords": ["roughing gouge angle", "roughing gouge bevel", "sharpen roughing gouge", "45 degrees roughing", "srg angle"],
+    "answer": "A spindle roughing gouge is commonly ground around 40 to 45 degrees straight across the edge. It does not need a fancy profile — a square, even grind across the wide flute is what lets it roll along a spindle taking off the corners. Keep the edge square to the flute so both wings cut evenly. Because it removes a lot of wood, it dulls fairly quickly, so touch it up regularly."
+  },
+  {
+    "id": "sharpening-skew-angle",
+    "topic": "sharpening",
+    "question": "What bevel angle should a skew chisel have?",
+    "keywords": ["skew angle", "skew bevel", "sharpen skew", "20 degrees", "skew grind", "double bevel skew", "included angle skew"],
+    "answer": "A skew is usually ground with a bevel of roughly 20 to 25 degrees on each side, giving an included angle of around 40 to 50 degrees. A lower angle plane-cuts more keenly but is more prone to catching and dulls faster; a slightly steeper grind is more forgiving for beginners. The edge can be straight or slightly curved (radiused), which many turners find easier to control. Hone both flat faces to keep that long bevel crisp."
+  },
+  {
+    "id": "sharpening-scraper-angle-burr",
+    "topic": "sharpening",
+    "question": "How do you sharpen a scraper and what is the burr?",
+    "keywords": ["scraper angle", "scraper burr", "sharpen scraper", "70 degrees", "80 degrees", "raise a burr", "negative rake", "scraper sharpening"],
+    "answer": "A scraper is ground at a steep angle, commonly around 70 to 80 degrees, and it actually cuts with the tiny burr that grinding leaves rolled over on the top edge. That fresh burr off the grinder does the work, so light pressure and a recently ground edge matter more than with other tools. Some turners burnish a cleaner, longer-lasting burr with a burnisher. A negative-rake scraper has bevels ground on both top and bottom, which tames the cut and is excellent on hard or figured wood."
+  },
+  {
+    "id": "sharpening-grinder-basics",
+    "topic": "sharpening",
+    "question": "What grinder should I use for sharpening turning tools?",
+    "keywords": ["grinder", "bench grinder", "slow speed grinder", "cbn wheel", "white wheel", "8 inch grinder", "sharpening setup", "grinder speed"],
+    "answer": "Most turners sharpen on a bench grinder — an 8-inch, low-speed (around 1750 rpm) grinder is the popular choice because it runs cooler and is easier to control. Friable white aluminium-oxide wheels or CBN wheels are favoured over the grey wheels that come with cheap grinders, since they cut cooler and stay true. Keep the wheel dressed flat and clean. The grinder gives you the bevel; you can refine the edge further by hand if you wish."
+  },
+  {
+    "id": "sharpening-jig-vari-grind",
+    "topic": "sharpening",
+    "question": "Do I need a sharpening jig?",
+    "keywords": ["sharpening jig", "wolverine", "vari-grind", "fingernail jig", "repeatable grind", "do i need a jig", "platform rest"],
+    "answer": "A jig is not strictly required, but for most people it is the fastest path to consistent, repeatable bevels — especially for swept-back fingernail grinds that are hard to do freehand. A common setup is a base support arm plus a pivoting arm jig for gouges and a flat platform for skews, scrapers, and parting tools. Repeatability matters: if every grind matches the last, you can ride a single consistent bevel and your technique improves faster. Skilled turners can grind freehand, but a jig removes a big variable while you learn."
+  },
+  {
+    "id": "sharpening-how-often",
+    "topic": "sharpening",
+    "question": "How often should I sharpen?",
+    "keywords": ["how often sharpen", "when to sharpen", "frequency sharpening", "touch up edge", "resharpen", "dull during turning"],
+    "answer": "More often than you would think — many turners go back to the grinder every few minutes during heavy cutting. The signs are a duller surface, more effort to cut, increased tearout, or the tool wanting to skid rather than bite. A light touch-up takes only a few seconds and removes very little steel. It is far better to sharpen too often than to fight a dull tool, which is both frustrating and dangerous."
+  }
+]
