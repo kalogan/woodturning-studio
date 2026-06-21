@@ -33,25 +33,41 @@ const EYE_HEIGHT = 1.6;  // metres
  * 0.062, 0.092) to stay outside the proximity-exit hysteresis distance.
  * At x = -14, z = 1.5 the distance is ≈ √((-14-0.062)² + (1.5-0.092)²) ≈ 14 m — safe.
  *
- * Long-hallway layout: hall X ∈ [-16, +2]. Entrance end is at -X; player lathe
- * is at origin (the +X end of the row). Spawn at -X entrance, facing +X (down the
- * hall toward the sign + player lathe). WALK_SPAWN_YAW = -π/2 rotates the
+ * Long-hallway layout: hall X ∈ [-16, +2]. A narrow ENTRY VESTIBULE corridor
+ * extends in -X off the entrance end (X ∈ [-19.5, -16], Z ∈ [0, 2.5]). The
+ * player spawns IN the corridor and walks +X through the corridor mouth into the
+ * main hall toward the sign + player lathe. WALK_SPAWN_YAW = -π/2 rotates the
  * FPSController yaw so the camera looks in the +X world direction on first frame.
  */
-const WALK_SPAWN     = { x: -14, z: 1.5 } as const;
+const WALK_SPAWN     = { x: -18.5, z: 1.25 } as const;
 // Yaw offset to face +X on spawn: in the 'YXZ' Euler convention used by FPSCamera,
 // yaw = 0 → looking -Z; yaw = -π/2 → looking +X (player faces down the hall).
 const WALK_SPAWN_YAW = -Math.PI / 2;
 
 /**
- * Hall AABB bounds — player position (XZ) is clamped inside these limits.
- * Hall: X ∈ [-16, +2], Z ∈ [-2.5, +4].
- * A 0.3 m wall-buffer keeps the camera from clipping the walls.
+ * Walkable bounds — player position (XZ) is clamped inside these limits.
+ *
+ * The space is an L-shape: the MAIN HALL (wide in Z) plus a narrow VESTIBULE
+ * corridor on the -X end (narrow in Z). A single AABB can't represent that, so
+ * the clamp is PIECEWISE on X:
+ *   • x < HALL_X_MIN (-16) → in the corridor: clamp Z to [VEST_MIN_Z, VEST_MAX_Z]
+ *     and X to [VEST_MIN_X, …]
+ *   • otherwise            → in the hall:     clamp Z to [ROOM_MIN_Z, ROOM_MAX_Z]
+ * ROOM_MAX_X is shared. The corridor Z-range [0.3, 2.2] is a SUBSET of the hall
+ * Z-range, so a player crossing the mouth at x ≈ -16 is never suddenly OOB.
+ * A ~0.3 m wall-buffer keeps the camera from clipping the walls.
  */
 const ROOM_MIN_X = -15.7;
 const ROOM_MAX_X =   1.7;
 const ROOM_MIN_Z = -2.2;
 const ROOM_MAX_Z =  6.95;
+
+// Vestibule corridor clamp (active when x < HALL_X_MIN). Corridor footprint is
+// X ∈ [-19.5, -16], Z ∈ [0, 2.5]; buffers pull the clamp ~0.3 m off each wall.
+const VEST_HALL_X = -16.0;   // corridor↔hall boundary (= HALL_X_MIN)
+const VEST_MIN_X  = -19.2;   // 0.3 m off the outer end wall (X = -19.5)
+const VEST_MIN_Z  =   0.3;   // 0.3 m off the -Z corridor wall (Z = 0)
+const VEST_MAX_Z  =   2.2;   // 0.3 m off the +Z corridor wall (Z = 2.5)
 
 // ── Pre-allocated THREE scratch objects (module scope — never re-created) ──
 // These are mutated in place inside useFrame to satisfy constraint #3.
@@ -191,9 +207,17 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
       camera.position.x += (_forward.x * input.forward + _right.x * input.strafe) * dist;
       camera.position.z += (_forward.z * input.forward + _right.z * input.strafe) * dist;
 
-      // Clamp to room bounds (named constants — see header comment)
-      camera.position.x = Math.max(ROOM_MIN_X, Math.min(ROOM_MAX_X, camera.position.x));
-      camera.position.z = Math.max(ROOM_MIN_Z, Math.min(ROOM_MAX_Z, camera.position.z));
+      // Clamp to walkable bounds — PIECEWISE for the L-shaped corridor + hall.
+      // (named constants — see header comment).
+      if (camera.position.x < VEST_HALL_X) {
+        // In the vestibule corridor: narrow in Z, extends further in -X.
+        camera.position.x = Math.max(VEST_MIN_X, Math.min(ROOM_MAX_X, camera.position.x));
+        camera.position.z = Math.max(VEST_MIN_Z, Math.min(VEST_MAX_Z, camera.position.z));
+      } else {
+        // In the main hall: wide in Z.
+        camera.position.x = Math.max(ROOM_MIN_X, Math.min(ROOM_MAX_X, camera.position.x));
+        camera.position.z = Math.max(ROOM_MIN_Z, Math.min(ROOM_MAX_Z, camera.position.z));
+      }
     }
 
     // Keep eye height constant (no vertical movement in walk mode)

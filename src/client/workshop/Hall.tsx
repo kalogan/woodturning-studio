@@ -47,6 +47,34 @@ const HALL_D = HALL_Z_MAX - HALL_Z_MIN;   // total depth  Z
 const HALL_CX = (HALL_X_MIN + HALL_X_MAX) / 2;  // centre X
 const HALL_CZ = (HALL_Z_MIN + HALL_Z_MAX) / 2;  // centre Z
 
+// ─── Entry vestibule (narrow corridor off the -X entrance end) ─────────────────
+// The real space has a SHORT HALLWAY the player walks through from the entry door
+// before the room opens up. It extends in -X off the main hall, offset to the
+// +Z/centre side of the entrance wall. The player spawns IN this corridor and
+// walks +X through the corridor mouth into the main hall.
+//
+//   Footprint:  X ∈ [VEST_X_MIN, HALL_X_MIN]  (= [-19.5, -16], ≈3.5 m long)
+//               Z ∈ [VEST_Z_MIN, VEST_Z_MAX]  (= [0.0, 2.5],   2.5 m wide)
+//               Y ∈ [0, HALL_H]  (same ceiling height as the hall)
+//
+// The corridor mouth (the gap in the hall's -X end wall) spans Z ∈ [0, 2.5];
+// the entrance door lives on the corridor's OUTER end wall at X = VEST_X_MIN.
+export const VEST_X_MIN = -19.5;        // outer end wall (entrance door)
+export const VEST_Z_MIN =   0.0;        // -Z side wall of the corridor
+export const VEST_Z_MAX =   2.5;        // +Z side wall of the corridor
+const VEST_LEN   = HALL_X_MIN - VEST_X_MIN;      // corridor length along X (3.5 m)
+const VEST_W     = VEST_Z_MAX - VEST_Z_MIN;      // corridor width along Z (2.5 m)
+const VEST_CX    = (VEST_X_MIN + HALL_X_MIN) / 2; // corridor centre X
+const VEST_CZ    = (VEST_Z_MIN + VEST_Z_MAX) / 2; // corridor centre Z
+
+// The -X end wall of the main hall is rendered as TWO segments leaving a gap at
+// Z ∈ [VEST_Z_MIN, VEST_Z_MAX] (the corridor mouth). Segments span the rest of
+// the hall depth: [-Z back wall → corridor mouth] and [corridor mouth → +Z].
+const ENT_SEG_BACK_W = VEST_Z_MIN - HALL_Z_MIN;  // back segment width (Z_MIN→0)
+const ENT_SEG_FRONT_W = HALL_Z_MAX - VEST_Z_MAX; // front segment width (2.5→Z_MAX)
+const ENT_SEG_BACK_CZ  = (HALL_Z_MIN + VEST_Z_MIN) / 2; // back segment centre Z
+const ENT_SEG_FRONT_CZ = (VEST_Z_MAX + HALL_Z_MAX) / 2; // front segment centre Z
+
 // ─── Brick wall parameters ────────────────────────────────────────────────────
 // Procedural brick: alternating mortar-joint colour bands every BRICK_COURSE_H
 // plus a base and top band in slightly different tone.
@@ -292,6 +320,13 @@ function makeBrickWallMaterial(wallW: number, wallH: number): THREE.MeshStandard
 const longWallBrickMat = makeBrickWallMaterial(HALL_W, HALL_H);
 const endWallBrickMat  = makeBrickWallMaterial(HALL_D, HALL_H);
 
+// Vestibule wall sizes — pre-built once. Side walls run along X (VEST_LEN);
+// the outer end wall + the two split entrance-wall segments run along Z.
+const vestSideBrickMat     = makeBrickWallMaterial(VEST_LEN, HALL_H);
+const vestEndBrickMat      = makeBrickWallMaterial(VEST_W, HALL_H);
+const entSegBackBrickMat   = makeBrickWallMaterial(ENT_SEG_BACK_W, HALL_H);
+const entSegFrontBrickMat  = makeBrickWallMaterial(ENT_SEG_FRONT_W, HALL_H);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-component: BrickWall
 // Renders a single wall as a base plane + horizontal mortar-band strips.
@@ -446,14 +481,83 @@ export function Hall() {
         <BrickWall wallW={HALL_D} baseMat={endWallBrickMat} />
       </group>
 
-      {/* ── ENTRANCE END WALL (−X short wall, brick) ─────────────────────────── */}
-      {/* Player spawns near here. Rotation +π/2 so face points into the hall (+X). */}
+      {/* ── ENTRANCE END WALL (−X short wall, brick) — SPLIT for corridor mouth ─ */}
+      {/* The vestibule corridor joins the hall here, so this wall is rendered as */}
+      {/* TWO segments leaving a gap at Z ∈ [VEST_Z_MIN, VEST_Z_MAX] (the corridor */}
+      {/* mouth). The player walks +X from the corridor into the hall through it.  */}
+      {/* Each segment group is positioned at its own centre-Z; rotation +π/2 so   */}
+      {/* the face points into the hall (+X).                                      */}
+      {/* Back segment: Z ∈ [HALL_Z_MIN, VEST_Z_MIN]. */}
       <group
-        name="wall-entrance-end"
-        position={[HALL_X_MIN, HALL_H / 2, HALL_CZ]}
+        name="wall-entrance-end-back"
+        position={[HALL_X_MIN, HALL_H / 2, ENT_SEG_BACK_CZ]}
         rotation={[0, Math.PI / 2, 0]}
       >
-        <BrickWall wallW={HALL_D} baseMat={endWallBrickMat} />
+        <BrickWall wallW={ENT_SEG_BACK_W} baseMat={entSegBackBrickMat} />
+      </group>
+      {/* Front segment: Z ∈ [VEST_Z_MAX, HALL_Z_MAX]. */}
+      <group
+        name="wall-entrance-end-front"
+        position={[HALL_X_MIN, HALL_H / 2, ENT_SEG_FRONT_CZ]}
+        rotation={[0, Math.PI / 2, 0]}
+      >
+        <BrickWall wallW={ENT_SEG_FRONT_W} baseMat={entSegFrontBrickMat} />
+      </group>
+
+      {/* ── ENTRY VESTIBULE (narrow corridor off the -X entrance end) ────────── */}
+      {/* A short hallway the player spawns in and walks +X through into the hall. */}
+      {/* Footprint X ∈ [VEST_X_MIN, HALL_X_MIN], Z ∈ [VEST_Z_MIN, VEST_Z_MAX].   */}
+      <group name="vestibule">
+        {/* Corridor floor */}
+        <mesh
+          name="vestibule-floor"
+          receiveShadow
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[VEST_CX, 0, VEST_CZ]}
+        >
+          <planeGeometry args={[VEST_LEN, VEST_W]} />
+          <primitive object={floorMat} attach="material" />
+        </mesh>
+
+        {/* Corridor ceiling */}
+        <mesh
+          name="vestibule-ceiling"
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[VEST_CX, HALL_H, VEST_CZ]}
+        >
+          <planeGeometry args={[VEST_LEN, VEST_W]} />
+          <primitive object={ceilingMat} attach="material" />
+        </mesh>
+
+        {/* -Z side wall (at Z = VEST_Z_MIN), running X VEST_X_MIN→HALL_X_MIN. */}
+        {/* Rotation 0 → face points into the corridor (+Z). */}
+        <group
+          name="vestibule-wall-back"
+          position={[VEST_CX, HALL_H / 2, VEST_Z_MIN]}
+          rotation={[0, 0, 0]}
+        >
+          <BrickWall wallW={VEST_LEN} baseMat={vestSideBrickMat} />
+        </group>
+
+        {/* +Z side wall (at Z = VEST_Z_MAX). Rotation π → face points into the */}
+        {/* corridor (-Z). */}
+        <group
+          name="vestibule-wall-front"
+          position={[VEST_CX, HALL_H / 2, VEST_Z_MAX]}
+          rotation={[0, Math.PI, 0]}
+        >
+          <BrickWall wallW={VEST_LEN} baseMat={vestSideBrickMat} />
+        </group>
+
+        {/* Outer END wall at X = VEST_X_MIN (holds the entrance door — Doorways). */}
+        {/* Rotation +π/2 → face points into the corridor (+X). */}
+        <group
+          name="vestibule-wall-end"
+          position={[VEST_X_MIN, HALL_H / 2, VEST_CZ]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <BrickWall wallW={VEST_W} baseMat={vestEndBrickMat} />
+        </group>
       </group>
 
       {/* ── AISLE WALL (+Z long wall, brick + windows) ──────────────────────── */}

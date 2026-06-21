@@ -58,12 +58,14 @@ const PANEL_LIP = 0.018;    // thin bevel/lip frame around each sunken panel
 const KNOB_R = 0.028;
 const KNOB_Y = -LEAF_H / 2 + 0.95; // handle height ≈ 0.95 m up the leaf
 
-// Placements (world). Entrance on -X wall (faces +X); sign-wall on +X wall
-// (faces -X), pushed to the +Z half to clear the HAMESTER HALL sign.
-const HALL_X_MIN = -16.0;
+// Placements (world). The entrance door now lives on the ENTRY VESTIBULE's
+// OUTER end wall (X = VEST_X_MIN = -19.5), centred in the corridor mouth
+// (Z ≈ 1.25), facing +X into the corridor. The sign-wall doorway is unchanged:
+// +X wall, faces -X, pushed to the -Z half to clear the HAMESTER HALL sign.
 const HALL_X_MAX = 2.0;
-const ENTRANCE_DOOR_X = HALL_X_MIN + 0.02; // just proud of the entrance wall
-const ENTRANCE_DOOR_Z = -0.6;              // clear of the grinder [-14.5,0,1.5]
+const VEST_X_MIN = -19.5;
+const ENTRANCE_DOOR_X = VEST_X_MIN + 0.05; // just proud of the corridor end wall
+const ENTRANCE_DOOR_Z = 1.25;              // centred in the corridor (Z ∈ [0, 2.5])
 const SIGN_DOOR_X = HALL_X_MAX - 0.02;     // just proud of the sign wall
 const SIGN_DOOR_Z = -1.3;                  // -Z side, just LEFT of the sign (door spans -2.1..-0.5)
 
@@ -209,15 +211,15 @@ function Doorway() {
 /**
  * Doorways — two framed white-door openings, one at each end of the hall.
  *
- *   1. Entrance doorway — -X wall, faces +X into the hall (replaces the old
- *      entry door). Placed at Z ≈ -0.6, clear of the grinder station.
+ *   1. Entrance doorway — on the ENTRY VESTIBULE's outer end wall (X = -19.5),
+ *      faces +X into the corridor, centred in the corridor mouth (Z ≈ 1.25).
  *   2. Sign-wall doorway — +X wall, faces -X into the hall, on the -Z side just
  *      LEFT of the centred HAMESTER HALL sign (Z ≈ -1.3, spanning -2.1..-0.5).
  */
 export function Doorways() {
   return (
     <group name="doorways">
-      {/* Entrance doorway — -X wall. Rotation +π/2 maps local +Z → world +X. */}
+      {/* Entrance doorway — vestibule outer end wall. Rotation +π/2 maps local +Z → world +X. */}
       <group
         name="doorway-entrance"
         position={[ENTRANCE_DOOR_X, 0, ENTRANCE_DOOR_Z]}
