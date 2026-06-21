@@ -26,3 +26,7 @@ export { ShopVac, SHOP_VAC_POS, SHOP_VAC_ROT } from './ShopVac.js';
 export { LeaningLumber, LUMBER_POS, LUMBER_ROT } from './LeaningLumber.js';
 export { SupportColumn, COLUMN_POS } from './SupportColumn.js';
 export { TaskLamps, LAMP_PLACEMENTS } from './TaskLamps.js';
+export { CeilingFan } from './CeilingFan.js';
+export { LogPallets } from './LogPallets.js';
+export { Buckets } from './Buckets.js';
+export { OfficeChairs } from './OfficeChairs.js';
