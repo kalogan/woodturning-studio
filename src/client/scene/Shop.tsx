@@ -20,7 +20,7 @@
  * Materials live at module scope in their respective component files.
  */
 
-import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, Doorways, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture, ShopMachines, WallConduit, SpeakerDisplay, WireRack, FlatFileCabinets, ShopVac, LeaningLumber, SupportColumn, TaskLamps, CeilingFan, LogPallets, Buckets, OfficeChairs, CeilingPipes } from '../workshop/index.js';
+import { Lighting, Furniture, HallLathes, DemoBench, StockCubbies, GrinderStation, ShopClutter, Doorways, TurnedDisplay, ToolWall, DustCollection, ClassroomSignage, CeilingEquipment, ShopFurniture, ShopMachines, WallConduit, SpeakerDisplay, WireRack, FlatFileCabinets, ShopVac, LeaningLumber, SupportColumn, TaskLamps, CeilingFan, LogPallets, Buckets, OfficeChairs, CeilingPipes, Instructor } from '../workshop/index.js';
 import { Hall } from '../workshop/Hall.js';
 
 export function Shop() {
@@ -113,6 +113,9 @@ export function Shop() {
 
       {/* Exposed overhead iron pipe + EMT conduit runs on the black ceiling */}
       <CeilingPipes />
+
+      {/* Low-poly instructor NPC at the demo lathe, with a subtle idle animation */}
+      <Instructor />
     </group>
   );
 }

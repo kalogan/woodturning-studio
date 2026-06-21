@@ -31,3 +31,4 @@ export { LogPallets } from './LogPallets.js';
 export { Buckets } from './Buckets.js';
 export { OfficeChairs } from './OfficeChairs.js';
 export { CeilingPipes } from './CeilingPipes.js';
+export { Instructor, INSTRUCTOR_POS, INSTRUCTOR_YAW } from './Instructor.js';
