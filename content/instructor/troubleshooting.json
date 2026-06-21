@@ -1,0 +1,51 @@
+[
+  {
+    "id": "trouble-catch-what-is",
+    "topic": "troubleshooting",
+    "question": "What is a catch and why does it happen?",
+    "keywords": ["catch", "what is a catch", "tool dug in", "dig in", "digging in", "keeps digging", "tool keeps digging", "sudden grab", "suddenly grabbed", "why catches happen", "tool grabbed"],
+    "answer": "A catch is when the tool suddenly digs into the wood and is grabbed or thrown, usually because the bevel was not rubbing and the edge was presented at the wrong angle or too high. It often happens when the tool tips off the rest, the cut is too aggressive, or the unsupported edge gets pulled into the spinning wood. The fix is to always anchor on the rest, get the bevel rubbing first, raise the handle gently to cut, and keep the rest close. Catches are a technique problem, not bad luck, and they fade quickly as you learn bevel control."
+  },
+  {
+    "id": "trouble-catch-fix",
+    "topic": "troubleshooting",
+    "question": "How do I stop getting catches?",
+    "keywords": ["stop catches", "avoid catch", "prevent catches", "fix catches", "no more catches", "reduce catches", "catch prevention"],
+    "answer": "To stop catches, work on three habits: keep the tool rest close so the tool cannot tip, always rub the bevel before the edge engages, and take lighter cuts with a sharp tool. Use the ABC sequence — Anchor on the rest, Bevel rubbing, then Cut — every time you start a cut. Avoid presenting the edge unsupported, cutting far above centre with a gouge, or forcing a heavy cut. A keen edge and bevel contact solve the great majority of catches."
+  },
+  {
+    "id": "trouble-tearout",
+    "topic": "troubleshooting",
+    "question": "Why am I getting tearout?",
+    "keywords": ["tearout", "torn grain", "fuzzy surface", "rough surface", "chipped grain", "why tearout", "fix tearout", "ragged surface"],
+    "answer": "Tearout — torn, fuzzy fibres instead of a clean surface — usually comes from a dull tool, cutting 'uphill' against the grain, or too heavy a cut. The fixes are to sharpen, reverse your cutting direction so you cut downhill with the grain, and take a light shear or finishing cut. On stubborn or figured wood a negative-rake scraper, a shear-scrape, or a touch of sanding sealer before the final cut all help. Most tearout disappears the moment you put a fresh edge on the tool."
+  },
+  {
+    "id": "trouble-chatter-vibration",
+    "topic": "troubleshooting",
+    "question": "How do I deal with chatter or vibration?",
+    "keywords": ["chatter", "vibration", "rippled surface", "ribbing", "lathe shaking", "fix chatter", "wavy surface", "chatter marks"],
+    "answer": "Chatter — a rippled or washboard surface — and general vibration usually mean the work or tool is not well supported. Move the tool rest closer, support long slender spindles with the tailstock or a steady rest, slow the speed if the blank is unbalanced, and take lighter cuts with a sharp tool held firmly. Make sure the tailstock, banjo, and blank are all locked down tight. Reducing the unsupported length of both the tool and the work is the key to a smooth, chatter-free surface."
+  },
+  {
+    "id": "trouble-out-of-round",
+    "topic": "troubleshooting",
+    "question": "My piece is out of round or unbalanced — what do I do?",
+    "keywords": ["out of round", "unbalanced", "wobbling", "not round", "balance blank", "off centre", "vibrating blank", "rough into round"],
+    "answer": "An out-of-round or unbalanced blank vibrates and is unsafe at speed, so slow the lathe right down and rough it into round before doing anything else. Use a roughing gouge (or bowl gouge for bowls) to take the high spots down until the piece runs true, then bring the speed up. Make sure it is mounted on its true centre and that nothing is loose. Once it is round and balanced, the vibration stops and you can work and sand at higher speed."
+  },
+  {
+    "id": "trouble-burning",
+    "topic": "troubleshooting",
+    "question": "Why is my wood burning or smoking?",
+    "keywords": ["burning", "smoking wood", "scorch marks", "friction burn", "burning at centre", "dead centre burning", "heat marks"],
+    "answer": "Burning usually means friction without cutting: a dull edge rubbing instead of slicing, a parting tool binding in a narrow cut, sanding paper held too long in one spot, or a non-rotating dead centre at the tailstock. The cures are to sharpen, widen and relieve parting cuts, keep sandpaper moving and slow the lathe for sanding, and use a live centre. Burnishing the wood by rubbing the bevel hard without cutting can also scorch it. In short, let a sharp edge cut and do not let anything just rub under pressure."
+  },
+  {
+    "id": "trouble-spiral-ridges",
+    "topic": "troubleshooting",
+    "question": "Why do I have spiral ridges or tool marks left behind?",
+    "keywords": ["spiral ridges", "tool marks", "ridges left", "screw thread marks", "uneven cylinder", "spiral pattern", "remove ridges"],
+    "answer": "Spiral ridges come from moving the tool along the rest too quickly or unevenly while roughing, leaving a thread-like pattern. Smooth them out with a steady, slower traverse and a light finishing cut, keeping the bevel rubbing and the edge sharp. A skew planing cut or a light pass with a sharp gouge will clean the cylinder to a fine surface. Consistent, unhurried movement along the rest is what produces a smooth, even result."
+  }
+]

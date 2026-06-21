@@ -1,0 +1,58 @@
+[
+  {
+    "id": "tool-spindle-roughing-gouge",
+    "topic": "tools",
+    "question": "What is a spindle roughing gouge for?",
+    "keywords": ["spindle roughing gouge", "roughing gouge", "srg", "rough down", "square to round", "knock off corners", "what is a roughing gouge"],
+    "answer": "The spindle roughing gouge is your workhorse for turning a square or rough blank down to a clean cylinder when working between centres. It has a deep U-shaped flute and a wide, straight-across edge that takes wood away quickly. Use it only on spindle (long-grain) work, never on bowls or faceplate work, because its tang is not strong enough for end-grain forces. Present it with the bevel rubbing and roll it slightly into the cut for a clean surface."
+  },
+  {
+    "id": "tool-spindle-gouge",
+    "topic": "tools",
+    "question": "What is a spindle gouge used for?",
+    "keywords": ["spindle gouge", "detail gouge", "beads", "coves", "what is a spindle gouge", "fingernail gouge", "shaping details"],
+    "answer": "The spindle gouge is your detailing tool for spindle work: it cuts beads, coves, and gentle profiles once the blank is roughed round. It has a shallower flute than a roughing gouge and is usually ground with a fingernail (swept-back) profile so the tip can work into tight curves. Take light cuts with the bevel rubbing and let the wing or nose do the work depending on the shape. It is not meant for hogging off large amounts of waste."
+  },
+  {
+    "id": "tool-bowl-gouge",
+    "topic": "tools",
+    "question": "What is a bowl gouge?",
+    "keywords": ["bowl gouge", "deep flute gouge", "hollowing bowls", "faceplate gouge", "what is a bowl gouge", "bowl turning tool"],
+    "answer": "The bowl gouge is a heavy, deep-fluted gouge built to handle the interrupted, end-grain-heavy cuts of bowl and faceplate work. Its thick shaft resists the leverage and vibration of reaching out over a tool rest into a hollowing cut. It is commonly ground with a swept-back (Irish/Ellsworth) grind so the wings can shear-cut the outside and the nose can hollow the inside. Never use a spindle roughing gouge where a bowl gouge belongs."
+  },
+  {
+    "id": "tool-skew-chisel",
+    "topic": "tools",
+    "question": "What is a skew chisel for?",
+    "keywords": ["skew chisel", "skew", "planing cut", "smooth finish", "what is a skew", "v-cut", "peeling cut", "oland", "planing"],
+    "answer": "The skew chisel is a flat chisel ground with an angled (skewed) edge, used for planing spindles to a glass-smooth finish, cutting clean V-grooves, and forming beads and pommels. Used well it leaves a surface that needs almost no sanding. It is also the tool most likely to give a beginner a catch, so practice keeping the cut on the lower-to-middle portion of the edge with the bevel rubbing. Master the planing cut first, then move on to beads and V-cuts."
+  },
+  {
+    "id": "tool-parting-tool",
+    "topic": "tools",
+    "question": "What does a parting tool do?",
+    "keywords": ["parting tool", "parting", "sizing", "cut off", "separate from waste", "diamond parting tool", "what is a parting tool", "grooves"],
+    "answer": "The parting tool makes narrow, straight cuts to define shoulders, set diameters (often with calipers), and part the finished work away from the waste. It is a narrow, often diamond-section blade that cuts mostly with its tip. Take it slowly and relieve the cut by widening it slightly if it starts to bind or heat up. For a clean parted face you can angle the tip to leave a slight nib rather than tearing the fibres."
+  },
+  {
+    "id": "tool-scrapers",
+    "topic": "tools",
+    "question": "What are scrapers used for?",
+    "keywords": ["scraper", "scrapers", "round nose scraper", "negative rake scraper", "scraping", "clean up bowl interior", "what is a scraper", "finishing scraper"],
+    "answer": "Scrapers remove small amounts of wood to refine a shape or clean up areas a gouge cannot easily reach, especially the inside of bowls and boxes. They are ground with a burr on the edge that does the actual cutting, and they work best presented flat or trailing slightly downhill, below centre, so a catch pulls the tool away rather than in. A negative-rake scraper is more forgiving and great for finishing cuts on hard or figured wood. Keep them sharp — a scraper with a fresh burr cuts; a dull one just rubs and burnishes."
+  },
+  {
+    "id": "tool-which-gouge-bowl-vs-spindle",
+    "topic": "tools",
+    "question": "What is the difference between a spindle gouge and a bowl gouge?",
+    "keywords": ["difference spindle gouge bowl gouge", "spindle vs bowl gouge", "which gouge", "can i use spindle gouge on a bowl", "gouge difference"],
+    "answer": "A bowl gouge has a much thicker, stronger shaft and a deeper flute so it can take the heavy leverage and end-grain forces of bowl work; a spindle gouge is lighter and meant for detailing between-centres spindle work. The big rule: do not use spindle tools — especially a spindle roughing gouge — for bowl or faceplate work, as the weaker tang can snap under load. You can do delicate detail on a spindle with a small spindle gouge, but reach for the bowl gouge whenever you are hollowing or working across end grain on a bowl."
+  },
+  {
+    "id": "tool-carbide-tools",
+    "topic": "tools",
+    "question": "What about carbide insert tools?",
+    "keywords": ["carbide tools", "carbide insert", "easy wood tools", "replaceable cutter", "beginner tools", "carbide vs traditional"],
+    "answer": "Carbide-insert tools use a small replaceable cutter held flat and presented level at centre height, so they are simple to learn and never need grinding — you just rotate or swap the dull insert. They mostly scrape rather than slice, so the finish off the tool is usually not as clean as a sharp traditional gouge or skew. They are a fine, approachable starting point and good for rough hollowing, but learning traditional gouges and the skew will ultimately give you better surfaces and more control."
+  }
+]

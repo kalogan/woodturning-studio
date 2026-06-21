@@ -1,0 +1,65 @@
+[
+  {
+    "id": "technique-riding-the-bevel",
+    "topic": "technique",
+    "question": "What does riding the bevel mean?",
+    "keywords": ["riding the bevel", "rub the bevel", "bevel contact", "bevel rubbing", "what is riding the bevel", "bevel support"],
+    "answer": "Riding (or rubbing) the bevel means letting the flat ground surface behind the cutting edge ride against the wood so it supports and steers the tool. You bring the tool to the wood with the bevel rubbing but not yet cutting, then gently raise the handle until the edge engages — the bevel stays in contact the whole time. This support is what gives a clean, controlled cut and prevents the edge from digging in. Lose bevel contact and you are scraping or, worse, inviting a catch."
+  },
+  {
+    "id": "technique-abc",
+    "topic": "technique",
+    "question": "What is the ABC of tool control?",
+    "keywords": ["abc", "anchor bevel cut", "anchor bevel rub cut", "tool control basics", "abc rule", "how to start a cut"],
+    "answer": "ABC stands for Anchor, Bevel, Cut — the sequence for safely starting almost any turning cut. First Anchor the tool firmly on the tool rest, then bring the Bevel into contact rubbing against the spinning wood, and only then slowly raise the handle to begin the Cut. Doing it in that order means the tool is always supported before the edge engages. It is the simplest habit that prevents the most catches."
+  },
+  {
+    "id": "technique-cutting-vs-scraping",
+    "topic": "technique",
+    "question": "What is the difference between cutting and scraping?",
+    "keywords": ["cutting vs scraping", "shear cut", "slicing vs scraping", "difference cutting scraping", "scrape or cut"],
+    "answer": "Cutting (or shearing) slices the wood fibres with the bevel supported, leaving a clean surface and long shavings; scraping drags the edge across the fibres, removing dust-like waste and usually leaving a rougher surface. Gouges and the skew are cutting tools used bevel-rubbing; scrapers deliberately scrape, presented flat or trailing downhill. Cutting gives the best results on most spindle and outside-bowl work, while scraping is handy for refining shapes a gouge cannot reach. Knowing which mode a tool is in tells you how to present it safely."
+  },
+  {
+    "id": "technique-spindle-vs-faceplate",
+    "topic": "technique",
+    "question": "What is the difference between spindle and faceplate (bowl) turning?",
+    "keywords": ["spindle vs faceplate", "between centres vs bowl", "grain orientation turning", "faceplate turning", "spindle turning", "long grain vs end grain"],
+    "answer": "In spindle turning the grain runs parallel to the lathe axis (between centres), as with a chair leg or pen; in faceplate or bowl turning the grain runs across the axis, as with a bowl mounted on a faceplate or chuck. This grain orientation changes everything: which tools you use, how the fibres are supported, and which direction is 'downhill'. Spindle work uses roughing gouges, spindle gouges, and the skew; bowl work uses the sturdier bowl gouge and scrapers. Always match the tool and technique to the grain orientation, not just the shape."
+  },
+  {
+    "id": "technique-cut-downhill",
+    "topic": "technique",
+    "question": "What does cutting downhill with the grain mean?",
+    "keywords": ["cut downhill", "with the grain", "cutting downhill", "grain direction cutting", "high to low", "avoid tearout direction", "cut from large to small"],
+    "answer": "Cutting downhill means working from the larger diameter toward the smaller, so the fibres you cut are supported by the wood still beneath them — like planing with the grain instead of against it. On a spindle that means cutting from a high point down into a cove or off the end, not uphill into unsupported fibres. Going the wrong way lifts and tears the fibres, leaving fuzzy tearout. On beads, that means cutting from the top of the bead down each side."
+  },
+  {
+    "id": "technique-tool-presentation",
+    "topic": "technique",
+    "question": "How should I present the tool to the wood?",
+    "keywords": ["tool presentation", "how to hold tool", "tool angle", "rest the tool", "approach the wood", "centre height presentation", "tool rest height"],
+    "answer": "Set the tool rest close to the work and at a height that lets the cutting edge meet the wood at or just above centre for gouges, with the handle low to start. Hold the tool firmly but not white-knuckled, brace it against your body, and move from your whole body rather than just your wrists. Always have the tool anchored on the rest before the edge touches the wood, and bring the bevel into contact before raising the handle to cut. Smooth, controlled movement beats force every time."
+  },
+  {
+    "id": "technique-sanding-grits",
+    "topic": "technique",
+    "question": "How do I sand a turning through the grits?",
+    "keywords": ["sanding", "grits", "sand through grits", "sanding sequence", "80 120 180 220 320", "sanding turning", "abrasives", "how to sand"],
+    "answer": "Sand progressively, starting at the finest grit that removes your tool marks and stepping up through each grit without skipping — a common sequence is 120, 180, 220, 320, then finer if needed. Each grit should remove the scratches left by the previous one, so do not jump from coarse straight to fine. Slow the lathe down, keep the paper moving to avoid heat and rings, and stop the lathe periodically to sand along the grain and check for missed scratches. The cleaner your tool work, the less sanding you will need."
+  },
+  {
+    "id": "technique-centre-height",
+    "topic": "technique",
+    "question": "Where should the tool cut relative to centre?",
+    "keywords": ["centre height", "cutting at centre", "above centre", "below centre", "tool height", "cut on centre line", "where to cut height"],
+    "answer": "For most cutting with gouges and the skew, you engage the wood at or just above the centreline with the bevel rubbing. Scrapers are usually presented at or slightly below centre, trailing downhill, so a catch pulls them harmlessly away. Cutting well below centre with a gouge invites the edge to be pulled down and grab. Set your tool rest height so that with a natural grip the edge naturally meets the wood near centre."
+  },
+  {
+    "id": "technique-light-cuts",
+    "topic": "technique",
+    "question": "Should I take heavy or light cuts?",
+    "keywords": ["light cuts", "heavy cuts", "depth of cut", "finishing cut", "how much to remove", "take your time", "shaving thickness"],
+    "answer": "Use heavier cuts only for roughing away waste, and switch to progressively lighter cuts as you approach your final shape. A light, sharp finishing cut leaves the best surface and the least tearout, and it is far safer because there is less force to cause a catch. Let the tool and the lathe speed do the work rather than forcing the cut. The final pass should barely whisper shavings off the surface."
+  }
+]

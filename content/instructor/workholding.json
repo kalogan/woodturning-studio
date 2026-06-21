@@ -1,0 +1,44 @@
+[
+  {
+    "id": "workholding-between-centres",
+    "topic": "workholding",
+    "question": "How does turning between centres work?",
+    "keywords": ["between centres", "spindle mounting", "drive centre", "live centre", "two centres", "mount spindle", "between centers"],
+    "answer": "Turning between centres holds the blank by its two ends: a drive centre in the headstock grips and spins the wood, while a live centre in the tailstock supports the other end and rotates with it. It is the standard, secure way to do spindle work like legs, spindles, and tool handles. Mark and seat the centres on the blank's true axis, then bring the tailstock up firmly so the drive bites in. This is usually the first mounting method a beginner learns."
+  },
+  {
+    "id": "workholding-drive-centre",
+    "topic": "workholding",
+    "question": "What is a drive centre (spur centre)?",
+    "keywords": ["drive centre", "spur centre", "drive center", "headstock centre", "four prong", "what is a drive centre", "spur drive"],
+    "answer": "The drive centre, or spur centre, fits into the headstock spindle and has spurs (often four prongs) around a central point that bite into the end of the blank to grip and drive it. Seating it well — sometimes by tapping it into a pre-cut kerf or pre-drilled centre — ensures the wood spins true and does not slip. If the wood slips, you can ease off, reseat, and bring the tailstock up a little firmer. It transfers the motor's rotation into the workpiece."
+  },
+  {
+    "id": "workholding-live-centre",
+    "topic": "workholding",
+    "question": "What is a live centre?",
+    "keywords": ["live centre", "live center", "tailstock centre", "rotating centre", "what is a live centre", "ball bearing centre", "dead centre"],
+    "answer": "A live centre fits in the tailstock and supports the free end of the work; 'live' means it spins on bearings with the wood, so there is no friction or burning. (An old dead centre does not rotate and needs lubrication — most turners use a live centre today.) Bring it up snug to support the blank, but not so hard that it bows a slender spindle. As you work and the wood compresses or warms, you may need to re-snug it."
+  },
+  {
+    "id": "workholding-faceplate",
+    "topic": "workholding",
+    "question": "When do I use a faceplate?",
+    "keywords": ["faceplate", "screw to faceplate", "bowl mounting", "faceplate turning", "when to use faceplate", "mount bowl blank", "platter mounting"],
+    "answer": "A faceplate is a metal disc that screws onto the spindle, and you fix the blank to it with stout screws into the wood — it is a very secure way to mount bowls, platters, and other faceplate work, especially for the first (outside) mounting. Use screws long enough to hold well but short enough not to reach into your finished shape. It is the strongest mounting method and great for roughing heavy blanks. Many turners use a faceplate to turn a tenon or recess, then switch to a chuck."
+  },
+  {
+    "id": "workholding-scroll-chuck",
+    "topic": "workholding",
+    "question": "What is a scroll chuck and when do I use it?",
+    "keywords": ["scroll chuck", "four jaw chuck", "self centring chuck", "tenon", "recess", "expand jaws", "chuck mounting", "when to use chuck"],
+    "answer": "A scroll chuck is a self-centring four-jaw chuck whose jaws move together to grip a tenon (a spigot you turn on the work) or to expand into a recess. It is the go-to for holding bowls and boxes once you have an outside shape to grip, letting you remove the tailstock and hollow the inside. Size the tenon or recess to suit your jaws and make a clean shoulder so the work seats squarely. It is versatile and quick, which is why it is one of the most popular accessories after the basic centres."
+  },
+  {
+    "id": "workholding-which-method",
+    "topic": "workholding",
+    "question": "Which workholding method should I choose?",
+    "keywords": ["which workholding", "choose mounting", "how to hold the wood", "best mounting method", "what holding method", "centres vs chuck vs faceplate"],
+    "answer": "Match the method to the work: use between centres for spindle work (legs, handles, spindles); a faceplate or screw chuck for the first mounting of bowls and platters; and a scroll chuck once you have a tenon or recess to grip for hollowing. Faceplates and chucks suit cross-grain bowl work, while between-centres suits long-grain spindle work. Often you combine them — for example, faceplate or between-centres to shape the outside and form a tenon, then a chuck to hollow. Whatever you choose, make sure the hold is secure before powering on."
+  }
+]

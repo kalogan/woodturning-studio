@@ -1,0 +1,37 @@
+[
+  {
+    "id": "finishing-friction-polish",
+    "topic": "finishing",
+    "question": "What is a friction polish?",
+    "keywords": ["friction polish", "shellac friction", "quick shine", "on the lathe finish", "friction finish", "instant gloss", "shellawax"],
+    "answer": "A friction polish is a shellac- or wax-based finish applied while the lathe spins, where the heat of friction from a cloth sets it to a quick, glossy shine right on the lathe. It is fast and ideal for small spindle items like pens, handles, and ornaments. The shine is lovely but the film is thin, so it offers limited protection and is not ideal for items that get heavy handling or wet use. Apply thin coats and build up the gloss gradually."
+  },
+  {
+    "id": "finishing-oils",
+    "topic": "finishing",
+    "question": "What oils can I use to finish turnings?",
+    "keywords": ["oil finish", "danish oil", "tung oil", "walnut oil", "linseed oil", "food safe oil", "oil turning", "wipe on oil"],
+    "answer": "Penetrating oils such as Danish oil, tung oil, and boiled linseed oil soak into the wood and bring out the grain with a soft, natural look, building protection with multiple coats. Walnut oil and mineral oil are popular food-safe choices for bowls and utensils, though check that any product is genuinely safe for food contact and fully cured. Wipe oil on, let it soak, then wipe off the excess and let it cure between coats. Oils are forgiving and easy to renew later, which makes them great for functional ware."
+  },
+  {
+    "id": "finishing-waxes",
+    "topic": "finishing",
+    "question": "How do I use wax on a turning?",
+    "keywords": ["wax finish", "carnauba wax", "paste wax", "buffing wax", "wax over oil", "beeswax", "wax turning", "soft sheen wax"],
+    "answer": "Wax gives a soft, pleasant sheen and is often applied over an oil or sealer rather than as the sole finish, since wax alone offers little protection. Apply a thin coat — carnauba for a harder shine, beeswax or paste wax for a softer lustre — then buff it with a clean cloth or on a buffing wheel while the lathe spins. Keep coats thin; too much wax just smears and stays gummy. Wax is easy to renew and a nice final touch on decorative pieces."
+  },
+  {
+    "id": "finishing-sanding-sealer",
+    "topic": "finishing",
+    "question": "What is sanding sealer for?",
+    "keywords": ["sanding sealer", "seal before finish", "raise grain", "cellulose sealer", "sealer coat", "what is sanding sealer", "firm up surface"],
+    "answer": "Sanding sealer is a thin sealing coat applied before the final finish: it stiffens the surface fibres and any soft spots so they sand more cleanly, and it partly seals the wood for a more even topcoat. After it dries you cut it back lightly with fine abrasive, then apply your oil, wax, or other finish over it. It is especially useful on soft, open-grained, or spalted woods that would otherwise fuzz up. Think of it as preparation rather than the finish itself."
+  },
+  {
+    "id": "finishing-food-safe",
+    "topic": "finishing",
+    "question": "What finish is safe for bowls and food?",
+    "keywords": ["food safe finish", "salad bowl finish", "food contact", "safe for eating", "mineral oil bowl", "utensil finish", "food safe oil"],
+    "answer": "For bowls and utensils that contact food, common choices are food-grade mineral oil, walnut oil, a beeswax-and-oil blend, or finishes specifically sold as food-safe (often called salad-bowl finishes) once fully cured. Most regular finishes are considered food-safe once they have completely cured, but mineral oil and dedicated food-safe products take the guesswork out. They are easy to reapply as the piece is used and washed. Always let any finish cure fully before the piece is used with food."
+  }
+]

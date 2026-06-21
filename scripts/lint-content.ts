@@ -293,6 +293,34 @@ const LatheSetupSchema = z.object({
   decoys: z.array(SetupDecoySchema),
 });
 
+// ── Instructor knowledge-base schema ──────────────────────────────────────────
+// Each file in content/instructor is an array of curated FAQ entries.
+
+const KB_TOPICS = [
+  'tools',
+  'sharpening',
+  'technique',
+  'wood',
+  'speed',
+  'safety',
+  'workholding',
+  'finishing',
+  'troubleshooting',
+] as const;
+
+const KbEntrySchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'id must be kebab-case'),
+  topic: z.enum(KB_TOPICS),
+  question: z.string().min(1),
+  keywords: z.array(z.string().min(1)).min(1),
+  answer: z.string().min(1),
+});
+
+const KbFileSchema = z.array(KbEntrySchema).min(1);
+
 // ── Validation helpers ────────────────────────────────────────────────────────
 
 let failures = 0;
@@ -326,6 +354,7 @@ validateDir('content/tools', ToolSpecSchema, 'tools');
 validateDir('content/curriculum', LessonSchema, 'curriculum');
 validateDir('content/lathe', LatheSpecSchema, 'lathe');
 validateDir('content/setup', LatheSetupSchema, 'setup');
+validateDir('content/instructor', KbFileSchema, 'instructor');
 
 // Wood species: species files validated as a group, cutting-matrix separately.
 // We use a custom loop so cutting-matrix.json is not fed to WoodSpeciesSchema.
