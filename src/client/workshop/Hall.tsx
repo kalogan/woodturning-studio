@@ -58,6 +58,14 @@ const BRICK_BASE_COLOR   = '#c8c4bc';   // main painted face
 const MORTAR_COLOR       = '#b8b4ac';   // recessed mortar band (subtle contrast)
 const BRICK_ACCENT_COLOR = '#bab6ae';   // slight variation every 4th course
 
+// ─── White-painted-brick surface texture (subtle, canvas-generated) ────────────
+// Painted brick reads as mostly-uniform white with faint running-bond joints up
+// close. Built ONCE at module scope (see makeBrickTexture / getBrickTexture).
+const BRICK_TEX_FACE   = '#e6e4dd';   // faint off-white brick face
+const BRICK_TEX_MORTAR = '#cfccc2';   // slightly-darker mortar line (low contrast)
+const BRICK_TEX_HEIGHT = 0.2;         // world height (m) of one brick row → repeat
+const BRICK_TEX_BRICKS_PER_ROW = 4;   // bricks across one texture tile (sets aspect)
+
 // ─── Ceiling / duct parameters ────────────────────────────────────────────────
 const DUCT_COLOR   = '#111112';   // near-black duct boxes
 const CEILING_COLOR = '#0e0e0f';  // very dark flat ceiling
@@ -79,6 +87,11 @@ const WIN_H = 0.9;   // window height
 const WIN_Y = 2.1;   // sill height
 // X positions for windows along the +Z front long wall
 const WIN_POSITIONS_X: number[] = [-2.0, -5.5, -9.0, -12.5];
+
+// Daylight look for the glass panes — a cool-white emissive so the windows
+// glow like lit daylight from inside the room (tunable).
+const WIN_DAYLIGHT_COLOR     = '#dfeaf2';  // cool-white daylight tint
+const WIN_EMISSIVE_INTENSITY = 1.0;        // 0.8–1.2 range
 
 // ─── Sign parameters ─────────────────────────────────────────────────────────
 // Sign is on the SHORT +X END WALL (the wall the player walks toward; no lathes).
@@ -107,11 +120,14 @@ const ceilingMat = new THREE.MeshStandardMaterial({
   side: THREE.FrontSide,
 });
 
-// Brick face — base coat
+// Brick face — base coat. Semi-transparent so the textured base plane (running
+// bond) reads through the course bands, while the bands still tint the courses.
 const brickFaceMat = new THREE.MeshStandardMaterial({
   color: BRICK_BASE_COLOR,
   roughness: 0.88,
   metalness: 0.0,
+  transparent: true,
+  opacity: 0.55,
 });
 
 // Mortar band (slightly darker/cooler)
@@ -119,6 +135,8 @@ const mortarMat = new THREE.MeshStandardMaterial({
   color: MORTAR_COLOR,
   roughness: 0.90,
   metalness: 0.0,
+  transparent: true,
+  opacity: 0.55,
 });
 
 // Accent band (every 4th course, very subtle)
@@ -126,6 +144,8 @@ const brickAccentMat = new THREE.MeshStandardMaterial({
   color: BRICK_ACCENT_COLOR,
   roughness: 0.86,
   metalness: 0.0,
+  transparent: true,
+  opacity: 0.55,
 });
 
 // Duct / structural steel
@@ -135,7 +155,7 @@ const ductMat = new THREE.MeshStandardMaterial({
   metalness: 0.35,
 });
 
-// Window glass — transparent grey-blue
+// Window glass — bright daylit panes (cool-white emissive glow)
 const glassMat = new THREE.MeshStandardMaterial({
   color: '#8ab0cc',
   roughness: 0.05,
@@ -143,6 +163,8 @@ const glassMat = new THREE.MeshStandardMaterial({
   transparent: true,
   opacity: 0.30,
   side: THREE.DoubleSide,
+  emissive: new THREE.Color(WIN_DAYLIGHT_COLOR),
+  emissiveIntensity: WIN_EMISSIVE_INTENSITY,
 });
 
 // Window frame (white-painted steel)
@@ -197,6 +219,79 @@ function getSignTexture(): THREE.CanvasTexture {
   return _signTex;
 }
 
+// ─── Brick canvas texture (procedural, low-contrast running bond) ──────────────
+// One tile = one full course-row of BRICK_TEX_BRICKS_PER_ROW bricks. Rows
+// alternate a half-brick offset (running bond). Mostly white painted brick with
+// faint mortar lines — kept low-contrast so the wall still reads as painted.
+function makeBrickTexture(): THREE.CanvasTexture {
+  const BRICKS = BRICK_TEX_BRICKS_PER_ROW;
+  const ROWS = 2;                       // two rows so the half-offset tiles cleanly
+  const BRICK_PX_W = 128;
+  const BRICK_PX_H = 64;
+  const W = BRICK_PX_W * BRICKS;
+  const H = BRICK_PX_H * ROWS;
+  const mortarPx = 4;                   // mortar joint thickness (px)
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  if (ctx === null) return tex;
+
+  // Mortar background fills the whole tile; bricks drawn on top leave joints.
+  ctx.fillStyle = BRICK_TEX_MORTAR;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = BRICK_TEX_FACE;
+  for (let row = 0; row < ROWS; row++) {
+    const y = row * BRICK_PX_H;
+    // Alternate rows shift by half a brick for running bond.
+    const offset = row % 2 === 0 ? 0 : -BRICK_PX_W / 2;
+    // Draw one extra brick so the wrapped half-offset row stays seamless.
+    for (let b = -1; b <= BRICKS; b++) {
+      const x = b * BRICK_PX_W + offset;
+      ctx.fillRect(
+        x + mortarPx / 2,
+        y + mortarPx / 2,
+        BRICK_PX_W - mortarPx,
+        BRICK_PX_H - mortarPx,
+      );
+    }
+  }
+
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Build a base-wall material whose brick map repeats correctly for a wall of the
+// given world width × height. The texture's *image* is shared (cloned textures
+// reference the same canvas bitmap); only the per-axis repeat differs. Created
+// at module scope per distinct wall size — no per-render allocation.
+function makeBrickWallMaterial(wallW: number, wallH: number): THREE.MeshStandardMaterial {
+  const tex = makeBrickTexture();
+  // One texture-tile spans BRICK_TEX_BRICKS_PER_ROW bricks wide and one row
+  // (BRICK_TEX_HEIGHT m) tall. Repeat = world size / tile size.
+  const tileW = BRICK_TEX_HEIGHT * (BRICK_TEX_BRICKS_PER_ROW / 2); // tile ~ as wide as it is tall × bricks
+  const repeatX = Math.max(1, Math.round(wallW / tileW));
+  const repeatY = Math.max(1, Math.round(wallH / BRICK_TEX_HEIGHT));
+  tex.repeat.set(repeatX, repeatY);
+  tex.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({
+    color: BRICK_BASE_COLOR,
+    roughness: 0.88,
+    metalness: 0.0,
+    map: tex,
+  });
+}
+
+// Two distinct wall widths in the hall: long walls (HALL_W) and end walls
+// (HALL_D). Pre-build one mapped base material for each, once.
+const longWallBrickMat = makeBrickWallMaterial(HALL_W, HALL_H);
+const endWallBrickMat  = makeBrickWallMaterial(HALL_D, HALL_H);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-component: BrickWall
 // Renders a single wall as a base plane + horizontal mortar-band strips.
@@ -205,9 +300,10 @@ function getSignTexture(): THREE.CanvasTexture {
 interface BrickWallProps {
   wallW: number;      // width of this wall section
   wallH?: number;     // height (defaults to HALL_H)
+  baseMat?: THREE.Material;  // mapped base-plane material (defaults to long wall)
 }
 
-function BrickWall({ wallW, wallH = HALL_H }: BrickWallProps) {
+function BrickWall({ wallW, wallH = HALL_H, baseMat = longWallBrickMat }: BrickWallProps) {
   const bands: ReactNode[] = [];
 
   for (let c = 0; c < BRICK_COURSES; c++) {
@@ -248,10 +344,10 @@ function BrickWall({ wallW, wallH = HALL_H }: BrickWallProps) {
 
   return (
     <group name="brick-wall">
-      {/* Base wall plane — provides the background and some depth */}
+      {/* Base wall plane — painted-brick texture map (subtle running bond) */}
       <mesh>
         <planeGeometry args={[wallW, wallH]} />
-        <primitive object={brickFaceMat} attach="material" />
+        <primitive object={baseMat} attach="material" />
       </mesh>
       {/* Brick course bands */}
       {bands}
@@ -347,7 +443,7 @@ export function Hall() {
         position={[HALL_X_MAX, HALL_H / 2, HALL_CZ]}
         rotation={[0, -Math.PI / 2, 0]}
       >
-        <BrickWall wallW={HALL_D} />
+        <BrickWall wallW={HALL_D} baseMat={endWallBrickMat} />
       </group>
 
       {/* ── ENTRANCE END WALL (−X short wall, brick) ─────────────────────────── */}
@@ -357,7 +453,7 @@ export function Hall() {
         position={[HALL_X_MIN, HALL_H / 2, HALL_CZ]}
         rotation={[0, Math.PI / 2, 0]}
       >
-        <BrickWall wallW={HALL_D} />
+        <BrickWall wallW={HALL_D} baseMat={endWallBrickMat} />
       </group>
 
       {/* ── AISLE WALL (+Z long wall, brick + windows) ──────────────────────── */}
