@@ -318,17 +318,23 @@ export function RoomEditor({ activeName, onSelect }: Props): React.JSX.Element {
   const [loadedCount, setLoadedCount] = useState(0);
 
   useEffect(() => {
-    let raf = 0;
+    // setTimeout (not requestAnimationFrame) to ramp: rAF is fully PAUSED while the
+    // page is hidden (backgrounded tab / offscreen), which would wedge the loader at
+    // 0/total and leave the room empty behind a permanent overlay. setTimeout still
+    // fires when hidden (throttled to ~1 s), so the room always finishes loading.
+    // When visible it's clamped to a few ms — effectively per-frame, and it yields to
+    // the event loop between batches so the progress bar paints + the thread breathes.
+    let timer = 0;
     let count = 0;
     const step = (): void => {
       count = Math.min(count + PROPS_PER_FRAME, total);
       setLoadedCount(count);
       if (count < total) {
-        raf = requestAnimationFrame(step);
+        timer = window.setTimeout(step, 16);
       }
     };
-    raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); };
+    timer = window.setTimeout(step, 16);
+    return () => { window.clearTimeout(timer); };
   }, [total]);
 
   const loading = loadedCount < total;
