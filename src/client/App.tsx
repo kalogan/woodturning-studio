@@ -13,6 +13,8 @@ import { escapeBtnStyle } from './scene/sharedStyles.js';
 import type { SceneCtx } from './scene/sceneCtx.js';
 import { SettingsMenu } from './ui/SettingsMenu.js';
 import { useSettingsStore } from './ui/settingsStore.js';
+import { LoadingOverlay } from './LoadingOverlay.js';
+import { FirstFrameSignal } from './FirstFrameSignal.js';
 
 // ── Tool-rest world XZ position ────────────────────────────────────────────
 // Derived from content/lathe/jet-jwl-1642.json + Lathe.tsx layout math.
@@ -173,6 +175,66 @@ export default function App() {
   // ── Registry lookup ───────────────────────────────────────────────────────
   const entry = sceneRegistry[state];
   const { Scene3D, Overlay } = entry;
+  const hasScene3D = Scene3D !== undefined;
+
+  // ── Loading indicator for heavy 3D scene mounts ───────────────────────────
+  // Entering a Scene3D state synchronously builds a lot of procedural geometry
+  // (~3–4 s). Rendering the overlay in the SAME commit as <Scene3D> would not
+  // paint until after that block. So when a 3D scene first needs to mount we:
+  //   1. show the overlay and DEFER the <Scene3D> mount by one tick (the
+  //      overlay paints first),
+  //   2. then mount <Scene3D> (which blocks),
+  //   3. hide the overlay once FirstFrameSignal fires (first real frame),
+  //      with a 6 s safety timeout so it can never get stuck on.
+  // The single <Canvas> is NEVER unmounted — only the Scene3D content render
+  // and overlay visibility are gated.
+  //
+  // `everMounted3D` latches once the FIRST heavy 3D scene has been mounted, so
+  // the loader shows on the very first entry into a 3D scene (the expensive
+  // one). Later WALK↔AT_LATHE↔TURNING transitions don't re-show it — keeping
+  // this simple while covering the one case the player actually waits on.
+  const everMounted3DRef = useRef(false);
+  const [mountScene, setMountScene] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Drive the deferred-mount sequence. For non-3D states (MENU) there is no
+  // heavy content: mount immediately and never show the loader. For the first
+  // 3D state, defer the mount one tick so the overlay paints before the freeze.
+  useEffect(() => {
+    if (!hasScene3D) {
+      setMountScene(true);
+      setLoading(false);
+      return;
+    }
+    // Already past the first heavy mount — render scene content directly.
+    if (everMounted3DRef.current) {
+      setMountScene(true);
+      setLoading(false);
+      return;
+    }
+
+    // First entry into a 3D scene: show overlay now, defer the heavy mount so
+    // the overlay can paint before the synchronous geometry build freezes the
+    // main thread.
+    setMountScene(false);
+    setLoading(true);
+    const raf = requestAnimationFrame(() => {
+      everMounted3DRef.current = true;
+      setMountScene(true);
+    });
+    // Safety net: never let the loader stick on even if the first frame
+    // signal never fires.
+    const timeout = window.setTimeout(() => { setLoading(false); }, 6000);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timeout);
+    };
+  }, [hasScene3D, state]);
+
+  // Cleared by FirstFrameSignal once the heavy scene paints its first frame.
+  const handleSceneReady = useCallback(() => {
+    setLoading(false);
+  }, []);
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a', position: 'relative' }}>
@@ -186,8 +248,19 @@ export default function App() {
       <Canvas shadows camera={{ position: [0, 1.6, 2.5], fov: 75 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[2, 4, 3]} intensity={1.2} />
-        {Scene3D !== undefined && <Scene3D ctx={ctx} />}
+        {/* Scene3D mount is deferred one tick so the loading overlay paints
+            first; the Canvas itself stays mounted so WebGL context and
+            pointer lock are preserved. */}
+        {Scene3D !== undefined && mountScene && (
+          <>
+            <Scene3D ctx={ctx} />
+            {loading && <FirstFrameSignal onReady={handleSceneReady} />}
+          </>
+        )}
       </Canvas>
+
+      {/* ── Loading overlay — DOM, above the Canvas, while a 3D scene mounts ── */}
+      {loading && <LoadingOverlay />}
 
       {/* ── DOM overlays by state (via registry) ─────────────────────── */}
       {Overlay !== undefined && <Overlay ctx={ctx} />}
