@@ -35,6 +35,9 @@ export type { EnvelopeParams, EnvelopeSchedule, ToneParams, NoiseParams } from '
 export { emit } from './events.js';
 export type { SfxEvent } from './events.js';
 
+// Footstep emitter — deterministic per-step variation for first-person walk
+export { emitFootstep } from './footsteps.js';
+
 // Continuous graphs — ambient room tone + RPM-driven motor
 export { calcMotorParams, calcMotorT, startAmbient, startMotor, stopAmbient, stopMotor, updateMotor } from './continuous.js';
 export type { MotorParams } from './continuous.js';
