@@ -17,10 +17,18 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FPSController, rightVectorXZ } from '../../input/fpsController.js';
 import { useSettingsStore } from '../ui/settingsStore.js';
+import { emitFootstep } from '../audio/footsteps.js';
 
 // ── Movement constants ─────────────────────────────────────────────────────
-const MOVE_SPEED = 1.4;  // metres per second
+const MOVE_SPEED = 2.2;  // metres per second (tunable)
 const EYE_HEIGHT = 1.6;  // metres
+
+// ── Footstep cadence ───────────────────────────────────────────────────────
+// One footstep is emitted every STEP_INTERVAL metres of actual travel, so the
+// cadence scales naturally with MOVE_SPEED (≈ 2.2 / 0.45 ≈ 4.9 steps/s while
+// walking). Distance is accumulated from the per-frame XZ delta — scalars only,
+// no per-frame heap allocation. Footsteps fire ONLY while moving + pointer-locked.
+const STEP_INTERVAL = 0.45;  // metres travelled per footstep (tunable)
 
 /**
  * Walk spawn position (XZ).
@@ -94,6 +102,14 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
 
   // Track whether pointer is locked so we skip movement when not focused.
   const pointerLockedRef = useRef(false);
+
+  // ── Footstep scheduling state (scalars — no per-frame allocation) ─────────
+  // stepDistanceRef accumulates metres travelled this stride; when it crosses
+  // STEP_INTERVAL we emit a footstep and subtract the interval. stepIndexRef is
+  // the monotonic step counter whose parity drives deterministic (RNG-free)
+  // left/right timbre variation.
+  const stepDistanceRef = useRef(0);
+  const stepIndexRef = useRef(0);
 
   // ── Push settingsStore config into the controller whenever settings change ─
   // Config is injected here (client → input direction) so src/input never
@@ -204,8 +220,24 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
 
       const dist = MOVE_SPEED * delta;
 
-      camera.position.x += (_forward.x * input.forward + _right.x * input.strafe) * dist;
-      camera.position.z += (_forward.z * input.forward + _right.z * input.strafe) * dist;
+      // Per-frame XZ displacement (scalars — no allocation).
+      const dx = (_forward.x * input.forward + _right.x * input.strafe) * dist;
+      const dz = (_forward.z * input.forward + _right.z * input.strafe) * dist;
+
+      camera.position.x += dx;
+      camera.position.z += dz;
+
+      // ── Footstep cadence ──────────────────────────────────────────────────
+      // Accumulate actual travelled distance and emit a footstep every
+      // STEP_INTERVAL metres. We only reach this branch while moving +
+      // pointer-locked, so steps never fire when standing still. The while-loop
+      // catches the (rare) case of a single frame spanning > one interval.
+      stepDistanceRef.current += Math.sqrt(dx * dx + dz * dz);
+      while (stepDistanceRef.current >= STEP_INTERVAL) {
+        stepDistanceRef.current -= STEP_INTERVAL;
+        emitFootstep(stepIndexRef.current);
+        stepIndexRef.current += 1;
+      }
 
       // Clamp to walkable bounds — PIECEWISE for the L-shaped corridor + hall.
       // (named constants — see header comment).
@@ -218,6 +250,10 @@ export function FPSCamera({ onMove, onInteract }: FPSCameraProps) {
         camera.position.x = Math.max(ROOM_MIN_X, Math.min(ROOM_MAX_X, camera.position.x));
         camera.position.z = Math.max(ROOM_MIN_Z, Math.min(ROOM_MAX_Z, camera.position.z));
       }
+    } else {
+      // Not moving (or unlocked): drop any partial-stride distance so resuming
+      // walk waits a full STEP_INTERVAL before the next step (no instant click).
+      stepDistanceRef.current = 0;
     }
 
     // Keep eye height constant (no vertical movement in walk mode)
