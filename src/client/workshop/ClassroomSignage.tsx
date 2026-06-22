@@ -33,11 +33,14 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// Rolling whiteboard: freestanding, down-aisle (+X side ends nearer player) of
-// the demo bench [-7.0, 0, 2.5] (footprint X∈[-7.65,-6.35], Z∈[2.14,2.86]).
-// Placed at X≈-5.4, pulled ~1 m into the room from the +Z wall, angled to face
-// back toward the lathes / aisle so the class can read the diagram.
-const BOARD_POS: [number, number, number] = [-5.4, 0, 5.05];
+// Rolling whiteboard: a demo-area prop, tucked back against the +Z aisle wall
+// BEHIND the demo cluster so it frames the demo instead of floating free in the
+// open floor. It previously sat at [-5.4, 0, 5.05] — pulled ~1 m into the room —
+// where its elevated white board face (Y 1.0–1.9, floating above a thin caster
+// frame) read as a "random panel" blocking the player's approach to the demo.
+// Now flush against the wall at X≈-4.5 (clear of the window at X=-5.5 and the
+// tool wall), still angled to face back toward the demo bench / aisle.
+const BOARD_POS: [number, number, number] = [-4.5, 0, 6.85];
 const BOARD_ROT: [number, number, number] = [0, -Math.PI * 0.78, 0];
 
 // Board panel geometry
