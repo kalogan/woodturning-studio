@@ -15,17 +15,21 @@
  *   Hall X ∈ [-16, +2], Z ∈ [-2.5, +7.25], floor Y=0.
  *
  * PLACEMENT — derived from the demo station (see DemoBench.tsx):
- *   The demo cluster sits at DEMO_BENCH_POS = [-7, 0, 4.5], rotation [0, π, 0].
+ *   The demo cluster sits at DEMO_BENCH_POS = [-7, 0, 4.0], rotation [0, π, 0].
  *   Inside that group the demo lathe is at local origin; its spindle (the work)
  *   is at local (SPINDLE_X=-0.62, SPINDLE_Y=0.99, 0). A local point (lx,ly,lz)
  *   maps to world (POSx - lx, ly, POSz - lz) under the group's π Y-rotation.
  *
- *   • Spindle/work in WORLD: (-7 - (-0.62), 0.99, 4.5 - 0) = (-6.38, 0.99, 4.5).
- *   • Operator side is the lathe FRONT (local +Z); the instructor stands there,
- *     just in front of the work, at local (~-0.47, 0, +0.62) → WORLD
- *     (-7 + 0.47, 0, 4.5 - 0.62) = (-6.53, 0, 3.88).
- *   • He stands at world Z=3.88 and the work is at world Z=4.5, so he FACES +Z
- *     (toward the lathe). The figure is modelled facing +Z, so yaw = 0.
+ *   • Spindle/work in WORLD (demo cluster at Z=4.0): (-7 - (-0.62), 0.99, 4.0) =
+ *     (-6.38, 0.99, 4.0).
+ *   • The demo cluster was reworked so the LATHE is the front piece (world Z≈4.0,
+ *     closest to the room centre) and the TV/shelf sit behind it against the
+ *     pillar (world Z≈5.1). The instructor therefore stands on the PILLAR side of
+ *     the lathe (world Z > 4.0) and FACES the room centre (-Z) across the bed —
+ *     so the class watching from the centre sees his front + the work + the TV.
+ *   • He stands at WORLD (-6.23, 0, 4.62) with yaw = π (facing -Z). His fixed
+ *     in-hand workpiece offset of local (0.15, 0.99, 0.62) then maps, under yaw π,
+ *     to world (-6.23-0.15, 0.99, 4.62-0.62) = (-6.38, 0.99, 4.0) = the spindle.
  *
  * Subtle idle animation lives in ONE useFrame, reading state.clock.elapsedTime
  * and mutating ref transforms IN PLACE — no per-frame heap allocation, no
@@ -44,11 +48,13 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 /** World position of the instructor's FEET (floor level), operator side of the
- *  demo lathe. Derived above from DEMO_BENCH_POS + the spindle local offset. */
-export const INSTRUCTOR_POS: [number, number, number] = [-6.53, 0, 3.88];
+ *  demo lathe — the PILLAR side, so he faces the room centre across the bed.
+ *  Derived above so his in-hand workpiece lands on the spindle at world Z≈4.5. */
+export const INSTRUCTOR_POS: [number, number, number] = [-6.23, 0, 4.62];
 
-/** Yaw (radians). 0 = facing +Z, i.e. toward the demo-lathe bed at world Z≈4.5. */
-export const INSTRUCTOR_YAW = 0;
+/** Yaw (radians). π = facing -Z, i.e. across the bed toward the room centre /
+ *  the demo lathe at world Z≈4.5 and the class beyond it. */
+export const INSTRUCTOR_YAW = Math.PI;
 
 // Figure proportions (metres). Total height ≈ shoes + legs + torso + neck + head.
 const SHOE_H    = 0.07;
@@ -180,8 +186,9 @@ interface InstructorProps {
  * subtle idle (breathing bob + gentle weight-shift sway) and slowly spins a pale
  * demo workpiece at the spindle — all allocation-free, mutating refs in place.
  *
- * Default position: INSTRUCTOR_POS = [-6.53, 0, 3.88]
- * Default yaw:      INSTRUCTOR_YAW = 0  (faces +Z, toward the demo lathe)
+ * Default position: INSTRUCTOR_POS = [-6.23, 0, 4.62]
+ * Default yaw:      INSTRUCTOR_YAW = π  (faces -Z, across the bed toward the
+ *                   room centre / class; the lathe is in front of him at Z≈4.0)
  */
 export function Instructor({
   position = INSTRUCTOR_POS,
@@ -287,10 +294,11 @@ export function Instructor({
       </group>
 
       {/* ── Spinning pale demo workpiece at the demo-lathe spindle ──
-          Spindle in WORLD is (-6.38, 0.99, 4.5); the instructor group is at
-          (-6.53, 0, 3.88) with yaw 0, so the spindle sits at LOCAL
-          (-6.38 - (-6.53), 0.99, 4.5 - 3.88) = (0.15, 0.99, 0.62). The piece is
-          laid on its side (cylinder axis along the bed) and spun about local Y. */}
+          Spindle in WORLD is (-6.38, 0.99, 4.0); the instructor group is at
+          (-6.23, 0, 4.62) with yaw π, so the spindle sits at LOCAL
+          (0.15, 0.99, 0.62) (the yaw-π map negates the x/z of the world delta).
+          The piece is laid on its side (cylinder axis along the bed) and spun
+          about local Y. */}
       <group ref={workRef} position={[0.15, 0.99, 0.62]} rotation={[Math.PI / 2, 0, 0]}>
         {/* Pale turned workpiece (a small bowl-ish cylinder) */}
         <mesh castShadow>

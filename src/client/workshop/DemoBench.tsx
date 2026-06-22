@@ -30,10 +30,14 @@
  * COORDINATE CONVENTION: same as Hall.tsx — origin at player lathe.
  *   Hall extends X ∈ [-2, +16], Z ∈ [-2.5, +4].
  *
- * Group local space (before the group's π Y-rotation):
- *   +X = along the demo-lathe bed.  The TV stand sits at local +Z (behind the
- *   lathe), the maple bench between lathe and stand, and the tripod stands at
- *   local -X and booms over the bed toward -Z.
+ * Group local space (before the group's π Y-rotation; local +Z → world -Z =
+ * toward the room centre / class, local -Z → world +Z = toward the pillar):
+ *   +X = along the demo-lathe bed. The lathe sits at the local origin and is the
+ *   piece CLOSEST to the room centre. The TV stand + shelf sit at local -Z (back
+ *   against the SupportColumn pillar at world Z≈5.6) with the TV screen facing
+ *   local +Z (toward the class). The maple bench sits at local -Z too (pillar
+ *   side, tailstock end). The tripod stands on the class side (local +Z) and
+ *   booms up and over the bed so the overhead camera hangs above the work.
  *
  * Materials, lathe-geometries and torus rings are pre-allocated ONCE at module
  * scope and attached via <primitive object={mat} attach="material" /> (avoids the
@@ -51,10 +55,15 @@ import { PropLathe } from './PropLathe.js';
 // The demo station sits mid-hall; the director repositions the whole cluster via
 // the Room Editor, so everything is laid out relative to the group origin.
 
-/** World position of the demo-station cluster centre (floor level). */
-export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 4.5];
+/** World position of the demo-station cluster centre (the demo lathe, floor
+ *  level). Pulled toward the room centre so the lathe is the front piece and the
+ *  TV/shelf clear behind it: lathe@Z4.0 → instructor@Z4.6 → TV/shelf@Z5.1 →
+ *  SupportColumn pillar front@Z≈5.35. */
+export const DEMO_BENCH_POS: [number, number, number] = [-7.0, 0, 4.0];
 
-/** Rotation (radians). Faces the lathe row (-Z direction, toward Z=0). */
+/** Rotation (radians). π so the cluster's local +Z points to world -Z — the
+ *  room centre / lathe row. The demo lathe (local origin) ends up closest to the
+ *  centre; the TV/shelf (local -Z) end up against the pillar behind it. */
 export const DEMO_BENCH_ROT: [number, number, number] = [0, Math.PI, 0];
 
 // ── Demo lathe (yellow Powermatic) ───────────────────────────────────────────
@@ -65,18 +74,24 @@ const LATHE_YAW = 0.08;                          // slight angle off-square
 const SPINDLE_X = -0.62;     // approx headstock spindle X (PropLathe HS_LEFT_X area)
 const SPINDLE_Y = 0.99;      // bed-top + a bit (spindle centre-line)
 
-// ── Maple workbench (front, operator side: local -Z, between lathe & stand) ──
-const WB_X      = 0.20;
-const WB_Z      = 0.95;     // in front of the A-frame stand
+// ── Maple workbench — BEHIND the lathe (pillar side: local -Z), tailstock end ─
+// Shifted to local -Z so it sits on the pillar side with the TV stand, clearing
+// the centre-of-room side for the lathe + instructor. Nudged to +X (tailstock
+// end) so it doesn't collide with the instructor standing at the headstock work.
+const WB_X      = 1.30;     // out at the tailstock end, clear of the lathe + NPC
+const WB_Z      = -0.80;    // behind the lathe (pillar side), beside the TV stand
 const WB_W      = 1.30;     // butcher-block top width (X)
 const WB_D      = 0.56;     // depth (Z)
 const WB_TOP_Y  = 0.90;     // bench-top height
 const WB_TOP_T  = 0.06;     // butcher-block slab thickness
 const WB_LEG_T  = 0.07;     // 4x4 leg thickness
 
-// ── A-frame TV stand — behind the lathe at local +Z ──────────────────────────
+// ── A-frame TV stand + shelf — AGAINST the pillar (pillar side: local -Z) ─────
+// Local -Z maps (under the group's π rotation) to world +Z, i.e. toward the
+// SupportColumn at world Z≈5.6. The TV screen still faces local +Z → world -Z
+// → toward the class / room centre, over the instructor's head.
 const TVS_X      = 0.30;     // shifted toward +X
-const TVS_Z      = 1.75;     // well behind the lathe bed
+const TVS_Z      = -1.1;     // back against the pillar front (world Z≈5.1)
 const TVS_W      = 1.00;     // overall width (X)
 const TVS_D      = 0.50;     // overall depth (Z)
 const TVS_TOP_Y  = 1.46;     // top platform height (~1.5 m tall A-frame)
@@ -714,10 +729,10 @@ export function DemoBench({
       <TVStand />
       <CameraTripod />
 
-      {/* Coiled extension cords on the floor near the stand base */}
-      <CordLoop pos={[-0.55, 0.014, 1.30]} rotY={0.3}  mat={_cordRedMat} />
-      <CordLoop pos={[-0.30, 0.014, 1.55]} rotY={-0.6} mat={_cordOrangeMat} />
-      <CordLoop pos={[-0.05, 0.014, 1.42]} rotY={1.1}  mat={_cordGreenMat} />
+      {/* Coiled extension cords on the floor near the stand base (pillar side) */}
+      <CordLoop pos={[-0.55, 0.014, -0.85]} rotY={0.3}  mat={_cordRedMat} />
+      <CordLoop pos={[-0.30, 0.014, -1.05]} rotY={-0.6} mat={_cordOrangeMat} />
+      <CordLoop pos={[-0.05, 0.014, -0.95]} rotY={1.1}  mat={_cordGreenMat} />
     </group>
   );
 }
