@@ -13,6 +13,20 @@ beforeEach(() => {
   cleanup();
 });
 
+/** Read an <input>'s current value by test id (narrows HTMLElement → input). */
+function inputValue(testId: string): string {
+  const el = screen.getByTestId(testId);
+  if (!(el instanceof HTMLInputElement)) throw new Error(`${testId} is not an input`);
+  return el.value;
+}
+
+/** Read a <button>'s disabled state by test id. */
+function isDisabled(testId: string): boolean {
+  const el = screen.getByTestId(testId);
+  if (!(el instanceof HTMLButtonElement)) throw new Error(`${testId} is not a button`);
+  return el.disabled;
+}
+
 describe('RoomPropertiesPanel — render + controls', () => {
   it('renders all controls with stable selectors for the active prop', () => {
     render(<RoomPropertiesPanel activeName="DemoBench" />);
@@ -67,5 +81,44 @@ describe('RoomPropertiesPanel — render + controls', () => {
     fireEvent.change(screen.getByTestId('room-scale-uniform'), { target: { value: '2' } });
     fireEvent.click(screen.getByTestId('room-reset-placement'));
     expect(useRoomLayoutStore.getState().diff()).toEqual({});
+  });
+});
+
+describe('RoomPropertiesPanel — child (composite key) selection', () => {
+  const KEY = 'DemoBench/demo-lathe';
+  const BASELINE = {
+    position: [1.2, 0, -0.4] as [number, number, number],
+    rotationDeg: [0, 90, 0] as [number, number, number],
+    scale: [1, 1, 1] as [number, number, number],
+  };
+
+  it('shows the authored baseline when no override is stored', () => {
+    render(<RoomPropertiesPanel activeName={KEY} childBaseline={BASELINE} />);
+    expect(screen.getByTestId('room-properties-panel').getAttribute('data-room-prop')).toBe(KEY);
+    // Fields reflect the authored baseline (not identity 0/0/0).
+    expect(inputValue('room-position-x')).toBe('1.2');
+    expect(inputValue('room-rotation-y')).toBe('90');
+    // No override yet → Reset is disabled.
+    expect(isDisabled('room-reset-placement')).toBe(true);
+  });
+
+  it('editing one axis writes a FULL override that preserves the baseline', () => {
+    render(<RoomPropertiesPanel activeName={KEY} childBaseline={BASELINE} />);
+    fireEvent.change(screen.getByTestId('room-position-y'), { target: { value: '0.5' } });
+
+    const stored = useRoomLayoutStore.getState().getPlacement(KEY);
+    // The edited axis changed; the untouched axes kept the baseline (not 0).
+    expect(stored.position).toEqual([1.2, 0.5, -0.4]);
+    expect(stored.rotationDeg).toEqual([0, 90, 0]);
+    expect(stored.scale).toEqual([1, 1, 1]);
+    expect(Object.keys(useRoomLayoutStore.getState().diff())).toEqual([KEY]);
+  });
+
+  it('Reset removes the override (child reverts to authored)', () => {
+    render(<RoomPropertiesPanel activeName={KEY} childBaseline={BASELINE} />);
+    fireEvent.change(screen.getByTestId('room-scale-uniform'), { target: { value: '1.5' } });
+    expect(isDisabled('room-reset-placement')).toBe(false);
+    fireEvent.click(screen.getByTestId('room-reset-placement'));
+    expect(useRoomLayoutStore.getState().layout[KEY]).toBeUndefined();
   });
 });

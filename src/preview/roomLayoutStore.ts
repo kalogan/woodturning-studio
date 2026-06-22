@@ -30,8 +30,43 @@ export interface RoomPlacement {
   scale: [number, number, number];
 }
 
-/** Map of prop-name → placement. Props with no entry are at identity. */
+/**
+ * Map of layout-key → placement. Props with no entry are at identity.
+ *
+ * Two flavours of key share this map (the store treats keys as opaque strings):
+ *   • a bare prop name (e.g. "DemoBench") — a DELTA placement on top of the prop's
+ *     own internal positioning (the original model).
+ *   • a composite "<PropName>/<childName>" (e.g. "DemoBench/demo-lathe") — a FULL
+ *     LOCAL transform OVERRIDE captured from a named child sub-group's gizmo. The
+ *     child editor (RoomEditor) owns this interpretation; the store just stores it.
+ */
 export type RoomLayout = Record<string, RoomPlacement>;
+
+/**
+ * A named child's AUTHORED local transform — the baseline the child editor falls
+ * back to when no override is stored yet (so the panel shows the child's real
+ * position, and the first edit seeds a full override from it). Lives here (not in
+ * RoomEditor) so RoomEditor and RoomPropertiesPanel can both import it WITHOUT a
+ * circular module dependency.
+ */
+export interface ChildBaseline {
+  readonly position: readonly [number, number, number];
+  readonly rotationDeg: readonly [number, number, number];
+  readonly scale: readonly [number, number, number];
+}
+
+/** Separator between a prop name and a child name in a composite layout key. */
+export const CHILD_KEY_SEP = '/';
+
+/** Build the composite layout key for a named child inside a prop. */
+export function childKey(propName: string, childName: string): string {
+  return `${propName}${CHILD_KEY_SEP}${childName}`;
+}
+
+/** True when a layout key targets a child sub-group (vs a bare top-level prop). */
+export function isChildKey(key: string): boolean {
+  return key.includes(CHILD_KEY_SEP);
+}
 
 const STORAGE_KEY = 'wts-room-layout';
 
