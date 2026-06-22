@@ -33,14 +33,11 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// Rolling whiteboard: a demo-area prop, tucked back against the +Z aisle wall
-// BEHIND the demo cluster so it frames the demo instead of floating free in the
-// open floor. It previously sat at [-5.4, 0, 5.05] — pulled ~1 m into the room —
-// where its elevated white board face (Y 1.0–1.9, floating above a thin caster
-// frame) read as a "random panel" blocking the player's approach to the demo.
-// Now flush against the wall at X≈-4.5 (clear of the window at X=-5.5 and the
-// tool wall), still angled to face back toward the demo bench / aisle.
-const BOARD_POS: [number, number, number] = [-4.5, 0, 6.85];
+// Rolling whiteboard: freestanding, down-aisle (+X side ends nearer player) of
+// the demo bench [-7.0, 0, 2.5] (footprint X∈[-7.65,-6.35], Z∈[2.14,2.86]).
+// Placed at X≈-5.4, pulled ~1 m into the room from the +Z wall, angled to face
+// back toward the lathes / aisle so the class can read the diagram.
+const BOARD_POS: [number, number, number] = [-5.4, 0, 5.05];
 const BOARD_ROT: [number, number, number] = [0, -Math.PI * 0.78, 0];
 
 // Board panel geometry
@@ -83,9 +80,14 @@ type Poster = {
   h: number;
 };
 const POSTERS: Poster[] = [
-  // Entrance wall (-X, X≈-15.85), flanking the door at Z≈-0.6. Faces +X.
-  { pos: [-15.85, 1.75, 1.4],  rot: [0, Math.PI / 2, 0], kind: 0, w: 0.46, h: 0.46 }, // caution, aisle side
-  { pos: [-15.85, 1.75, -1.8], rot: [0, Math.PI / 2, 0], kind: 3, w: 0.42, h: 0.56 }, // rules placard, lathe side
+  // Entrance wall (-X, X≈-15.85), FLANKING the corridor mouth. The wall here is
+  // split for the entry vestibule, leaving an open gap at Z ∈ [0, 2.5] (the
+  // mouth the player walks through). Posters must sit on the SOLID segments
+  // either side of that gap — NOT inside it. The caution sign previously sat at
+  // Z=1.4 (dead in the open mouth, floating in the walk-in path); it now hangs
+  // on the +Z solid segment (Z>2.5) opposite the rules placard on the -Z side.
+  { pos: [-15.85, 1.75, 3.2],  rot: [0, Math.PI / 2, 0], kind: 0, w: 0.46, h: 0.46 }, // caution, +Z side of mouth
+  { pos: [-15.85, 1.75, -1.8], rot: [0, Math.PI / 2, 0], kind: 3, w: 0.42, h: 0.56 }, // rules placard, -Z side of mouth
   // Lathe wall (-Z, Z≈-2.46), high in the gaps between prop lathes. Faces +Z.
   { pos: [-3.75, 2.05, -2.46], rot: [0, 0, 0],           kind: 1, w: 0.46, h: 0.46 }, // eye protection
   { pos: [-6.25, 2.05, -2.46], rot: [0, 0, 0],           kind: 2, w: 0.42, h: 0.50 }, // first aid
