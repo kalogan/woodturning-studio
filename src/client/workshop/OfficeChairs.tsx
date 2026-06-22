@@ -27,9 +27,12 @@ import * as THREE from 'three';
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
 /** Chair placements: [x, z, yaw]. Vary rotation per chair. */
+// Moved the two former aisle chairs (were at Z=0.9, blocking the central +Z
+// walkway in front of the lathe row) over to the demo-audience side (Z≈3.4),
+// out of the through-path. The third was already by the demo bench.
 const CHAIRS: readonly [number, number, number][] = [
-  [-5.0,  0.9, 0.3],    // operator side of X=-5 lathe
-  [-10.0, 0.9, -0.5],   // operator side of X=-10 lathe
+  [-5.5,  3.4, 0.1],    // demo-audience side, clear of the aisle
+  [-9.5,  3.4, -0.2],   // demo-audience side, clear of the aisle
   [-8.4,  3.9, 2.4],    // by the demo bench
 ];
 

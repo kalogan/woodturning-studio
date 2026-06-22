@@ -29,11 +29,10 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// Rolling utility cart — beside the prop lathe at X ≈ -5, on the aisle side.
-// Prop lathe footprint there: X [-5.725, -4.275], Z [-0.21, +0.21]. The cart at
-// Z = +0.9 sits clearly aisle-side of the lathe and clear of the shavings bin
-// at [-4.2, 0, -1.9]. Cart spans ~0.6 (X) × 0.4 (Z), well off the centre lane.
-const CART_POS: [number, number, number] = [-5.0, 0, 2.9];
+// Rolling utility cart — was parked at [-5, 0, 2.9], in the central +Z walkway.
+// Moved over to the demo side (Z≈4.0, -X of the demo cluster) so it's out of the
+// through-path while staying handy to the demo station.
+const CART_POS: [number, number, number] = [-10.5, 0, 4.0];
 const CART_ROT: [number, number, number] = [0, 0, 0];
 
 const CART_W   = 0.60;   // width  (X)

@@ -237,8 +237,9 @@ export function Furniture(): ReactNode {
       {/* ── Demo monitor — right wall, angled toward lathe ── */}
       <DemoStation />
 
-      {/* ToolCabinet — left wall, near front */}
-      <group position={[-2.92, 0, 1.2]} rotation={[0, Math.PI / 2, 0]}>
+      {/* ToolCabinet — pushed back against the -Z wall (behind the lathe row),
+          clear of the central +Z walkway it used to block at Z=1.2. */}
+      <group position={[-2.92, 0, -1.85]} rotation={[0, Math.PI / 2, 0]}>
         <ToolCabinet />
       </group>
 
