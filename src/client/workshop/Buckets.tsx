@@ -12,8 +12,9 @@
  *
  * PLACEMENT (verified clear of machine footprints, ~0.3 m bucket footprint):
  *   [-15.6, -0.9] near collector; [-14.2, -1.7] gap between collector + band
- *   saw; [-13.0, 1.0] near grinder; [-12.2, -1.9] near drill press; [-10.2,
- *   -1.9] off the drill-press side. All sit in open floor between machines.
+ *   saw; [-12.6, -1.4] -Z gap on the band-saw side (moved off the centre entry
+ *   aisle); [-12.2, -1.9] near drill press; [-10.2, -1.9] off the drill-press
+ *   side. All sit in open floor between machines, none in the entry walkway.
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the
@@ -30,7 +31,7 @@ import * as THREE from 'three';
 const BUCKETS: readonly [number, number, number, number][] = [
   [-15.6, -0.9, 0, 0.4],   // grey  — near dust collector
   [-14.2, -1.7, 1, -0.6],  // white — between collector + band saw
-  [-13.0,  1.0, 2, 1.1],   // orange— near grinder
+  [-12.6, -1.4, 2, 1.1],   // orange— moved off centre aisle to -Z gap (band saw side)
   [-12.2, -1.9, 0, 0.2],   // grey  — near drill press
   [-10.2, -1.9, 2, -0.9],  // orange— off drill-press side
 ];

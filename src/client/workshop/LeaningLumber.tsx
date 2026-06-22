@@ -9,10 +9,13 @@
  *   Hall X ∈ [-16, +2], Z ∈ [-2.5, +7.25], ceiling 3.6 m, floor Y=0.
  *   -X wall (X≈-16) = entrance end wall.
  *
- * PLACEMENT (verified clear): leaning against the -X entrance wall, low-Z side.
- *   LUMBER_POS = [-15.7, 0, 0.3]. The dust collector is at X≈-15 / Z≈-1.7,
- *   the grinder at X=-14.5 / Z=1.5, and the shop vac at X=-15.5 / Z=3.0 — the
- *   boards lean back into the -X wall and tip toward +X, clear of all three.
+ * PLACEMENT (verified clear): relocated OFF the entry walkway. Previously at
+ *   the corridor mouth ([-15.7, 0, 0.3]) where it blocked the path; now tucked
+ *   into a clear gap along the -Z back wall near the working end, base at
+ *   LUMBER_POS = [-3.0, 0, -2.2]. The -Z wall is at Z≈-2.5; prop lathes sit at
+ *   Z≈0 (nearest at X=-2.5), and the demo cluster is far +Z — so the small
+ *   leaning footprint (boards tip toward +X, ~0.26 m wide in Z) is clear of all
+ *   of them and well out of the centre entry aisle (Z 0.4–2.1).
  *
  * Materials are pre-allocated at module scope and attached via
  * <primitive object={mat} attach="material" /> to avoid the
@@ -26,8 +29,8 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-/** World position of the lumber pile (floor contact, against -X wall). */
-export const LUMBER_POS: [number, number, number] = [-15.7, 0, 0.3];
+/** World position of the lumber pile (floor contact, -Z back-wall gap). */
+export const LUMBER_POS: [number, number, number] = [-3.0, 0, -2.2];
 
 /** Rotation (radians). Boards run along Z; the lean tips them toward +X. */
 export const LUMBER_ROT: [number, number, number] = [0, 0, 0];
