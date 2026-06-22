@@ -218,15 +218,21 @@ export default function App() {
     // main thread.
     setMountScene(false);
     setLoading(true);
-    const raf = requestAnimationFrame(() => {
+    // Defer the heavy mount via setTimeout (NOT requestAnimationFrame): rAF is
+    // paused while the page/tab is hidden, which would leave the scene unmounted
+    // until the tab regains focus. setTimeout still fires when hidden, so the
+    // workshop always finishes mounting. A 0 ms macrotask still lets the browser
+    // paint the overlay (committed this render) before the geometry build freezes
+    // the main thread on the next task.
+    const deferMount = window.setTimeout(() => {
       everMounted3DRef.current = true;
       setMountScene(true);
-    });
+    }, 0);
     // Safety net: never let the loader stick on even if the first frame
     // signal never fires.
     const timeout = window.setTimeout(() => { setLoading(false); }, 6000);
     return () => {
-      cancelAnimationFrame(raf);
+      window.clearTimeout(deferMount);
       window.clearTimeout(timeout);
     };
   }, [hasScene3D, state]);
