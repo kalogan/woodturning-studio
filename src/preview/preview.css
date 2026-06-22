@@ -126,6 +126,60 @@ html, body, #root {
   font-weight: 600;
 }
 
+/* ── Expandable prop rows (nested child selection) ─────────────────────── */
+
+/* A prop row = a disclosure toggle + the prop's own select button. */
+.harness__row {
+  display: flex;
+  align-items: stretch;
+}
+
+.harness__expander {
+  flex: 0 0 auto;
+  width: 24px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.harness__expander:hover { color: var(--text); }
+
+/* A non-expandable prop (no named children) keeps the same indent, no control. */
+.harness__expander--leaf { cursor: default; }
+
+/* The prop's own select button fills the rest of the row. */
+.harness__item--prop { flex: 1 1 auto; padding-left: 4px; }
+
+/* When a CHILD of this prop is the active selection, the parent row is tinted
+   subtly so the director can see which prop owns the active child. */
+.harness__item--ancestor { color: var(--accent); }
+
+/* Indented list of a prop's named children. */
+.harness__children {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.harness__item--child {
+  padding-left: 40px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.harness__item--child:hover { color: var(--text); }
+
+.harness__item--child.harness__item--active {
+  color: var(--accent-text);
+}
+
 .harness__main {
   position: relative;
   min-width: 0;

@@ -7,7 +7,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   IDENTITY_PLACEMENT,
+  childKey,
   identityPlacement,
+  isChildKey,
   isIdentityPlacement,
   useRoomLayoutStore,
 } from './roomLayoutStore.js';
@@ -42,6 +44,29 @@ describe('identityPlacement / isIdentityPlacement', () => {
     expect(isIdentityPlacement({ ...identityPlacement(), scale: [1.2, 1, 1] })).toBe(false);
     expect(isIdentityPlacement({ ...identityPlacement(), position: [0, 0.5, 0] })).toBe(false);
     expect(isIdentityPlacement({ ...identityPlacement(), rotationDeg: [0, 15, 0] })).toBe(false);
+  });
+});
+
+describe('composite child keys', () => {
+  it('childKey joins prop + child with the separator; isChildKey detects it', () => {
+    const key = childKey('DemoBench', 'demo-lathe');
+    expect(key).toBe('DemoBench/demo-lathe');
+    expect(isChildKey(key)).toBe(true);
+    expect(isChildKey('DemoBench')).toBe(false);
+  });
+
+  it('a child override is stored, diffed and reset like any other key', () => {
+    const key = childKey('DemoBench', 'tv-stand');
+    const { setPlacement } = useRoomLayoutStore.getState();
+    setPlacement(key, { position: [0.2, 0, 0.5], rotationDeg: [0, 90, 0], scale: [1, 1, 1] });
+
+    expect(useRoomLayoutStore.getState().getPlacement(key).position).toEqual([0.2, 0, 0.5]);
+    expect(Object.keys(useRoomLayoutStore.getState().diff())).toEqual([key]);
+
+    // Reset removes the override entirely (so the child reverts to authored).
+    useRoomLayoutStore.getState().reset(key);
+    expect(useRoomLayoutStore.getState().layout[key]).toBeUndefined();
+    expect(useRoomLayoutStore.getState().diff()).toEqual({});
   });
 });
 
