@@ -12,18 +12,13 @@
  * unaffected. Vercel typechecks + builds this file at deploy time using the
  * self-contained `api/tsconfig.json`.
  *
- * Uses the Web-standard (Request) => Response signature, which Vercel supports
- * for functions exporting a default handler — so no `@vercel/node` dependency.
+ * Uses a Web-standard NAMED HTTP-method export (`export function POST(req)`),
+ * which Vercel recognizes as a fetch-style handler returning a `Response` — so no
+ * `@vercel/node` dependency. (A `export default (req) => Response` is instead
+ * treated as the Node `(req, res)` signature: the returned Response is ignored and
+ * the function hangs to a 300s timeout. Named-method exports avoid that.)
  */
 import Anthropic from '@anthropic-ai/sdk';
-
-/**
- * Run on Vercel's EDGE runtime. The Web-standard `(Request) => Response` handler
- * below is only invoked by the Edge runtime; on the default Node runtime Vercel
- * expects a `(req, res)` signature and the function never responds (→
- * FUNCTION_INVOCATION_TIMEOUT). The Anthropic SDK is fetch-based and runs on Edge.
- */
-export const config = { runtime: 'edge' };
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -81,11 +76,7 @@ function parseBody(body: unknown): ChatRequest | null {
     : { messages: b.messages as ChatMessage[], context };
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return json({ error: 'method_not_allowed' }, 405);
-  }
-
+export async function POST(req: Request): Promise<Response> {
   // Graceful degrade: without a key the live instructor simply isn't connected,
   // so the client falls back to its local knowledge base.
   if (!process.env.ANTHROPIC_API_KEY) {
