@@ -31,10 +31,11 @@ import { PropertiesPanel } from './PropertiesPanel.js';
 import { EditedProp } from './EditedProp.js';
 import { useEditStore, IDENTITY_EDIT } from './editStore.js';
 import { RoomEditor } from './RoomEditor.js';
+import { InstructorChat } from '../instructor/InstructorChat.js';
 import './preview.css';
 
 /** Which top-level harness view is active. Persisted in localStorage. */
-type HarnessTab = 'props' | 'room';
+type HarnessTab = 'props' | 'room' | 'instructor';
 
 const TAB_STORAGE_KEY = 'wts-preview-tab';
 
@@ -43,7 +44,8 @@ const ROOM_DEFAULT = 'Lighting';
 
 function loadTab(): HarnessTab {
   if (typeof localStorage === 'undefined') return 'props';
-  return localStorage.getItem(TAB_STORAGE_KEY) === 'room' ? 'room' : 'props';
+  const stored = localStorage.getItem(TAB_STORAGE_KEY);
+  return stored === 'room' || stored === 'instructor' ? stored : 'props';
 }
 
 function persistTab(tab: HarnessTab): void {
@@ -303,13 +305,20 @@ export function PreviewApp(): React.JSX.Element {
         >
           Room
         </button>
+        <button
+          type="button"
+          className={'harness__tab' + (tab === 'instructor' ? ' harness__tab--active' : '')}
+          data-testid="tab-instructor"
+          aria-selected={tab === 'instructor'}
+          onClick={() => { selectTab('instructor'); }}
+        >
+          Instructor
+        </button>
       </div>
 
-      {tab === 'props' ? (
-        <PropsGallery />
-      ) : (
-        <RoomEditor activeName={roomActive} onSelect={selectRoom} />
-      )}
+      {tab === 'props' && <PropsGallery />}
+      {tab === 'room' && <RoomEditor activeName={roomActive} onSelect={selectRoom} />}
+      {tab === 'instructor' && <InstructorChat />}
     </>
   );
 }
