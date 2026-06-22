@@ -17,6 +17,14 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 
+/**
+ * Run on Vercel's EDGE runtime. The Web-standard `(Request) => Response` handler
+ * below is only invoked by the Edge runtime; on the default Node runtime Vercel
+ * expects a `(req, res)` signature and the function never responds (→
+ * FUNCTION_INVOCATION_TIMEOUT). The Anthropic SDK is fetch-based and runs on Edge.
+ */
+export const config = { runtime: 'edge' };
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
