@@ -20,12 +20,14 @@ import * as THREE from 'three';
 
 // ─── Director tuning knobs ────────────────────────────────────────────────────
 
-// Long-hallway layout: hall X ∈ [-2, +16], Z ∈ [-2.5, +4].
-// Grinder station is placed near the -X entrance end, in the middle of the aisle,
-// facing down the hall toward the player's lathe (+X direction).
+// Long-hallway layout: hall X ∈ [-16, +2], Z ∈ [-2.5, +7.25].
+// Grinder station previously sat dead-centre just inside the entrance
+// ([-14.5, 0, 1.5]), blocking the centre entry aisle. Relocated to the +Z side
+// near the entrance (Z=3.6) — clear of the centre aisle (Z 0.4–2.1) and of the
+// shop vac (X=-15.5, Z=3.0, ~1.4 m away). Still faces down the hall (+X).
 
 /** World position of the grinder station (base centre). */
-export const GRINDER_POS: [number, number, number] = [-14.5, 0, 1.5];
+export const GRINDER_POS: [number, number, number] = [-14.5, 0, 3.6];
 
 /** Rotation (radians). Faces down the hall toward player lathe (+X direction). */
 export const GRINDER_ROT: [number, number, number] = [0, Math.PI / 2, 0];
@@ -225,8 +227,8 @@ interface GrinderStationProps {
  * GrinderStation — pedestal bench grinder with two wheels, tool rests,
  * and a water cooling pot.
  *
- * Default position: GRINDER_POS = [-2.2, 0, 1.5]  (left wall)
- * Default rotation: GRINDER_ROT = [0, π/2, 0]     (faces into room)
+ * Default position: GRINDER_POS = [-14.5, 0, 3.6]  (+Z side, near entrance)
+ * Default rotation: GRINDER_ROT = [0, π/2, 0]      (faces down the hall, +X)
  * Both constants are exported for easy director tuning.
  */
 export function GrinderStation({
